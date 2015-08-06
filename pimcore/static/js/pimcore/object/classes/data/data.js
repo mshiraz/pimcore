@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -21,7 +21,8 @@ pimcore.object.classes.data.data = Class.create({
                 "fullpath","childs","values","cachetag","cachetags","parent","published","valuefromparent",
                 "userpermissions","dependencies","modificationdate","usermodification","byid","bypath","data",
                 "versions","properties","permissions","permissionsforuser","childamount","apipluginbroker","resource",
-                "parentClass","definition","locked","language","omitmandatorycheck", "idPath"
+                "parentClass","definition","locked","language","omitmandatorycheck", "idpath", "object", "fieldname",
+                "constructor"
             ],
 
     /**
@@ -66,8 +67,10 @@ pimcore.object.classes.data.data = Class.create({
 
     getLayout: function () {
 
+        var niceName = (this.getTypeName() ? this.getTypeName() : t(this.getType()));
+
         this.specificPanel = new Ext.form.FormPanel({
-            title: t(this.getType() + "_settings"),
+            title: t("specific_settings") + " (" + niceName + ")",
             bodyStyle: "padding: 10px;",
             style: "margin: 10px 0 10px 0",
             layout: "pimcoreform",
@@ -85,7 +88,16 @@ pimcore.object.classes.data.data = Class.create({
                 autoCreate: {tag: 'input', type: 'text', maxlength: '70', autocomplete: 'off'},
                 enableKeyEvents: true,
                 value: this.datax.name,
-                disabled: !in_array("name",this.availableSettingsFields)
+                disabled: !in_array("name",this.availableSettingsFields) || this.inCustomLayoutEditor,
+                listeners: {
+                    keyup: function (el) {
+                        // autofill title field if untouched and empty
+                        var title = el.ownerCt.getComponent("title");
+                        if(title["_autooverwrite"] === true) {
+                            el.ownerCt.getComponent("title").setValue(el.getValue());
+                        }
+                    }
+                }
             },
             {
                 xtype: "textfield",
@@ -94,7 +106,18 @@ pimcore.object.classes.data.data = Class.create({
                 itemId: "title",
                 width: 300,
                 value: this.datax.title,
-                disabled: !in_array("title",this.availableSettingsFields)
+                disabled: !in_array("title",this.availableSettingsFields),
+                enableKeyEvents: true,
+                listeners: {
+                    keyup: function (el) {
+                        el["_autooverwrite"] = false;
+                    },
+                    afterrender: function (el) {
+                        if(el.getValue().length < 1) {
+                            el["_autooverwrite"] = true;
+                        }
+                    }
+                }
             },
             {
                 xtype: "textarea",
@@ -110,7 +133,7 @@ pimcore.object.classes.data.data = Class.create({
                 fieldLabel: t("mandatoryfield"),
                 name: "mandatory",
                 checked: this.datax.mandatory,
-                disabled: !in_array("mandatory",this.availableSettingsFields)
+                disabled: !in_array("mandatory",this.availableSettingsFields) || this.isInCustomLayoutEditor()
             },
             {
                 xtype: "checkbox",
@@ -126,28 +149,34 @@ pimcore.object.classes.data.data = Class.create({
                 name: "invisible",
                 checked: this.datax.invisible,
                 disabled: !in_array("invisible",this.availableSettingsFields)
-            },
-            {
+            }
+        ];
+
+        if (!this.inCustomLayoutEditor) {
+            standardSettings.push(            {
                 xtype: "checkbox",
                 fieldLabel: t("visible_in_gridview"),
                 name: "visibleGridView",
                 checked: this.datax.visibleGridView,
                 disabled: !in_array("visibleGridView",this.availableSettingsFields)
-            },
-            {
+            });
+
+            standardSettings.push({
                 xtype: "checkbox",
                 fieldLabel: t("visible_in_searchresult"),
                 name: "visibleSearch",
                 checked: this.datax.visibleSearch,
                 disabled: !in_array("visibleSearch",this.availableSettingsFields)
-            },{
+            });
+
+            standardSettings.push({
                 xtype: "checkbox",
                 fieldLabel: t("index"),
                 name: "index",
                 checked: this.datax.index,
                 disabled: !in_array("index",this.availableSettingsFields)
-            }
-        ];
+            });
+        }
 
         var layoutSettings = [
             {
@@ -160,26 +189,35 @@ pimcore.object.classes.data.data = Class.create({
             }
         ];
 
+        this.standardSettingsForm = new Ext.form.FormPanel(
+            {
+                xtype: "form",
+                title: t("general_settings") + " (" + niceName + ")",
+                bodyStyle: "padding: 10px;",
+                style: "margin: 10px 0 10px 0",
+                labelWidth: 140,
+                itemId: "standardSettings",
+                items: standardSettings
+            }
+        );
+
+        this.layoutSettingsForm = new Ext.form.FormPanel(
+            {
+                xtype: "form",
+                title: t("layout_settings"),
+                bodyStyle: "padding: 10px;",
+                style: "margin: 10px 0 10px 0",
+                labelWidth: 230,
+                items: layoutSettings
+            }
+        );
+
+
         this.layout = new Ext.Panel({
             bodyStyle: "padding: 10px;",
             items: [
-                {
-                    xtype: "form",
-                    title: t("general_settings") + " (" + (this.getTypeName() ? this.getTypeName() : t(this.getType())) + ")",
-                    bodyStyle: "padding: 10px;",
-                    style: "margin: 10px 0 10px 0",
-                    labelWidth: 140,
-                    itemId: "standardSettings",
-                    items: standardSettings
-                },
-                {
-                    xtype: "form",
-                    title: t("layout_settings"),
-                    bodyStyle: "padding: 10px;",
-                    style: "margin: 10px 0 10px 0",
-                    labelWidth: 230,
-                    items: layoutSettings
-                },
+                this.standardSettingsForm,
+                this.layoutSettingsForm,
                 this.specificPanel
             ]
         });
@@ -212,7 +250,9 @@ pimcore.object.classes.data.data = Class.create({
 
         for (var i = 0; i < items.length; i++) {
             if (items[i].name == "name") {
-                this.treeNode.setText(items[i].getValue());
+                if (this.treeNode) {
+                    this.treeNode.setText(items[i].getValue());
+                }
                 break;
             }
         }
@@ -254,5 +294,20 @@ pimcore.object.classes.data.data = Class.create({
 
         this.datax.fieldtype = this.getType();
         this.datax.datatype = "data";
+    },
+
+    setInCustomLayoutEditor: function(inCustomLayoutEditor) {
+        this.inCustomLayoutEditor = inCustomLayoutEditor;
+    },
+
+    isInCustomLayoutEditor: function() {
+        return this.inCustomLayoutEditor;
+    },
+
+    applySpecialData: function(source) {
+
     }
+
+
+
 });

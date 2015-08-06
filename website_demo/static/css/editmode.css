@@ -4,7 +4,6 @@
 }
 
 .editmode-label label {
-    float: left;
     padding-right: 5px;
 }
 
@@ -51,19 +50,32 @@
     text-align: center;
 }
 
-/* bootstrap 3 ExtJS fixes */
-.x-form-field, .x-form-trigger, .x-form-item, .x-panel-body {
-    -moz-box-sizing:content-box;
-    box-sizing: content-box;
-    -webkit-box-sizing: content-box;
+.gallery .carousel-inner .item img {
+    min-width: 100%;
+    height: auto;
 }
 
-.x-fieldset legend {
-    border:0;
-    margin:0;
-    width: auto;
+.teaser-icon > .icon > .image {
+    line-height: normal;
+    padding-top: 20px;
 }
 
-.x-panel label {
-    margin:0;
+.teaser-icon .icon .pimcore_tag_select {
+    position: absolute;
+    right: -30px;
+    top: 25px;
+}
+
+.teaser-icon .icon .image input {
+    visibility: hidden;
+}
+
+.glyphicon-selection .x-combo-list-item {
+    font-family: 'Glyphicons Halflings' !important;
+    font-size: 25px !important;
+}
+
+.carousel-caption .pimcore_tag_image {
+    position: absolute;
+    top: 0px;
 }

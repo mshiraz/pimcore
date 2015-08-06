@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    Object
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Object_KeyValue_GroupConfig extends Pimcore_Model_Abstract {
+namespace Pimcore\Model\Object\KeyValue;
+
+use Pimcore\Model;
+
+class GroupConfig extends Model\AbstractModel {
 
     /** Group id.
      * @var integer
@@ -32,10 +36,19 @@ class Object_KeyValue_GroupConfig extends Pimcore_Model_Abstract {
      */
     public $description;
 
+    /**
+     * @var integer
+     */
+    public $creationDate;
+
+    /**
+     * @var integer
+     */
+    public $modificationDate;
 
     /**
      * @param integer $id
-     * @return Object_KeyValue_GroupConfig
+     * @return Model\Object\KeyValue\GroupConfig
      */
     public static function getById($id) {
         try {
@@ -45,12 +58,15 @@ class Object_KeyValue_GroupConfig extends Pimcore_Model_Abstract {
             $config->getResource()->getById();
 
             return $config;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
 
         }
     }
 
-
+    /**
+     * @param $name
+     * @return GroupConfig
+     */
     public static function getByName ($name) {
         try {
             $config = new self();
@@ -58,14 +74,13 @@ class Object_KeyValue_GroupConfig extends Pimcore_Model_Abstract {
             $config->getResource()->getByName();
 
             return $config;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
 
         }
     }
 
-
     /**
-     * @return Object_KeyValue_GroupConfig
+     * @return Model\Object\KeyValue\GroupConfig
      */
     public static function create() {
         $config = new self();
@@ -73,7 +88,6 @@ class Object_KeyValue_GroupConfig extends Pimcore_Model_Abstract {
 
         return $config;
     }
-
 
     /**
      * @param integer $id
@@ -116,7 +130,7 @@ class Object_KeyValue_GroupConfig extends Pimcore_Model_Abstract {
 
     /** Sets the description.
      * @param $description
-     * @return Object_KeyValue_GroupConfig
+     * @return Model\Object\KeyValue\GroupConfig
      */
     public function setDescription($description) {
         $this->description = $description;
@@ -127,9 +141,9 @@ class Object_KeyValue_GroupConfig extends Pimcore_Model_Abstract {
      * Deletes the key value group configuration
      */
     public function delete() {
-        Pimcore_API_Plugin_Broker::getInstance()->preDeleteKeyValueGroupConfig($this);
+        \Pimcore::getEventManager()->trigger("object.keyValue.groupConfig.preDelete", $this);
         parent::delete();
-        Pimcore_API_Plugin_Broker::getInstance()->postDeleteKeyValueGroupConfig($this);
+        \Pimcore::getEventManager()->trigger("object.keyValue.groupConfig.postDelete", $this);
     }
 
     /**
@@ -140,17 +154,54 @@ class Object_KeyValue_GroupConfig extends Pimcore_Model_Abstract {
 
         if ($this->getId()) {
             $isUpdate = true;
-            Pimcore_API_Plugin_Broker::getInstance()->preUpdateKeyValueGroupConfig($this);
+            \Pimcore::getEventManager()->trigger("object.keyValue.groupConfig.preUpdate", $this);
         } else {
-            Pimcore_API_Plugin_Broker::getInstance()->preAddKeyValueGroupConfig($this);
+            \Pimcore::getEventManager()->trigger("object.keyValue.groupConfig.preAdd", $this);
         }
 
-        parent::save();
+        $model = parent::save();
 
         if ($isUpdate) {
-            Pimcore_API_Plugin_Broker::getInstance()->postUpdateKeyValueGroupConfig($this);
+            \Pimcore::getEventManager()->trigger("object.keyValue.groupConfig.postUpdate", $this);
         } else {
-            Pimcore_API_Plugin_Broker::getInstance()->postAddKeyValueGroupConfig($this);
+            \Pimcore::getEventManager()->trigger("object.keyValue.groupConfig.postAdd", $this);
         }
+        return $model;
+    }
+
+    /**
+     * @param $modificationDate
+     * @return $this
+     */
+    public function setModificationDate($modificationDate)
+    {
+        $this->modificationDate = (int) $modificationDate;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getModificationDate()
+    {
+        return $this->modificationDate;
+    }
+
+    /**
+     * @param $creationDate
+     * @return $this
+     */
+    public function setCreationDate($creationDate)
+    {
+        $this->creationDate = (int) $creationDate;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getCreationDate()
+    {
+        return $this->creationDate;
     }
 }

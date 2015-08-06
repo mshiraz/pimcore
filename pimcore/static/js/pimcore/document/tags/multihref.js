@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -138,6 +138,7 @@ pimcore.document.tags.multihref = Class.create(pimcore.document.tag, {
                     },
                     {
                         xtype: "button",
+                        cls: "pimcore_inline_upload",
                         iconCls: "pimcore_icon_upload_single",
                         handler: this.uploadDialog.bind(this)
                     }
@@ -185,7 +186,7 @@ pimcore.document.tags.multihref = Class.create(pimcore.document.tag, {
                         path: data["fullpath"],
                         type: "asset",
                         subtype: data["type"]
-                    }, this.store.getCount() + 1));
+                    }));
                 }
             } catch (e) {
                 console.log(e);
@@ -220,7 +221,7 @@ pimcore.document.tags.multihref = Class.create(pimcore.document.tag, {
 
         // check for existing element
         if (!this.elementAlreadyExists(initData.id, initData.type)) {
-            this.store.add(new this.store.recordType(initData, this.store.getCount() + 1));
+            this.store.add(new this.store.recordType(initData));
             return true;
         }
         return false;
@@ -264,6 +265,7 @@ pimcore.document.tags.multihref = Class.create(pimcore.document.tag, {
 
         menu.add(new Ext.menu.Item({
             text: t('upload'),
+            cls: "pimcore_inline_upload",
             iconCls: "pimcore_icon_upload_single",
             handler: function (item) {
                 item.parentMenu.destroy();
@@ -321,7 +323,7 @@ pimcore.document.tags.multihref = Class.create(pimcore.document.tag, {
                         path: items[i].fullpath,
                         type: items[i].type,
                         subtype: subtype
-                    }, this.store.getCount() + 1));
+                    }));
                 }
             }
         }

@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    Tool
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Tool_Lock extends Pimcore_Model_Abstract {
+namespace Pimcore\Model\Tool;
+
+use Pimcore\Model;
+
+class Lock extends Model\AbstractModel {
 
     /**
      * @var string
@@ -33,12 +37,12 @@ class Tool_Lock extends Pimcore_Model_Abstract {
     protected static $acquiredLocks = array();
 
     /**
-     * @var Tool_Lock
+     * @var Lock
      */
     protected static $instance;
 
     /**
-     * @return Tool_Lock
+     * @return Lock
      */
     protected static function getInstance () {
         if(!self::$instance) {
@@ -52,6 +56,7 @@ class Tool_Lock extends Pimcore_Model_Abstract {
      * @param string $key
      */
     public static function acquire ($key, $expire = 120, $refreshInterval = 1) {
+
         $instance = self::getInstance();
         $instance->getResource()->acquire($key, $expire, $refreshInterval);
 
@@ -62,6 +67,7 @@ class Tool_Lock extends Pimcore_Model_Abstract {
      * @param string $key
      */
     public static function release ($key) {
+
         $instance = self::getInstance();
         $instance->getResource()->release($key);
 
@@ -73,6 +79,7 @@ class Tool_Lock extends Pimcore_Model_Abstract {
      * @return bool
      */
     public static function lock ($key) {
+
         $instance = self::getInstance();
         return $instance->getResource()->lock($key);
     }
@@ -89,7 +96,7 @@ class Tool_Lock extends Pimcore_Model_Abstract {
 
     /**
      * @param $key
-     * @return Tool_Lock
+     * @return Lock
      */
     public static function get($key) {
         $lock = new self;
@@ -102,8 +109,6 @@ class Tool_Lock extends Pimcore_Model_Abstract {
      */
     public static function releaseAll() {
         $locks = self::$acquiredLocks;
-
-        Logger::debug($locks);
 
         foreach($locks as $key) {
             self::release($key);

@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -28,6 +28,7 @@ if (!console) {
 
 // some globals
 var editables = [];
+var editablesReady = false;
 var editableNames = [];
 var editWindow;
 
@@ -41,6 +42,7 @@ if (typeof pimcore == "object") {
 
     pimcore.globalmanager = parent.pimcore.globalmanager;
     pimcore.helpers = parent.pimcore.helpers;
+    pimcore.settings = parent.pimcore.settings;
 }
 
 if (pimcore_document_id) {
@@ -71,7 +73,7 @@ Ext.onReady(function () {
 
     // this sets the height of the body and html element to the current absolute height of the page
     // this is because some pages set the body height, and the positioning is then done by "absolute"
-    // the problem is that ExtJS relies on the body height for DnD, so if the body isn't as high as the whole page
+    // the problem is that ExtJS relies on the body height for DnD, so if the body isn't as high as the entire page
     // dnd works only in the section covered by the specified body height
     window.setInterval(pimcore.edithelpers.setBodyHeight, 1000);
 
@@ -89,7 +91,7 @@ Ext.onReady(function () {
         }
         
         if(in_array(name,editableNames)) {
-            Ext.MessageBox.alert("ERROR","Dublicate editable name: " + name);
+            pimcore.helpers.showNotification("ERROR", "Duplicate editable name: " + name, "error");
         }
         editableNames.push(name);
 
@@ -115,21 +117,14 @@ Ext.onReady(function () {
             }
         }
 
+        editablesReady = true;
+
         // add lazyload styles
         // this is necessary, because otherwise ext will overwrite many default styles (reset.css)
         // and then the style detection of eg. input, textarea editable isn't accurate anymore
         Ext.each(Ext.query("link[type='pimcore-lazyload-style']"), function (item) {
             item.setAttribute("type", "text/css");
             item.setAttribute("rel", "stylesheet");
-        });
-
-        // handler for Esc
-        var mapEsc = new Ext.KeyMap(document, {
-            key: [27],
-            fn: function () {
-                closeCKeditors();
-            },
-            stopEvent: true
         });
 
         // register the global key bindings
@@ -196,6 +191,12 @@ Ext.onReady(function () {
         }
 
     }
+
+    // put a mask over all iframe, because they would break the dnd functionality
+    editWindow.maskFrames();
+
+    // enable the edit tab again
+    editWindow.loadMask.hide();
 });
 
 

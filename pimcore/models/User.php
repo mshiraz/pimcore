@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    User
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class User extends User_UserRole {
+namespace Pimcore\Model;
+
+use Pimcore\File; 
+
+class User extends User\UserRole {
 
     /**
      * @var string
@@ -65,7 +69,7 @@ class User extends User_UserRole {
     /**
      * @var bool
      */
-    public $welcomescreen = true;
+    public $welcomescreen = false;
 
     /**
      * @var bool
@@ -77,6 +81,11 @@ class User extends User_UserRole {
      * @var bool
      */
     public $memorizeTabs = true;
+
+    /**
+     * @var string|null
+     */
+    public $apiKey;
 
 
     /**
@@ -107,9 +116,8 @@ class User extends User_UserRole {
     }
 
     /**
-     * Alias for setName()
-     * @deprecated
      * @param $username
+     * @return $this
      */
     public function setUsername ($username) {
         $this->setName($username);
@@ -125,8 +133,8 @@ class User extends User_UserRole {
     }
 
     /**
-     *
-     * @param string $firstname
+     * @param $firstname
+     * @return $this
      */
     public function setFirstname($firstname) {
         $this->firstname = $firstname;
@@ -142,8 +150,8 @@ class User extends User_UserRole {
     }
 
     /**
-     *
-     * @param string $lastname
+     * @param $lastname
+     * @return $this
      */
     public function setLastname($lastname) {
         $this->lastname = $lastname;
@@ -159,8 +167,8 @@ class User extends User_UserRole {
     }
 
     /**
-     *
-     * @param string $email
+     * @param $email
+     * @return $this
      */
     public function setEmail($email) {
         $this->email = $email;
@@ -236,19 +244,51 @@ class User extends User_UserRole {
      * @param String $key
      * @return boolean
      */
-    public function isAllowed($key) {
+    public function isAllowed($key, $type = "permission") {
 
-        if(!$this->getPermission($key)) {
-            // check roles
-            foreach ($this->getRoles() as $roleId) {
-                $role = User_Role::getById($roleId);
-                if($role->getPermission($key)) {
-                    return true;
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        if($type == "permission") {
+            if(!$this->getPermission($key)) {
+                // check roles
+                foreach ($this->getRoles() as $roleId) {
+                    $role = User\Role::getById($roleId);
+                    if($role->getPermission($key)) {
+                        return true;
+                    }
                 }
+            }
+
+            return $this->getPermission($key);
+        } else if ($type == "class") {
+            $classes = $this->getClasses();
+            foreach ($this->getRoles() as $roleId) {
+                $role = User\Role::getById($roleId);
+                $classes = array_merge($classes, $role->getClasses());
+            }
+
+            if(!empty($classes)) {
+                return in_array($key, $classes);
+            } else {
+                return true;
+            }
+        } else  if ($type == "docType") {
+            $docTypes = $this->getDocTypes();
+            foreach ($this->getRoles() as $roleId) {
+                $role = User\Role::getById($roleId);
+                $docTypes = array_merge($docTypes, $role->getDocTypes());
+            }
+
+            if(!empty($docTypes)) {
+                return in_array($key, $docTypes);
+            } else {
+                return true;
             }
         }
 
-        return $this->getPermission($key);
+        return false;
     }
 
     /**
@@ -266,7 +306,8 @@ class User extends User_UserRole {
     }
 
     /**
-     * @param array $roles
+     * @param $roles
+     * @return $this
      */
     public function setRoles($roles)
     {
@@ -292,7 +333,8 @@ class User extends User_UserRole {
     }
 
     /**
-     * @param boolean $welcomescreen
+     * @param $welcomescreen
+     * @return $this
      */
     public function setWelcomescreen($welcomescreen)
     {
@@ -309,7 +351,8 @@ class User extends User_UserRole {
     }
 
     /**
-     * @param boolean $closeWarning
+     * @param $closeWarning
+     * @return $this
      */
     public function setCloseWarning($closeWarning)
     {
@@ -326,7 +369,8 @@ class User extends User_UserRole {
     }
 
     /**
-     * @param boolean $memorizeTabs
+     * @param $memorizeTabs
+     * @return $this
      */
     public function setMemorizeTabs($memorizeTabs)
     {
@@ -343,15 +387,71 @@ class User extends User_UserRole {
     }
 
     /**
-     * @return string | null
+     * @param $apiKey
+     * @throws \Exception
      */
-
-    public function getApiKey(){
-        if($this->getActive()){
-            return $this->getPassword();
-        }else{
-            Logger::warn("Couldn't get API key of user (ID: ". $this->getId().") because the user is not active.");
+    public function setApiKey($apiKey)
+    {
+        if(!empty($apiKey) && strlen($apiKey) < 32) {
+            throw new \Exception("API-Key has to be at least 32 characters long");
         }
+        $this->apiKey = $apiKey;
     }
 
+    /**
+     * @return null|string
+     */
+    public function getApiKey()
+    {
+        if(empty($this->apiKey)) {
+            return null;
+        }
+        return $this->apiKey;
+    }
+
+    /**
+     * @param $path
+     */
+    public function setImage($path) {
+        $userImageDir = PIMCORE_WEBSITE_VAR . "/user-image";
+        if(!is_dir($userImageDir)) {
+            File::mkdir($userImageDir);
+        }
+
+        $destFile = $userImageDir . "/user-" . $this->getId() . ".png";
+        $thumb = PIMCORE_SYSTEM_TEMP_DIRECTORY . "/user-thumbnail-" . $this->getId() . ".png";
+        @unlink($destFile);
+        @unlink($thumb);
+        copy($path, $destFile);
+        @chmod($destFile, File::getDefaultMode());
+    }
+
+    /**
+     * @return string
+     */
+    public function getImage($width = null, $height = null) {
+
+        if(!$width) {
+            $width = 46;
+        }
+        if(!$height) {
+            $height = 46;
+        }
+
+        $id = $this->getId();
+        $user = PIMCORE_WEBSITE_VAR . "/user-image/user-" . $id . ".png";
+        if(file_exists($user)) {
+            $thumb = PIMCORE_SYSTEM_TEMP_DIRECTORY . "/user-thumbnail-" . $id . ".png";
+            if(!file_exists($thumb)) {
+                $image = \Pimcore\Image::getInstance();
+                $image->load($user);
+                $image->cover($width,$height);
+                $image->save($thumb, "png");
+            }
+
+            return $thumb;
+        }
+
+        return PIMCORE_PATH . "/static/img/avatar.png";
+    }
 }

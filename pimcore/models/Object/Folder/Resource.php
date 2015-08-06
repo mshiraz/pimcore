@@ -11,10 +11,14 @@
  *
  * @category   Pimcore
  * @package    Object
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Object_Folder_Resource extends Object_Abstract_Resource {
+namespace Pimcore\Model\Object\Folder;
+
+use Pimcore\Model;
+
+class Resource extends Model\Object\AbstractObject\Resource {
 
 }

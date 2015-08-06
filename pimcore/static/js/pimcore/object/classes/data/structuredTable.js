@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -127,7 +127,7 @@ pimcore.object.classes.data.structuredTable = Class.create(pimcore.object.classe
                 value = trim(value);
                 var regresult = value.match(/[a-zA-Z0-9_]+/);
 
-                if (value.length > 1 && regresult == value && in_array(value.toLowerCase(),
+                if (value.length >= 1 && regresult == value && in_array(value.toLowerCase(),
                                     ["id","key","path","type","index","classname","creationdate","userowner",
                                      "value","class","list","fullpath","childs","values","cachetag","cachetags",
                                      "parent","published","valuefromparent","userpermissions","dependencies",
@@ -258,6 +258,23 @@ pimcore.object.classes.data.structuredTable = Class.create(pimcore.object.classe
         }
 
         return this.datax;
+    },
+
+    applySpecialData: function(source) {
+        if (source.datax) {
+            if (!this.datax) {
+                this.datax =  {};
+            }
+            Ext.apply(this.datax,
+                {
+                    width: source.datax.width,
+                    height: source.datax.height,
+                    labelWidth: source.datax.labelWidth,
+                    labelFirstCell: source.datax.labelFirstCell,
+                    cols: source.datax.cols,
+                    rows: source.datax.rows
+                });
+        }
     }
 
 });

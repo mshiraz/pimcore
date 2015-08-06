@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -246,6 +246,7 @@ pimcore.document.tags.href = Class.create(pimcore.document.tag, {
         if((this.options["types"] && in_array("asset",this.options.types)) || !this.options["types"]) {
             menu.add(new Ext.menu.Item({
                 text: t('upload'),
+                cls: "pimcore_inline_upload",
                 iconCls: "pimcore_icon_upload_single",
                 handler: function (item) {
                     item.parentMenu.destroy();
@@ -268,7 +269,10 @@ pimcore.document.tags.href = Class.create(pimcore.document.tag, {
 
         pimcore.helpers.itemselector(false, this.addDataFromSelector.bind(this), {
             type: this.options.types,
-            subtype: this.options.subtypes
+            subtype: this.options.subtypes,
+            specific: {
+                classes: this.options["classes"]
+            }
         });
     },
 

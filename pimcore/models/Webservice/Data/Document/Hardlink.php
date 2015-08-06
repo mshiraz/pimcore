@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    Webservice
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Webservice_Data_Document_Hardlink extends Webservice_Data_Document {
+namespace Pimcore\Model\Webservice\Data\Document;
+
+use Pimcore\Model;
+
+class Hardlink extends Model\Webservice\Data\Document {
 
     /**
      * static type of this object

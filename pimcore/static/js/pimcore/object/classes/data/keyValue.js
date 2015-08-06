@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -67,6 +67,7 @@ pimcore.object.classes.data.keyValue = Class.create(pimcore.object.classes.data.
         var multivalent = 0;
         var metavisible = 0;
         var metaWidth = 200;
+        var metaVisible = false;
 
         if (this.datax.keyWidth) {
             keyWidth = this.datax.keyWidth;
@@ -161,6 +162,7 @@ pimcore.object.classes.data.keyValue = Class.create(pimcore.object.classes.data.
                 name: "multivalent",
                 value: multivalent,
                 checked: multivalent,
+                disabled: this.isInCustomLayoutEditor(),
                 fieldLabel: t("keyvalue_data_multivalent"),
                 width: 300
             }
@@ -176,5 +178,26 @@ pimcore.object.classes.data.keyValue = Class.create(pimcore.object.classes.data.
         data.name = "keyvaluepairs";
 
         return data;
+    },
+
+    applySpecialData: function(source) {
+        if (source.datax) {
+            if (!this.datax) {
+                this.datax =  {};
+            }
+            Ext.apply(this.datax,
+                {
+                    keyWidth: source.datax.keyWidth,
+                    valueWidth: source.datax.valueWidth,
+                    descWidth: source.datax.descWidth,
+                    height: source.datax.height,
+                    maxheight: source.datax.maxheight,
+                    groupWidth: source.datax.groupWidth,
+                    groupDescWidth: source.datax.groupDescWidth,
+                    multivalent: source.datax.multivalent,
+                    metawidth: source.datax.metawidth,
+                    metaVisible: source.datax.metaVisible,
+                });
+        }
     }
 });

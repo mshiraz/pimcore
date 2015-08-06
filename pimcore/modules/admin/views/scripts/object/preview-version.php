@@ -10,7 +10,13 @@
 <body>
 
 
-<?php $fields = $this->object->getClass()->getFieldDefinitions(); ?>
+<?php
+
+    use Pimcore\Model\Object;
+
+    $fields = $this->object->getClass()->getFieldDefinitions();
+
+?>
 
 <table class="preview" border="0" cellpadding="0" cellspacing="0">
     <tr>
@@ -21,7 +27,7 @@
     <tr class="system">
         <td>Date</td>
         <td>o_modificationDate</td>
-        <td><?php echo date('Y-m-d H:m:s', $this->object->getModificationDate()); ?></td>
+        <td><?php echo date('Y-m-d H:i:s', $this->object->getModificationDate()); ?></td>
     </tr>
     <tr class="system">
         <td>Path</td>
@@ -31,7 +37,7 @@
     <tr class="system">
         <td>Published</td>
         <td>o_published</td>
-        <td><?php echo Zend_Json::encode($this->object->getPublished()); ?></td>
+        <td><?php echo \Zend_Json::encode($this->object->getPublished()); ?></td>
     </tr>
 
     <tr class="">
@@ -40,22 +46,28 @@
 
 <?php $c = 0; ?>
 <?php foreach ($fields as $fieldName => $definition) { ?>
-    <?php if($definition instanceof Object_Class_Data_Localizedfields) { ?>
-        <?php foreach(Pimcore_Tool::getValidLanguages() as $language) { ?>
+    <?php if($definition instanceof Object\ClassDefinition\Data\Localizedfields) { ?>
+        <?php foreach(\Pimcore\Tool::getValidLanguages() as $language) { ?>
             <?php foreach ($definition->getFieldDefinitions() as $lfd) { ?>
                 <tr<?php if ($c % 2) { ?> class="odd"<?php } ?>>
                     <td><?php echo $lfd->getTitle() ?> (<?php echo $language; ?>)</td>
                     <td><?php echo $lfd->getName() ?></td>
-                    <td><?php echo $lfd->getVersionPreview($this->object->getValueForFieldName($fieldName)->getLocalizedValue($lfd->getName(), $language)) ?></td>
+                    <td>
+                        <?php
+                            if($this->object->getValueForFieldName($fieldName)) {
+                                echo $lfd->getVersionPreview($this->object->getValueForFieldName($fieldName)->getLocalizedValue($lfd->getName(), $language));
+                            }
+                        ?>
+                    </td>
                 </tr>
             <?php
                 $c++;
             } ?>
     <?php } ?>
-    <?php } else if($definition instanceof Object_Class_Data_Objectbricks){ ?>
+    <?php } else if($definition instanceof Object\ClassDefinition\Data\Objectbricks){ ?>
             <?php foreach($definition->getAllowedTypes() as $asAllowedType) { ?>
                 <?php
-                $collectionDef = Object_Objectbrick_Definition::getByKey($asAllowedType);
+                $collectionDef = Object\Objectbrick\Definition::getByKey($asAllowedType);
 
                 foreach ($collectionDef->getFieldDefinitions() as $lfd) { ?>
                     <?php

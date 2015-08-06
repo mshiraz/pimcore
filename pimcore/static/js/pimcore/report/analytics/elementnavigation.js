@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -89,7 +89,7 @@ pimcore.report.analytics.elementnavigation = Class.create(pimcore.report.abstrac
         var path = "";
         var type = "";
         
-        if (this.type == "document_page" || this.type == "document_snippet") {
+        if (this.type == "document_page") {
             id = this.reference.id;
             path = this.reference.data.path + this.reference.data.key;
             type = "document";

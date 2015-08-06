@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    Document
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Document_Folder_Resource extends Document_Resource {
+namespace Pimcore\Model\Document\Folder;
+
+use Pimcore\Model;
+
+class Resource extends Model\Document\Resource {
 
     /**
      * Deletes the folder

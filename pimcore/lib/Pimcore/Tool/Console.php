@@ -9,15 +9,20 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Pimcore_Tool_Console {
+namespace Pimcore\Tool;
+
+use Pimcore\Config; 
+
+class Console {
 	/**
 	 * @var string system environment
 	 */
 	private static $systemEnvironment;
+
     /**
      * @static
      * @return string "windows" or "unix"
@@ -34,16 +39,16 @@ class Pimcore_Tool_Console {
     }
 
     /**
-     * @static
-     * @return string
+     * @return mixed
+     * @throws \Exception
      */
     public static function getPhpCli () {
 
-        if(Pimcore_Config::getSystemConfig()->general->php_cli) {
-            if(@is_executable(Pimcore_Config::getSystemConfig()->general->php_cli)) {
-                return (string) Pimcore_Config::getSystemConfig()->general->php_cli;
+        if(Config::getSystemConfig()->general->php_cli) {
+            if(@is_executable(Config::getSystemConfig()->general->php_cli)) {
+                return (string) Config::getSystemConfig()->general->php_cli;
             } else {
-                Logger::critical("PHP-CLI binary: " . Pimcore_Config::getSystemConfig()->general->php_cli . " is not executable");
+                \Logger::critical("PHP-CLI binary: " . Config::getSystemConfig()->general->php_cli . " is not executable");
             }
         }
 
@@ -61,7 +66,7 @@ class Pimcore_Tool_Console {
             }
         }
 
-        throw new Exception("No php executable found, please configure the correct path in the system settings");
+        throw new \Exception("No php executable found, please configure the correct path in the system settings");
     }
 
     public static function getTimeoutBinary () {
@@ -77,31 +82,37 @@ class Pimcore_Tool_Console {
     }
 
     /**
-     * @static
      * @param $cmd
      * @param null $outputFile
+     * @param null $timeout
+     * @return string
      */
     public static function exec ($cmd, $outputFile = null, $timeout = null) {
 
-        if(!$outputFile) {
-            if(self::getSystemEnvironment() == 'windows') {
-                $outputFile = "NUL";
-            } else {
-                $outputFile = "/dev/null";
-            }
-        }
-
         if($timeout && self::getTimeoutBinary()) {
-            $cmd = self::getTimeoutBinary() . " -k 1m " . $timeout . "s " . $cmd;
+
+            // check if --kill-after flag is supported in timeout
+            $killafter = "";
+            $out = self::exec(self::getTimeoutBinary() . " --help");
+            if(strpos($out, "--kill-after")) {
+                $killafter = " -k 1m";
+            }
+
+            $cmd = self::getTimeoutBinary() . $killafter . " " . $timeout . "s " . $cmd;
         } else if($timeout) {
-            Logger::warn("timeout binary not found, executing command without timeout");
+            \Logger::warn("timeout binary not found, executing command without timeout");
         }
 
         if($outputFile) {
             $cmd = $cmd . " > ". $outputFile ." 2>&1";
+        } else {
+            // send stderr to /dev/null otherwise this goes to the apache error log and can fill it up pretty quickly
+            if(self::getSystemEnvironment() != 'windows') {
+                $cmd .= " 2> /dev/null";
+            }
         }
 
-        Logger::debug("Executing command `" . $cmd . "´ on the current shell");
+        \Logger::debug("Executing command `" . $cmd . "` on the current shell");
         $return = shell_exec($cmd);
 
         return $return;
@@ -141,10 +152,10 @@ class Pimcore_Tool_Console {
         }
 
         $commandWrapped = "/usr/bin/nohup " . $nice . $cmd . " > ". $outputFile ." 2>&1 & echo $!";
-        Logger::debug("Executing command `" . $commandWrapped . "´ on the current shell in background");
+        \Logger::debug("Executing command `" . $commandWrapped . "´ on the current shell in background");
         $pid = shell_exec($commandWrapped);
 
-        Logger::debug("Process started with PID " . $pid);
+        \Logger::debug("Process started with PID " . $pid);
 
         return $pid;
     }
@@ -162,16 +173,14 @@ class Pimcore_Tool_Console {
         }
 
         $commandWrapped = "cmd /c " . $cmd . " > ". $outputFile . " 2>&1";
-        Logger::debug("Executing command `" . $commandWrapped . "´ on the current shell in background");
+        \Logger::debug("Executing command `" . $commandWrapped . "´ on the current shell in background");
 
-        $WshShell = new COM("WScript.Shell");
+        $WshShell = new \COM("WScript.Shell");
         $WshShell->Run($commandWrapped, 0, false);
-        Logger::debug("Process started - returning the PID is not supported on Windows Systems");
+        \Logger::debug("Process started - returning the PID is not supported on Windows Systems");
 
         return 0;
     }
-
-
 
     /**
      * Returns a hash with all options passed to a cli script
@@ -195,6 +204,12 @@ class Pimcore_Tool_Console {
         return $options;
     }
 
+    /**
+     * @param $options
+     * @param string $concatenator
+     * @param string $arrayConcatenator
+     * @return string
+     */
     public static function getOptionString($options,$concatenator = '=',$arrayConcatenator = ','){
         $string = '';
 
@@ -213,16 +228,13 @@ class Pimcore_Tool_Console {
     }
 
     /**
-     * checks the user which executes a cli script
-     *
      * @param array $allowedUsers
-     *
-     * @throws Exception
+     * @throws \Exception
      */
     public static function checkExecutingUser($allowedUsers = array()){
         $owner = fileowner(PIMCORE_CONFIGURATION_SYSTEM);
         if($owner == false){
-            throw new Exception("Couldn't get user from file " . PIMCORE_CONFIGURATION_SYSTEM);
+            throw new \Exception("Couldn't get user from file " . PIMCORE_CONFIGURATION_SYSTEM);
         }
         $userData = posix_getpwuid($owner);
         $allowedUsers[] = $userData['name'];
@@ -231,7 +243,18 @@ class Pimcore_Tool_Console {
         $scriptExecutingUser = $scriptExecutingUserData['name'];
 
         if(!in_array($scriptExecutingUser,$allowedUsers)){
-            throw new Exception("The current system user is not allowed to execute this script. Allowed users: '" . implode(',',$allowedUsers) ."' Executing user: '$scriptExecutingUser'.");
+            throw new \Exception("The current system user is not allowed to execute this script. Allowed users: '" . implode(',',$allowedUsers) ."' Executing user: '$scriptExecutingUser'.");
         }
     }
+
+    /**
+     * @throws \Exception
+     */
+    public static function checkCliExecution() {
+        if (php_sapi_name() != 'cli') {
+            throw new \Exception("Script execution is restricted to CLI");
+        }
+    }
+
+
 }

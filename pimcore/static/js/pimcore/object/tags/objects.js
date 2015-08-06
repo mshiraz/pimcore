@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -49,6 +49,8 @@ pimcore.object.tags.objects = Class.create(pimcore.object.tags.abstract, {
     getGridColumnConfig: function(field) {
         return {header: ts(field.label), width: 150, sortable: false, dataIndex: field.key, renderer:
             function (key, value, metaData, record) {
+                this.applyPermissionStyle(key, value, metaData, record);
+
                 if(record.data.inheritedFields[key] && record.data.inheritedFields[key].inherited == true) {
                     metaData.css += " grid_value_inherited";
                 }
@@ -93,21 +95,16 @@ pimcore.object.tags.objects = Class.create(pimcore.object.tags.abstract, {
         });
 
         this.nameField = new Ext.form.Field({
-            xtype: 'field',
             fieldLabel: t('name'),
-            width: 200
-
+            width: 300
         });
 
-        this.parentIdField = new Ext.form.Hidden({
-            xtype: 'parentld'
-
-        });
+        this.parentIdField = new Ext.form.Hidden({});
 
         this.parentField = new Ext.form.Field({
             name: 'parent',
             fieldLabel: t('parent_element'),
-            width: 200,
+            width: 300,
             disabled:true
         });
 
@@ -185,7 +182,7 @@ pimcore.object.tags.objects = Class.create(pimcore.object.tags.abstract, {
                             id: data.id,
                             path: parent + "/" + pimcore.helpers.getValidFilename(name),
                             type: className
-                        }, this.store.getCount() + 1));
+                        }));
                         pimcore.helpers.openElement(data.id, "object", "object");
                         this.window.close();
                     } else {
@@ -417,7 +414,7 @@ pimcore.object.tags.objects = Class.create(pimcore.object.tags.abstract, {
                             };
 
                             if (!this.objectAlreadyExists(initData.id)) {
-                                this.store.add(new this.store.recordType(initData, this.store.getCount() + 1));
+                                this.store.add(new this.store.recordType(initData));
                                 return true;
                             }
                         }
@@ -570,7 +567,7 @@ pimcore.object.tags.objects = Class.create(pimcore.object.tags.abstract, {
                         id: items[i].id,
                         path: items[i].fullpath,
                         type: items[i].classname
-                    }, this.store.getCount() + 1));
+                    }));
                 }
             }
         }

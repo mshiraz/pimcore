@@ -1,9 +1,9 @@
 <?php
 
+namespace Website\Tool;
 
-class Website_Tool_Text
+class Text
 {
-	
 	public static function getStringAsOneLine ($string) {
 		$string = str_replace("\r\n", " ", $string);
 		$string = str_replace("\n", " ", $string);
@@ -13,23 +13,23 @@ class Website_Tool_Text
 		return $string;
 	}
 	
-	public static function cutStringRespectingWhitespace ($string,$length) {
-		if ( $length < strlen($string) )
-		{
-			$text = substr($string, 0, $length);
-			if ( false !== ($length = strrpos($text,' ')) )
-			{
-				$text = substr($text, 0, $length);
-			}
-			$string = $text."...";
-		}
-		return $string;
-	}
+    public static function cutStringRespectingWhitespace ($string,$length, $suffix = "...") {
+   		if ( $length < strlen($string) )
+   		{
+   			$text = substr($string, 0, $length);
+   			if ( false !== ($length = strrpos($text,' ')) )
+   			{
+   				$text = substr($text, 0, $length);
+   			}
+   			$string = $text . $suffix;
+   		}
+   		return $string;
+   	}
 
 
 	public static function toUrl($text) {
 		
-        $text = Pimcore_Tool_Transliteration::toASCII($text);
+        $text = \Pimcore\Tool\Transliteration::toASCII($text);
         
         $search = array('?', '\'', '"', '/', '-', '+', '.', ',', ';', '(', ')', ' ', '&', 'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß', 'É', 'é', 'È', 'è', 'Ê', 'ê', 'E', 'e', 'Ë', 'ë',
                          'À', 'à', 'Á', 'á', 'Å', 'å', 'a', 'Â', 'â', 'Ã', 'ã', 'ª', 'Æ', 'æ', 'C', 'c', 'Ç', 'ç', 'C', 'c', 'Í', 'í', 'Ì', 'ì', 'Î', 'î', 'Ï', 'ï',

@@ -11,33 +11,20 @@
  *
  * @category   Pimcore
  * @package    Document
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Document_DocType_Resource extends Pimcore_Model_Resource_Abstract {
+namespace Pimcore\Model\Document\DocType;
 
-    /**
-     * Contains all valid columns in the database table
-     *
-     * @var array
-     */
-    protected $validColumns = array();
+use Pimcore\Model;
 
-    /**
-     * Get the valid columns from the database
-     *
-     * @return void
-     */
-    public function init() {
-        $this->validColumns = $this->getValidTableColumns("documents_doctypes");
-    }
+class Resource extends Model\Resource\AbstractResource {
 
     /**
      * Get the data for the object from database for the given id
-     *
-     * @param integer $id
-     * @return void
+     * @param null $id
+     * @throws \Exception
      */
     public function getById($id = null) {
 
@@ -75,23 +62,26 @@ class Document_DocType_Resource extends Pimcore_Model_Resource_Abstract {
     }
 
     /**
-     * Save changes to database, it's an good idea to use save() instead
+     * Save changes to database, it's a good idea to use save() instead
      *
-     * @return void
+     * @throw \Exception
      */
     public function update() {
         try {
+            $ts = time();
+            $this->model->setModificationDate($ts);
+
             $type = get_object_vars($this->model);
 
             foreach ($type as $key => $value) {
-                if (in_array($key, $this->validColumns)) {
+                if (in_array($key, $this->getValidTableColumns("documents_doctypes"))) {
                     $data[$key] = $value;
                 }
             }
 
             $this->db->update("documents_doctypes", $data, $this->db->quoteInto("id = ?", $this->model->getId()));
         }
-        catch (Exception $e) {
+        catch (\Exception $e) {
             throw $e;
         }
     }
@@ -102,6 +92,10 @@ class Document_DocType_Resource extends Pimcore_Model_Resource_Abstract {
      * @return boolean
      */
     public function create() {
+        $ts = time();
+        $this->model->setModificationDate($ts);
+        $this->model->setCreationDate($ts);
+
         $this->db->insert("documents_doctypes", array());
 
         $this->model->setId($this->db->lastInsertId());

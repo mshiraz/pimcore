@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -72,13 +72,15 @@ pimcore.object.classes.data.table = Class.create(pimcore.object.classes.data.dat
                 xtype: "spinnerfield",
                 fieldLabel: t("rows"),
                 name: "rows",
-                value: this.datax.rows
+                value: this.datax.rows,
+                disabled: this.isInCustomLayoutEditor()
             },
             {
                 xtype: "spinnerfield",
                 fieldLabel: t("cols"),
                 name: "cols",
-                value: this.datax.cols
+                value: this.datax.cols,
+                disabled: this.isInCustomLayoutEditor()
             },
             {
                 xtype: "textarea",
@@ -86,11 +88,28 @@ pimcore.object.classes.data.table = Class.create(pimcore.object.classes.data.dat
                 name: "data",
                 width: 300,
                 height: 300,
-                value: this.datax.data
+                value: this.datax.data,
+                disabled: this.isInCustomLayoutEditor()
             }
         ]);
 
         return this.layout;
+    },
+
+    applySpecialData: function(source) {
+        if (source.datax) {
+            if (!this.datax) {
+                this.datax =  {};
+            }
+            Ext.apply(this.datax,
+                {
+                    width: source.datax.width,
+                    height: source.datax.height,
+                    cols: source.datax.cols,
+                    rows: source.datax.rows,
+                    data: source.datax.data
+                });
+        }
     }
 
 });

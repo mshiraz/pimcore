@@ -9,11 +9,15 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Pimcore_API_Plugin_Broker {
+namespace Pimcore\API\Plugin;
+
+use Pimcore\Tool;
+
+class Broker {
 
     /**
      * Array of instance of objects extending Pimcore_API_Plugin_Abstract
@@ -29,54 +33,57 @@ class Pimcore_API_Plugin_Broker {
      */
     protected $_systemModules = array();
 
-
+    /**
+     * @return mixed|Broker
+     * @throws \Zend_Exception
+     */
     public static function getInstance() {
 
-        if(Zend_Registry::isRegistered("Pimcore_API_Plugin_Broker")) {
-            $broker = Zend_Registry::get("Pimcore_API_Plugin_Broker");
-            if ($broker instanceof Pimcore_API_Plugin_Broker) {
+        if(\Zend_Registry::isRegistered("Pimcore_API_Plugin_Broker")) {
+            $broker = \Zend_Registry::get("Pimcore_API_Plugin_Broker");
+            if ($broker instanceof Broker) {
                 return $broker;
             }
         }
 
-        $broker = new Pimcore_API_Plugin_Broker();
-        Zend_Registry::set("Pimcore_API_Plugin_Broker", $broker);
+        $broker = new Broker();
+        \Zend_Registry::set("Pimcore_API_Plugin_Broker", $broker);
         return $broker;
     }
 
     /**
-     * @param string $module
-     * @return void
+     * @param $module
+     * @throws \Exception
      */
     public function registerModule($module) {
-        if (Pimcore_Tool::classExists($module)) {
-            $this->_systemModules[] = new $module();
+        if (Tool::classExists($module)) {
+            $moduleInstance = new $module;
+            $moduleInstance->init();
+            $this->_systemModules[] = $moduleInstance;
         } else {
-            throw new Exception("unknown module [ $module ].");
+            throw new \Exception("unknown module [ $module ].");
         }
-
     }
 
 
     /**
-     *
-     * Register a Pimcore plugin
-     *
-     * @param Pimcore_API_Plugin_Abstract $plugin
-     * @param int $stackIndex
+     * @param AbstractPlugin $plugin
+     * @param null $stackIndex
+     * @return $this
+     * @throws Exception
      */
-    public function registerPlugin(Pimcore_API_Plugin_Abstract $plugin, $stackIndex = null) {
+    public function registerPlugin(AbstractPlugin $plugin, $stackIndex = null) {
         if (false !== array_search($plugin, $this->_plugins, true)) {
-            throw new Pimcore_API_Plugin_Exception('Plugin already registered');
+            throw new Exception('Plugin already registered');
         }
 
         //installed?
         if (!$plugin::isInstalled()) {
             if (is_object($plugin)) {
                 $className = get_class($plugin);
-                Logger::debug("Not registering plugin [ " . $className . " ] because it is not installed");
+                \Logger::debug("Not registering plugin [ " . $className . " ] because it is not installed");
             } else {
-                Logger::debug("Not registering plugin, it is not an object");
+                \Logger::debug("Not registering plugin, it is not an object");
             }
             return $this;
         }
@@ -86,7 +93,7 @@ class Pimcore_API_Plugin_Broker {
 
         if ($stackIndex) {
             if (isset($this->_plugins[$stackIndex])) {
-                throw new Pimcore_API_Plugin_Exception('Plugin with stackIndex "' . $stackIndex . '" already registered');
+                throw new Exception('Plugin with stackIndex "' . $stackIndex . '" already registered');
             }
             $this->_plugins[$stackIndex] = $plugin;
         } else {
@@ -99,20 +106,22 @@ class Pimcore_API_Plugin_Broker {
 
         ksort($this->_plugins);
 
+        $plugin->init();
+
         return $this;
     }
 
     /**
-     * Unregister a Pimcore plugin.
-     *
-     * @param string|Pimcore_API_Plugin_Abstract $plugin Plugin object or class name
+     * @param $plugin
+     * @return $this
+     * @throws Exception
      */
     public function unregisterPlugin($plugin) {
-        if ($plugin instanceof Pimcore_API_Plugin_Abstract) {
+        if ($plugin instanceof AbstractPlugin) {
             // Given a plugin object, find it in the array
             $key = array_search($plugin, $this->_plugins, true);
             if (false === $key) {
-                throw new Pimcore_API_Plugin_Exception('Plugin never registered.');
+                throw new Exception('Plugin never registered.');
             }
             unset($this->_plugins[$key]);
         } elseif (is_string($plugin)) {
@@ -161,10 +170,8 @@ class Pimcore_API_Plugin_Broker {
     }
 
     /**
-     * Retrieve a plugin or plugins by class
-     *
-     * @param  string $class Class name of plugin(s) desired
-     * @return false|Pimcore_API_Plugin_Abstract|array Returns false if none found, plugin if only one found, and array of plugins if multiple plugins of same class found
+     * @param $class
+     * @return array|bool
      */
     public function getPlugin($class) {
         $found = array();
@@ -216,245 +223,6 @@ class Pimcore_API_Plugin_Broker {
 
     /**
      *
-     * Calls preAddAsset functions of all registered plugins and system modules
-     *
-     * @param Asset $asset
-     */
-    public function preAddAsset(Asset $asset) {
-        $this->executeMethod('preAddAsset', $asset);
-    }
-
-    /**
-     *
-     * Calls postAddAsset functions of all registered plugins and system modules
-     *
-     * @param Asset $asset
-     */
-    public function postAddAsset(Asset $asset) {
-        $this->executeMethod('postAddAsset', $asset);
-    }
-
-    /**
-     * Calls preDeleteAsset functions of all registered plugins and system modules
-     *
-     * @param Asset $asset
-     */
-    public function preDeleteAsset(Asset $asset) {
-        $this->executeMethod('preDeleteAsset', $asset);
-    }
-
-
-    /**
-     * Calls postDeleteAsset functions of all registered plugins and system modules
-     *
-     * @param Asset $asset
-     */
-    public function postDeleteAsset(Asset $asset) {
-        $this->executeMethod('postDeleteAsset', $asset);
-    }
-
-    /**
-     * Calls preUpdateAsset functions of all registered plugins and system modules
-     *
-     * @param Asset $asset
-     */
-    public function preUpdateAsset(Asset $asset) {
-        $this->executeMethod('preUpdateAsset', $asset);
-    }
-
-    /**
-     * Calls postUpdateAsset functions of all registered plugins and system modules
-     *
-     * @param Asset $asset
-     */
-    public function postUpdateAsset(Asset $asset) {
-        $this->executeMethod('postUpdateAsset', $asset);
-    }
-
-
-    /**
-     *
-     * Calls preAddDocument functions of all registered plugins and system modules
-     *
-     * @param Document $document
-     */
-    public function preAddDocument(Document $document) {
-        $this->executeMethod('preAddDocument', $document);
-    }
-
-    /**
-     *
-     * Calls postAddDocument functions of all registered plugins and system modules
-     *
-     * @param Document $document
-     */
-    public function postAddDocument(Document $document) {
-        $this->executeMethod('postAddDocument', $document);
-    }
-
-    /**
-     * Calls preDeleteDocument functions of all registered plugins and system modules
-     *
-     * @param Document $document
-     */
-    public function preDeleteDocument(Document $document) {
-        $this->executeMethod('preDeleteDocument', $document);
-    }
-
-    /**
-     * Calls postDeleteDocument functions of all registered plugins and system modules
-     *
-     * @param Document $document
-     */
-    public function postDeleteDocument(Document $document) {
-        $this->executeMethod('postDeleteDocument', $document);
-    }
-
-    /**
-     * Calls preUpdateDocument functions of all registered plugins and system modules
-     *
-     * @param Document $document
-     */
-    public function preUpdateDocument(Document $document) {
-        $this->executeMethod('preUpdateDocument', $document);
-    }
-
-    /**
-     * Calls postUpdateDocument functions of all registered plugins and system modules
-     *
-     * @param Document $document
-     */
-    public function postUpdateDocument(Document $document) {
-        $this->executeMethod('postUpdateDocument', $document);
-    }
-
-
-
-    /**
-     * Calls preAddObject functions of all registered plugins and system modules
-     *
-     * @param Object_Abstract $object
-     */
-    public function preAddObject(Object_Abstract $object) {
-        $this->executeMethod('preAddObject', $object);
-    }
-
-    /**
-     * Calls postAddObject functions of all registered plugins and system modules
-     *
-     * @param Object_Abstract $object
-     */
-    public function postAddObject(Object_Abstract $object) {
-        $this->executeMethod('postAddObject', $object);
-    }
-
-    /**
-     * Calls preDeleteObject functions of all registered plugins and system modules
-     *
-     * @param Object_Abstract $object
-     */
-    public function preDeleteObject(Object_Abstract $object) {
-        $this->executeMethod('preDeleteObject', $object);
-    }
-
-    /**
-     * Calls postDeleteObject functions of all registered plugins and system modules
-     *
-     * @param Object_Abstract $object
-     */
-    public function postDeleteObject(Object_Abstract $object) {
-        $this->executeMethod('postDeleteObject', $object);
-    }
-
-    /**
-     * Calls preUpdateObject functions of all registered plugins and system modules
-     *
-     * @param Object_Abstract $object
-     */
-    public function preUpdateObject(Object_Abstract $object) {
-        $this->executeMethod('preUpdateObject', $object);
-    }
-
-    /**
-     * Calls postUpdateObject functions of all registered plugins and system modules
-     *
-     * @param Object_Abstract $object
-     */
-    public function postUpdateObject(Object_Abstract $object) {
-        $this->executeMethod('postUpdateObject', $object);
-    }
-
-
-    /**
-     * Calls preLogoutUser functions of all registered plugins and system modules
-     *
-     * @param User $user
-     */
-    public function preLogoutUser(User $user) {
-        $this->executeMethod('preLogoutUser', $user);
-    }
-
-    /**
-     * Calls postLoginUser functions of system modules and registered plugins,
-     * stops once the user has been authenticated successfully
-     * by a module or plugin and the user is valid
-     *
-     * @param string $username
-     * @param string password
-     * @return User $user
-     */
-    public function authenticateUser($username, $password) {
-        foreach ($this->_systemModules as $module) {
-            $user = $module->authenticateUser($username, $password);
-            if($user instanceof User){
-                if(!$user->isActive()){
-                    Logger::error("User provided by module [ ".get_class($module)." ] is inactive");
-                } else if (!$user->getId()){
-                    Logger::error("User provided by module [ ".get_class($module)." ] has no id");
-                } else {
-                    return $user;
-                }
-            }
-
-
-        }
-        foreach ($this->_plugins as $plugin) {
-            $user = $plugin->authenticateUser($username, $password);
-            if($user instanceof User){
-                if(!$user->isActive()){
-                    Logger::error("User provided by plugin [ ".get_class($plugin)." ] is inactive");
-                } else if (!$user->getId()){
-                    Logger::error("User provided by plugin [ ".get_class($plugin)." ] has no id");
-                } else {
-                    return $user;
-                }
-            }
-        }
-
-        return null;
-    }
-
-
-
-    /**
-     *
-     * Calls preDispatch of all registered plugins and system modules
-     */
-    public function preDispatch() {
-        $this->executeMethod('preDispatch');
-    }
-
-
-    /**
-     * Calls maintenance functions of all registered plugins and system modules
-     */
-    public function maintenance() {
-        $this->executeMethod('maintenance');
-    }
-
-
-    /**
-     *
      * @param string $language
      * @return Array $translations
      */
@@ -470,7 +238,7 @@ class Pimcore_API_Plugin_Broker {
                     if (is_file($languageFile) and strtolower(substr($languageFile, -4, 4)) == ".csv") {
 
                         $handle = fopen($languageFile, "r");
-                        while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                        while (($data = fgetcsv($handle, 0, ",")) !== FALSE) {
                             $pluginTranslations[$data[0]] = $data[1];
                         }
                         fclose($handle);
@@ -482,160 +250,10 @@ class Pimcore_API_Plugin_Broker {
                     }
                 }
             } catch (Exception $e) {
-                Logger::error("Plugin " . get_class($plugin) . " threw Exception when trying to get translations");
+                \Logger::error("Plugin " . get_class($plugin) . " threw Exception when trying to get translations");
             }
         }
         return $translations;
 
     }
-
-
-    /**
-     *
-     * Calls preAddKeyValueKeyConfig functions of all registered plugins and system modules
-     *
-     * @param Object_KeyValue_KeyConfig $config
-     */
-    public function preAddKeyValueKeyConfig(Object_KeyValue_KeyConfig $config) {
-        $this->executeMethod('preAddKeyValueKeyConfig', $config);
-    }
-
-    /**
-     *
-     * Calls postAddKeyValueKeyConfig functions of all registered plugins and system modules
-     *
-     * @param Object_KeyValue_KeyConfig $config
-     */
-    public function postAddKeyValueKeyConfig(Object_KeyValue_KeyConfig $config) {
-        $this->executeMethod('postAddKeyValueKeyConfig', $config);
-    }
-
-    /**
-     * Calls preDeleteKeyValueKeyConfig functions of all registered plugins and system modules
-     *
-     * @param preDeleteKeyValueKeyConfig $config
-     */
-    public function preDeleteKeyValueKeyConfig(Object_KeyValue_KeyConfig $config) {
-        $this->executeMethod('preDeleteKeyValueKeyConfig', $config);
-    }
-
-
-    /**
-     * Calls postDeleteKeyValueKeyConfig functions of all registered plugins and system modules
-     *
-     * @param Object_KeyValue_KeyConfig $asset
-     */
-    public function postDeleteKeyValueKeyConfig(Object_KeyValue_KeyConfig $config) {
-        $this->executeMethod('postDeleteKeyValueKeyConfig', $config);
-    }
-
-    /**
-     * Calls preUpdateKeyValueKeyConfig functions of all registered plugins and system modules
-     *
-     * @param Object_KeyValue_KeyConfig $asset
-     */
-    public function preUpdateKeyValueKeyConfig(Object_KeyValue_KeyConfig $config) {
-        $this->executeMethod('preUpdateKeyValueKeyConfig', $config);
-    }
-
-    /**
-     * Calls postUpdateKeyValueKeyConfig functions of all registered plugins and system modules
-     *
-     * @param Object_KeyValue_KeyConfig $config
-     */
-    public function postUpdateKeyValueKeyConfig(Object_KeyValue_KeyConfig $config) {
-        $this->executeMethod('postUpdateKeyValueKeyConfig', $config);
-    }
-
-
-    /**
-     *
-     * Calls preAddKeyValueGroupConfig functions of all registered plugins and system modules
-     *
-     * @param Object_KeyValue_GroupConfig $config
-     */
-    public function preAddKeyValueGroupConfig(Object_KeyValue_GroupConfig $config) {
-        $this->executeMethod('preAddKeyValueGroupConfig', $config);
-    }
-
-    /**
-     *
-     * Calls postAddKeyValueGroupConfig functions of all registered plugins and system modules
-     *
-     * @param Object_KeyValue_GroupConfig $config
-     */
-    public function postAddKeyValueGroupConfig(Object_KeyValue_GroupConfig $config) {
-        $this->executeMethod('postAddKeyValueGroupConfig', $config);
-    }
-
-    /**
-     * Calls preDeleteKeyValueGroupConfig functions of all registered plugins and system modules
-     *
-     * @param preDeleteKeyValueGroupConfig $config
-     */
-    public function preDeleteKeyValueGroupConfig(Object_KeyValue_GroupConfig $config) {
-        $this->executeMethod('preDeleteKeyValueGroupConfig', $config);
-    }
-
-
-    /**
-     * Calls postDeleteKeyValueGroupConfig functions of all registered plugins and system modules
-     *
-     * @param Object_KeyValue_GroupConfig $asset
-     */
-    public function postDeleteKeyValueGroupConfig(Object_KeyValue_GroupConfig $config) {
-        $this->executeMethod('postDeleteKeyValueGroupConfig', $config);
-    }
-
-    /**
-     * Calls preUpdateKeyValueGroupConfig functions of all registered plugins and system modules
-     *
-     * @param Object_KeyValue_GroupConfig $asset
-     */
-    public function preUpdateKeyValueGroupConfig(Object_KeyValue_GroupConfig $config) {
-        $this->executeMethod('preUpdateKeyValueGroupConfig', $config);
-    }
-
-    /**
-     * Calls postUpdateKeyValueGroupConfig functions of all registered plugins and system modules
-     *
-     * @param Object_KeyValue_GroupConfig $config
-     */
-    public function postUpdateKeyValueGroupConfig(Object_KeyValue_GroupConfig $config) {
-        $this->executeMethod('postUpdateKeyValueGroupConfig', $config);
-    }
-
-    /**
-     * Calls preAddObjectClass functions of all registered plugins and system modules
-     *
-     * @param Object_Class $class
-     */
-    public function preAddObjectClass(Object_Class $class) {
-        $this->executeMethod('preAddObjectClass',$class);
-    }
-
-    /**
-     * Calls preUpdateObjectClass functions of all registered plugins and system modules
-     *
-     * @param Object_Class $class
-     */
-    public function preUpdateObjectClass(Object_Class $class) {
-        $this->executeMethod('preUpdateObjectClass',$class);
-    }
-
-
-
-    protected function executeMethod($method){
-
-        $arguments = func_get_args();
-        array_shift($arguments);
-
-        foreach ($this->_systemModules as $module) {
-            call_user_func_array(array($module, $method), $arguments);
-        }
-        foreach ($this->_plugins as $plugin) {
-            call_user_func_array(array($plugin, $method), $arguments);
-        }
-    }
-
 }

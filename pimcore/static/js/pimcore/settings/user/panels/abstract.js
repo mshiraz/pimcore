@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -50,17 +50,34 @@ pimcore.settings.user.panels.abstract = Class.create({
     },
 
     remove: function () {
-        Ext.Ajax.request({
-            url: "/admin/user/delete",
-            params: {
-                id: this.id
-            }
-        });
 
-        this.remove();
+        Ext.MessageBox.show({
+            title:t('delete'),
+            msg: this.hasChildNodes() ? t("are_you_sure_recursive") : t("are_you_sure"),
+            buttons: Ext.Msg.OKCANCEL ,
+            icon: this.hasChildNodes() ? Ext.MessageBox.WARNING : Ext.MessageBox.QUESTION,
+            fn: function (button) {
+                if (button == "ok") {
+                    Ext.Ajax.request({
+                        url: "/admin/user/delete",
+                        params: {
+                            id: this.id
+                        },
+                        success: function() {
+                            this.remove();
+                        }.bind(this)
+                    });
+                }
+            }.bind(this)
+        });
     },
 
-    add: function (type) {
+
+    add: function (type, rid) {
+        var pid = this.id;
+        if (rid) {
+            pid = this.parentNode.id;
+        }
         Ext.MessageBox.prompt(t('add'), t('please_enter_the_name'), function (button, value, object) {
             if(button=='ok' && value != ''){
                 Ext.Ajax.request({
@@ -69,9 +86,10 @@ pimcore.settings.user.panels.abstract = Class.create({
                         parentId: this.id,
                         type: type,
                         name: value,
-                        active: 1
+                        active: 1,
+                        rid: rid
                     },
-                    success: this.attributes.reference.addComplete.bind(this.attributes.reference, this.id)
+                    success: this.attributes.reference.addComplete.bind(this.attributes.reference, pid)
                 });
             }
         }.bind(this));

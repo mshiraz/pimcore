@@ -1,6 +1,9 @@
 <?php
 
-class ContentController extends Website_Controller_Action
+use Website\Controller\Action;
+use Pimcore\Model\Asset;
+
+class ContentController extends Action
 {
     public function defaultAction() {
         $this->enableLayout();
@@ -37,7 +40,7 @@ class ContentController extends Website_Controller_Action
         }
 
         // do some validation & assign the parameters to the view
-        foreach (array("firstname", "lastname", "email") as $key) {
+        foreach (["firstname", "lastname", "email"] as $key) {
             if($this->getParam($key)) {
                 $this->view->$key = htmlentities(strip_tags($this->getParam($key)));
             }

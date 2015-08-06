@@ -9,32 +9,40 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Pimcore_Controller_Plugin_TagManagement extends Zend_Controller_Plugin_Abstract {
+namespace Pimcore\Controller\Plugin;
 
+use Pimcore\Model\Cache;
+use Pimcore\Model\Tool;
+
+class TagManagement extends \Zend_Controller_Plugin_Abstract {
+
+    /**
+     *
+     */
     public function dispatchLoopShutdown() {
         
-        if(!Pimcore_Tool::isHtmlResponse($this->getResponse())) {
+        if(!\Pimcore\Tool::isHtmlResponse($this->getResponse())) {
             return;
         }
 
         $cacheKey = "outputfilter_tagmngt";
-        $tags = Pimcore_Model_Cache::load($cacheKey);
+        $tags = Cache::load($cacheKey);
         if(!is_array($tags)) {
-            $dir = Tool_Tag_Config::getWorkingDir();
+            $dir = Tool\Tag\Config::getWorkingDir();
 
             $tags = array();
             $files = scandir($dir);
             foreach ($files as $file) {
                 if(strpos($file, ".xml")) {
                     $name = str_replace(".xml", "", $file);
-                    $tags[] = Tool_Tag_Config::getByName($name);
+                    $tags[] = Tool\Tag\Config::getByName($name);
                 }
             }
-            Pimcore_Model_Cache::save($tags, $cacheKey, array("tagmanagement"), null, 100);
+            Cache::save($tags, $cacheKey, array("tagmanagement"), null, 100);
         }
 
         if(empty($tags)) {
@@ -53,16 +61,18 @@ class Pimcore_Controller_Plugin_TagManagement extends Zend_Controller_Plugin_Abs
             $textPattern = $tag->getTextPattern();
 
             // site check
-            if(Site::isSiteRequest() && $tag->getSiteId()) {
-                if(Site::getCurrentSite()->getId() != $tag->getSiteId()) {
+            if(\Site::isSiteRequest() && $tag->getSiteId()) {
+                if(\Site::getCurrentSite()->getId() != $tag->getSiteId()) {
                     continue;
                 }
-            } else if (!Site::isSiteRequest() && $tag->getSiteId()) {
+            } else if (!\Site::isSiteRequest() && $tag->getSiteId()) {
                 continue;
             }
 
+            $requestPath = rtrim($this->getRequest()->getPathInfo(),"/");
+
             if( ($method == strtolower($this->getRequest()->getMethod()) || empty($method)) &&
-                (empty($pattern) || @preg_match($pattern, $this->getRequest()->getRequestUri())) &&
+                (empty($pattern) || @preg_match($pattern, $requestPath)) &&
                 (empty($textPattern) || strpos($body,$textPattern) !== false)
             ) {
 
@@ -106,7 +116,7 @@ class Pimcore_Controller_Plugin_TagManagement extends Zend_Controller_Plugin_Abs
                                     $html->clear();
                                     unset($html);
 
-                                    $html = str_get_html($body);
+                                    $html = null;
                                 }
                             }
                         }

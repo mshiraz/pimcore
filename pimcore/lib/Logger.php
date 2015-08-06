@@ -9,11 +9,12 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
  
-class Logger {
+class
+Logger {
 	
 	private static $logger = array();
 	private static $priorities = array();
@@ -44,7 +45,16 @@ class Logger {
 	public static function setPriorities ($prios) {
 		self::$priorities = $prios;
 	}
-	
+
+    /**
+     * return priorities, an array of log levels that will be logged by this logger
+     *
+     * @return array
+     */
+    public static function getPriorities () {
+        return self::$priorities;
+    }
+
 	public static function initDummy() {
 		self::$enabled = false;
 	}
@@ -56,6 +66,19 @@ class Logger {
     public static function enable() {
         self::$enabled = true;
     }
+
+    public static function setVerbosePriorities() {
+        self::setPriorities(array(
+            Zend_Log::DEBUG,
+            Zend_Log::INFO,
+            Zend_Log::NOTICE,
+            Zend_Log::WARN,
+            Zend_Log::ERR,
+            Zend_Log::CRIT,
+            Zend_Log::ALERT,
+            Zend_Log::EMERG
+        ));
+    }
 	
 	public static function log ($message,$code=Zend_Log::INFO) {
 		
@@ -66,7 +89,13 @@ class Logger {
 		if(in_array($code,self::$priorities)) {
 
             $backtrace = debug_backtrace();
-            $call = $backtrace[2];
+
+            if (!isset($backtrace[2])) {
+                $call = array('class' => '', 'type' => '', 'function' => '');
+            } else {
+                $call = $backtrace[2];
+            }
+
             $call["line"] = $backtrace[1]["line"];
 
             if(is_object($message) || is_array($message)) {

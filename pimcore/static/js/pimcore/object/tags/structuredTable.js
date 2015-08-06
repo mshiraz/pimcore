@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -67,6 +67,8 @@ pimcore.object.tags.structuredTable = Class.create(pimcore.object.tags.abstract,
     getGridColumnConfig: function(field) {
         return {header: ts(field.label), width: 150, sortable: false, dataIndex: field.key,
             renderer: function (key, field, value, metaData, record) {
+                        this.applyPermissionStyle(key, value, metaData, record);
+
                         if(record.data.inheritedFields[key] && record.data.inheritedFields[key].inherited == true) {
                             metaData.css += " grid_value_inherited";
                         }
@@ -128,8 +130,8 @@ pimcore.object.tags.structuredTable = Class.create(pimcore.object.tags.abstract,
                 editor = new Ext.form.NumberField({});
             } else if(this.fieldConfig.cols[i].type == "text") {
                 editor = new Ext.form.TextField({
-                    maxLength: 50,
-                    autoCreate: {tag: 'input', type: 'text', size: '20', maxlength: "50", autocomplete: 'off'}
+                    maxLength: 255,
+                    autoCreate: {tag: 'input', type: 'text', size: '20', maxlength: "255", autocomplete: 'off'}
                 });
             } else if(this.fieldConfig.cols[i].type == "bool") {
                 editor = new Ext.form.Checkbox();
@@ -161,6 +163,7 @@ pimcore.object.tags.structuredTable = Class.create(pimcore.object.tags.abstract,
 
         this.component = new Ext.grid.EditorGridPanel({
             store: this.store,
+            enableColumnMove: false,
             colModel: new Ext.grid.ColumnModel({
                 defaults: {
                     sortable: false

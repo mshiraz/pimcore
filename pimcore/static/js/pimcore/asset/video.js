@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -17,18 +17,18 @@ pimcore.asset.video = Class.create(pimcore.asset.asset, {
 
     initialize: function(id) {
 
+        this.id = intval(id);
         this.setType("video");
+        this.addLoadingPanel();
 
         pimcore.plugin.broker.fireEvent("preOpenAsset", this, "video");
-
-        this.addLoadingPanel();
-        this.id = intval(id);
 
         this.properties = new pimcore.element.properties(this, "asset");
         this.versions = new pimcore.asset.versions(this);
         this.scheduler = new pimcore.element.scheduler(this, "asset");
         this.dependencies = new pimcore.element.dependencies(this, "asset");
         this.notes = new pimcore.element.notes(this, "asset");
+        this.metadata = new pimcore.asset.metadata(this);
 
         this.getData();
     },
@@ -38,6 +38,9 @@ pimcore.asset.video = Class.create(pimcore.asset.asset, {
 
         items.push(this.getEditPanel());
 
+        if (this.isAllowed("publish")) {
+            items.push(this.metadata.getLayout());
+        }
         if (this.isAllowed("properties")) {
             items.push(this.properties.getLayout());
         }
@@ -111,7 +114,7 @@ pimcore.asset.video = Class.create(pimcore.asset.asset, {
                         width: 265,
                         handler: function () {
                             try {
-                                var time = window[this.previewFrameId].player.getTime();
+                                var time = window[this.previewFrameId].document.getElementById("video").currentTime;
                                 var date = new Date();
                                 Ext.getCmp("pimcore_asset_video_imagepreview_"
                                     + this.id).update('<img align="center" src="/admin/asset/get-video-thumbnail/id/'
@@ -166,18 +169,18 @@ pimcore.asset.video = Class.create(pimcore.asset.asset, {
             });
 
             this.previewImagePanel.on("afterrender", function () {
-                this.checkFlowplayerInterval = window.setInterval(function () {
-                    if(window[this.previewFrameId].flowplayer) {
+                this.checkVideoplayerInterval = window.setInterval(function () {
+                    if(window[this.previewFrameId] && window[this.previewFrameId].document.getElementById("video")) {
                         this.previewImagePanel.body.setStyle({
                             display: "block"
                         });
-                        clearInterval(this.checkFlowplayerInterval);
+                        clearInterval(this.checkVideoplayerInterval);
                     }
                 }.bind(this), 1000);
             }.bind(this));
 
             this.previewImagePanel.on("beforedestroy", function () {
-                clearInterval(this.checkFlowplayerInterval);
+                clearInterval(this.checkVideoplayerInterval);
                 try {
                     delete window[this.previewFrameId];
                 } catch (e) {

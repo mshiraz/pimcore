@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    Webservice
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Webservice_Data_Document_Page extends Webservice_Data_Document_PageSnippet {
+namespace Pimcore\Model\Webservice\Data\Document;
+
+use Pimcore\Model;
+
+class Page extends Model\Webservice\Data\Document\PageSnippet {
     
     /**
      * @var string

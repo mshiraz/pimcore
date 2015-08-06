@@ -11,14 +11,16 @@
  *
  * @category   Pimcore
  * @package    Asset
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Asset_Image_Thumbnail {
+namespace Pimcore\Model\Asset\Image;
+
+class Thumbnail {
 
     /**
-     * @var Asset_Image
+     * @var Pimcore\Model\Asset\Image
      */
     protected $asset;
 
@@ -53,25 +55,41 @@ class Asset_Image_Thumbnail {
     protected $mimetype;
 
     /**
-     * @var Asset_Image_Thumbnail_Config
+     * @var Thumbnail\Config
      */
     protected $config;
 
     /**
-     * Generate a thumbnail image.
-     * @param Image_Asset Original image
-     * @param mixed $selector Name, array or object with the thumbnail configuration.
-    */
-    public function __construct($asset, $config = null) {
+     * @var bool
+     */
+    protected $deferred = false;
+
+    /**
+     * @var bool
+     */
+    protected static $pictureElementInUse = false;
+
+    /**
+     * @var bool
+     */
+    protected static $embedPicturePolyfill = true;
+
+    /**
+     * @param $asset
+     * @param null $config
+     * @param bool $deferred
+     */
+    public function __construct($asset, $config = null, $deferred = false) {
 
         $this->asset = $asset;
+        $this->deferred = $deferred;
         $this->config = $this->createConfig($config);
     }
 
     /**
      *
      */
-    public function generate() {
+    public function generate($deferredAllowed = false) {
         if(!$this->path) {
             // if no correct thumbnail config is given use the original image as thumbnail
             if(!$this->config) {
@@ -79,16 +97,28 @@ class Asset_Image_Thumbnail {
                 $this->path = str_replace(PIMCORE_DOCUMENT_ROOT, "", $fsPath);
             } else {
                 try {
-                    $this->path = Asset_Image_Thumbnail_Processor::process($this->asset, $this->config);
-                } catch (Exception $e) {
+                    $deferred = ($deferredAllowed && $this->deferred) ? true : false;
+                    $this->path = Thumbnail\Processor::process($this->asset, $this->config, null, $deferred);
+                } catch (\Exception $e) {
                     $this->path = '/pimcore/static/img/filetype-not-supported.png';
-                    Logger::error("Couldn't create thumbnail of image " . $this->asset->getFullPath());
-                    Logger::error($e);
+                    \Logger::error("Couldn't create thumbnail of image " . $this->asset->getFullPath());
+                    \Logger::error($e);
                 }
             }
         }
     }
-    
+
+    /**
+     *
+     */
+    public function reset() {
+        $this->path = null;
+        $this->width = null;
+        $this->height = null;
+        $this->realHeight = null;
+        $this->realWidth = null;
+    }
+
     /**
      * Get the public path to the thumbnail image.
      * This method is here for backwards compatility.
@@ -96,15 +126,15 @@ class Asset_Image_Thumbnail {
      * @return string Public path to thumbnail image.
     */
     public function __toString() {
-        return $this->getPath();
+        return $this->getPath(true);
     }
 
     /**
      * Get the public path to the thumbnail image.
      * @return string Public path to thumbnail image.
     */
-    public function getPath() {
-        $this->generate();
+    public function getPath($deferredAllowed = false) {
+        $this->generate($deferredAllowed);
         return $this->path;
     }
 
@@ -171,34 +201,187 @@ class Asset_Image_Thumbnail {
     */
     public function getHTML($attributes = array()) {
 
+        $image = $this->getAsset();
         $attr = array();
+        $pictureAttribs = []; // this is used for the html5 <picture> element
 
-        if($this->getWidth()) {
-            $attr['width'] = 'width="'.$this->getWidth().'"';
-        }
-        if($this->getHeight()) {
-            $attr['height'] = 'height="'.$this->getHeight().'"';
-        }
-
-        foreach($attributes as $key => $value) {
-            //only include attributes with characters a-z and dashes in their name.
-            if(preg_match("/^[a-z-]+$/i", $key)) {
-                $attr[$key] = $key.'="'.htmlspecialchars($value).'"';
+        if(!$this->deferred && !isset($attributes["disableWidthHeightAttributes"])) {
+            if($this->getWidth()) {
+                $attr['width'] = 'width="'.$this->getWidth().'"';
+            }
+            if($this->getHeight()) {
+                $attr['height'] = 'height="'.$this->getHeight().'"';
             }
         }
 
-        $attr['src'] = 'src="'.$this->getPath().'"';
-
-        //ALT-attribute is required in XHTML
-        if(!isset($attr['alt'])) {
-            $attr['alt'] = 'alt=""';
+        $altText = "";
+        $titleText = "";
+        if(isset($attributes["alt"])) {
+            $altText = $attributes["alt"];
+        }
+        if(isset($attributes["title"])) {
+            $titleText = $attributes["title"];
         }
 
-        return '<img '.implode(' ', $attr).' />';
+        if(empty($titleText)) {
+            if($image->getMetadata("title")) {
+                $titleText = $image->getMetadata("title");
+            }
+        }
+
+        if(empty($altText)) {
+            if($image->getMetadata("alt")) {
+                $altText = $image->getMetadata("alt");
+            } else {
+                $altText = $titleText;
+            }
+        }
+
+        // get copyright from asset
+        if($image->getMetadata("copyright")) {
+            if(!empty($altText)) {
+                $altText .= " | ";
+            }
+            if(!empty($titleText)) {
+                $titleText .= " | ";
+            }
+            $altText .= ("© " . $image->getMetadata("copyright"));
+            $titleText .= ("© " . $image->getMetadata("copyright"));
+        }
+
+        $attributes["alt"] = $altText;
+        if(!empty($titleText)) {
+            $attributes["title"] = $titleText;
+        }
+
+        foreach($attributes as $key => $value) {
+
+            // ignored attributes
+            if(in_array($key, ["disableWidthHeightAttributes"])) {
+                continue;
+            }
+
+            //only include attributes with characters a-z and dashes in their name.
+            if(preg_match("/^[a-z-]+$/i", $key)) {
+                $attr[$key] = $key . '="' . htmlspecialchars($value) . '"';
+
+                // do not include all attributes
+                if(!in_array($key, ["width","height","alt"])) {
+                    $pictureAttribs[$key] = $key . '="' . htmlspecialchars($value) . '"';
+                }
+
+                // some attributes need to be added also as data- attribute, this is specific to picturePolyfill
+                if(in_array($key, ["alt"])) {
+                    $pictureAttribs["data-" . $key] = "data-" . $key . '="' . htmlspecialchars($value) . '"';
+                }
+            }
+        }
+
+        $path = $this->getPath(true);
+        $attr['src'] = 'src="'. $path .'"';
+
+        $thumbConfig = $this->getConfig();
+
+        if($this->getConfig() && !$this->getConfig()->hasMedias()) {
+            // generate the srcset
+            $srcSetValues = [];
+            foreach ([1,2] as $highRes) {
+                $thumbConfigRes = clone $thumbConfig;
+                $thumbConfigRes->setHighResolution($highRes);
+                $srcsetEntry = $image->getThumbnail($thumbConfigRes, true) . " " . $highRes . "x";
+                $srcSetValues[] = $srcsetEntry;
+            }
+            $attr['srcset'] = 'srcset="'. implode(", ", $srcSetValues) .'"';
+        }
+
+        // build html tag
+        $htmlImgTag = '<img '.implode(' ', $attr).' />';
+
+        // $this->getConfig() can be empty, the original image is returned
+        if(!$this->getConfig() || !$this->getConfig()->hasMedias()) {
+            return $htmlImgTag;
+        } else {
+            // output the <picture> - element
+
+            // set this variable so that Pimcore_Controller_Plugin_Thumbnail::dispatchLoopShutdown() knows that
+            // the picture polyfill script needs to be included
+            self::$pictureElementInUse = true;
+
+            // mobile first => fallback image is the smallest possible image
+            $fallBackImageThumb = null;
+
+            $html = '<picture ' . implode(" ", $pictureAttribs) . ' data-default-src="' . $path . '">' . "\n";
+                $mediaConfigs = $thumbConfig->getMedias();
+
+                // currently only max-width is supported, the key of the media is WIDTHw (eg. 400w) according to the srcset specification
+                ksort($mediaConfigs, SORT_NUMERIC);
+                array_push($mediaConfigs, $thumbConfig->getItems()); //add the default config at the end - picturePolyfill v4
+
+                foreach ($mediaConfigs as $mediaQuery => $config) {
+                    $srcSetValues = [];
+                    foreach ([1,2] as $highRes) {
+                        $thumbConfigRes = clone $thumbConfig;
+                        $thumbConfigRes->selectMedia($mediaQuery);
+                        $thumbConfigRes->setHighResolution($highRes);
+                        $thumb = $image->getThumbnail($thumbConfigRes, true);
+                        $srcSetValues[] = $thumb . " " . $highRes . "x";
+
+                        if(!$fallBackImageThumb) {
+                            $fallBackImageThumb = $thumb;
+                        }
+                    }
+
+                    $html .= "\t" . '<source srcset="' . implode(", ", $srcSetValues) .'"';
+                    if($mediaQuery) {
+                        // currently only max-width is supported, so we replace the width indicator (400w) out of the name
+                        $maxWidth = str_replace("w","",$mediaQuery);
+                        $html .= ' media="(max-width: ' . $maxWidth . 'px)"';
+                        $thumb->reset();
+                    }
+                    $html .= ' />' . "\n";
+                }
+
+                //$html .= "\t" . '<noscript>' . "\n\t\t" . $htmlImgTag . "\n\t" . '</noscript>' . "\n";
+
+                $attrCleanedForPicture = $attr;
+                unset($attrCleanedForPicture["width"]);
+                unset($attrCleanedForPicture["height"]);
+                $attrCleanedForPicture["src"] = 'src="' . (string) $fallBackImageThumb . '"';
+                $htmlImgTagForpicture = '<img '.implode(' ', $attrCleanedForPicture).' />';
+
+                $html .= $htmlImgTagForpicture . "\n";
+
+            $html .= '</picture>' . "\n";
+
+            return $html;
+        }
     }
 
     /**
-     * @return Asset_Image The original image from which this thumbnail is generated.
+     * @param string $name
+     * @param int $highRes
+     * @return Thumbnail
+     * @throws \Exception
+     */
+    public function getMedia($name, $highRes = 1) {
+        $thumbConfig = $this->getConfig();
+        $mediaConfigs = $thumbConfig->getMedias();
+
+        if(array_key_exists($name, $mediaConfigs)) {
+            $thumbConfigRes = clone $thumbConfig;
+            $thumbConfigRes->selectMedia($name);
+            $thumbConfigRes->setHighResolution($highRes);
+            $thumbConfigRes->setMedias([]);
+            $thumb = $this->getAsset()->getThumbnail($thumbConfigRes);
+
+            return $thumb;
+        } else {
+            throw new \Exception("Media query '" . $name . "' doesn't exist in thumbnail configuration: " . $thumbConfig->getName());
+        }
+    }
+
+    /**
+     * @return Pimcore\Model\Asset\Image The original image from which this thumbnail is generated.
     */
     public function getAsset() {
         return $this->asset;
@@ -206,8 +389,7 @@ class Asset_Image_Thumbnail {
 
     /**
      * Get thumbnail image configuration.
-     * @param string $config
-     * @return Asset_Image_Thumbnail_Config
+     * @return Thumbnail\Config
      */
     public function getConfig() {
         return $this->config;
@@ -216,6 +398,7 @@ class Asset_Image_Thumbnail {
     /**
      * @param string $type
      * @return null|string
+     * @throws \Exception
      */
     public function getChecksum($type = "md5") {
         $file = $this->getFileSystemPath();
@@ -242,10 +425,10 @@ class Asset_Image_Thumbnail {
     /**
      * Get a thumbnail image configuration.
      * @param mixed $selector Name, array or object describing a thumbnail configuration.
-     * @return Asset_Image_Thumbnail_Config
+     * @return Thumbnail\Config
     */
     protected function createConfig($selector) {
-        return Asset_Image_Thumbnail_Config::getByAutoDetect($selector);
+        return Thumbnail\Config::getByAutoDetect($selector);
     }
 
     /**
@@ -255,7 +438,11 @@ class Asset_Image_Thumbnail {
     protected function applyFileInfo() {
         $info = @getimagesize($this->getFileSystemPath());
         if($info) {
-            list($this->width, $this->height, $type, $attr, $this->mimetype) = $info;
+            list($this->width, $this->height) = $info;
+
+            if(array_key_exists("mime", $info)) {
+                $this->mimetype = $info["mime"];
+            }
 
             $this->realHeight = $this->height;
             $this->realWidth = $this->width;
@@ -265,5 +452,37 @@ class Asset_Image_Thumbnail {
                 $this->height = floor($this->height / $this->config->getHighResolution());
             }
         }
+    }
+
+    /**
+     * @return bool
+     */
+    public static function isPictureElementInUse() {
+        return self::$pictureElementInUse;
+    }
+
+    /**
+     * Enables, when set to true, dispatchLoopShutdown of Pimcore_Controller_Plugin_Thumbnail
+     * @param bool $flag
+     * @return void
+     */
+    public static function setPictureElementInUse($flag) {
+    	self::$pictureElementInUse = (bool) $flag;
+    }
+
+    /**
+     * @return boolean
+     */
+    public static function getEmbedPicturePolyfill()
+    {
+        return self::$embedPicturePolyfill;
+    }
+
+    /**
+     * @param boolean $embedPicturePolyfill
+     */
+    public static function setEmbedPicturePolyfill($embedPicturePolyfill)
+    {
+        self::$embedPicturePolyfill = $embedPicturePolyfill;
     }
 }

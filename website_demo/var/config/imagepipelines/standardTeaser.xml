@@ -4,15 +4,16 @@
     <item>
       <method>cover</method>
       <arguments>
-        <width>275</width>
-        <height>150</height>
+        <width>360</width>
+        <height>200</height>
         <positioning>center</positioning>
+        <doNotScaleUp>1</doNotScaleUp>
       </arguments>
     </item>
   </items>
   <name>standardTeaser</name>
-  <description></description>
+  <description/>
   <format>SOURCE</format>
   <quality>90</quality>
-  <highResolution>2</highResolution>
+  <highResolution>0</highResolution>
 </zend-config>

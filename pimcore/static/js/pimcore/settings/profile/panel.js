@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -62,12 +62,26 @@ pimcore.settings.profile.panel = Class.create({
             width:300
         });
 
+        passwordCheck = function (el) {
+            if(/^(?=.*\d)(?=.*[a-zA-Z]).{6,100}$/.test(el.getValue())) {
+                el.getEl().addClass("password_valid");
+                el.getEl().removeClass("password_invalid");
+            } else {
+                el.getEl().addClass("password_invalid");
+                el.getEl().removeClass("password_valid");
+            }
+        };
+
         generalItems.push({
             xtype:"textfield",
             fieldLabel:t("new_password"),
             name:"new_password",
             inputType:"password",
-            width:300
+            width:300,
+            enableKeyEvents: true,
+            listeners: {
+                keyup: passwordCheck
+            }
         });
         generalItems.push({
             xtype:"textfield",
@@ -75,7 +89,11 @@ pimcore.settings.profile.panel = Class.create({
             name:"retype_password",
             inputType:"password",
             width:300,
-            style:"margin-bottom: 20px;"
+            style:"margin-bottom: 20px;",
+            enableKeyEvents: true,
+            listeners: {
+                keyup: passwordCheck
+            }
         });
 
         generalItems.push({
@@ -92,6 +110,34 @@ pimcore.settings.profile.panel = Class.create({
             value:this.currentUser.lastname,
             width:300
         });
+
+        var date = new Date();
+        var image = "/admin/user/get-image?id=" + this.currentUser.id + "&_dc=" + date.getTime();
+        generalItems.push({
+            xtype: "fieldset",
+            title: t("image"),
+            items: [{
+                xtype: "container",
+                id: "pimcore_user_image_" + this.currentUser.id,
+                html: '<img src="' + image + '" />',
+                width: 45,
+                height: 45,
+                style: "float:left; margin-right: 10px;"
+            },{
+                xtype:"button",
+                text: t("upload"),
+                handler: function () {
+                    pimcore.helpers.uploadDialog("/admin/user/upload-current-user-image?id="
+                                    + this.currentUser.id, null, function () {
+                        var cont = Ext.getCmp("pimcore_user_image_" + this.currentUser.id);
+                        var date = new Date();
+                        cont.update('<img src="/admin/user/get-image?id=' + this.currentUser.id + '&_dc='
+                                    + date.getTime() + '" />');
+                    }.bind(this));
+                }.bind(this)
+            }]
+        });
+
         generalItems.push({
             xtype:"textfield",
             fieldLabel:t("email"),
@@ -158,6 +204,13 @@ pimcore.settings.profile.panel = Class.create({
 
     saveCurrentUser:function () {
         var values = this.userPanel.getForm().getFieldValues();
+        if(values["new_password"]) {
+            if(!/^(?=.*\d)(?=.*[a-zA-Z]).{6,100}$/.test(values["new_password"]) || values["new_password"] != values["retype_password"]) {
+                delete values["new_password"];
+                delete values["retype_password"];
+                Ext.MessageBox.alert(t('error'), t("password_was_not_changed"));
+            }
+        }
 
         Ext.Ajax.request({
             url:"/admin/user/update-current-user",

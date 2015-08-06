@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -24,42 +24,122 @@ pimcore.document.tags.input = Class.create(pimcore.document.tag, {
         if (!data) {
             data = "";
         }
-        
-        if(!options.width) {
-            options.width = Ext.get(id).getWidth()-2;
+
+        this.element = Ext.get(id);
+        this.element.dom.setAttribute("contenteditable", true);
+
+        // set min height for IE, as he isn't able to update :after css selector
+        this.element.update("|"); // dummy content to get appropriate height
+        this.element.applyStyles({
+            "min-height": this.element.getHeight() + "px"
+        });
+
+        this.element.update(data + "<br>");
+
+        this.checkValue();
+
+        this.element.on("keyup", this.checkValue.bind(this));
+        this.element.on("keydown", function (e, t, o) {
+            // do not allow certain keys, like enter, ...
+            if(in_array(e.getCharCode(), [13])) {
+                e.stopEvent();
+            }
+        });
+
+        this.element.dom.addEventListener("paste", function(e) {
+            e.preventDefault();
+
+            var text = "";
+            if(e.clipboardData) {
+                text = e.clipboardData.getData("text/plain");
+            } else if (window.clipboardData) {
+                text = window.clipboardData.getData("Text");
+            }
+
+            text = this.clearText(text);
+            text = htmlentities(text, "ENT_NOQUOTES", null, false);
+
+            try {
+                document.execCommand("insertHTML", false, text);
+            } catch (e) {
+                // IE <= 10
+                document.selection.createRange().pasteHTML(text);
+            }
+        }.bind(this));
+
+        if(options["width"]) {
+            this.element.applyStyles({
+                display: "inline-block",
+                width: options["width"] + "px",
+                overflow: "auto",
+                "white-space": "nowrap"
+            });
         }
 
-        options.value = data;
-        options.name = id + "_editable";
-        this.element = new Ext.form.TextField(options);
-        this.element.render(id);
+        if(options["nowrap"]) {
+            this.element.applyStyles({
+                "white-space": "nowrap",
+                overflow: "auto"
+            });
+        }
 
-        if(options["autoStyle"] !== false) {
-            var styles = Ext.get(id).parent().getStyles("font-size","font-family","font-style","font-weight",
-                                "font-stretch","font-variant","color","line-height","text-shadow","text-align",
-                                "text-decoration","text-transform","direction","white-space","word-spacing");
-            styles["background"] = "none";
-            if(!options["height"]) {
-                styles["height"] = "auto";
-            }
-            if(styles["font-size"] == "0px") {
-                delete styles["font-size"];
-            }
+        if(options["class"]) {
+            this.element.addClass(options["class"]);
+        }
 
-            this.element.getEl().applyStyles(styles);
+        if (options["placeholder"]) {
+            this.element.dom.setAttribute('data-placeholder', options["placeholder"]);
+        }
+    },
 
-            // necessary for IE9
-            window.setTimeout(function () {
-                this.element.getEl().repaint();
-            }.bind(this), 300);
+    checkValue: function () {
+        var value = trim(this.element.dom.innerHTML);
+        var origValue = value;
+
+        var textLength = trim(strip_tags(value)).length;
+
+        if(textLength < 1) {
+            this.element.addClass("empty");
+            value = ""; // set to "" since it can contain an <br> at the end
+        } else {
+            this.element.removeClass("empty");
+        }
+
+        if(value != origValue) {
+            this.element.update(this.getValue());
         }
     },
 
     getValue: function () {
-        return this.element.getValue();
+        var text = "";
+        if(typeof this.element.dom.textContent != "undefined") {
+            text = this.element.dom.textContent;
+        } else {
+            text = this.element.dom.innerText;
+        }
+
+        text = this.clearText(text);
+        return text;
+    },
+
+    clearText: function (text) {
+        text = str_replace("\r\n", " ", text);
+        text = str_replace("\n", " ", text);
+        return text;
     },
 
     getType: function () {
         return "input";
+    },
+
+    setInherited: function($super, inherited, el) {
+
+        $super(inherited, el);
+
+        if(this.inherited) {
+            this.element.dom.setAttribute("contenteditable", false);
+        } else {
+            this.element.dom.setAttribute("contenteditable", true);
+        }
     }
 });

@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -133,17 +133,16 @@ pimcore.document.tree = Class.create({
     },
 
     onDragStart : function (tree, node, id) {
-        pimcore.helpers.dndMaskFrames();
         pimcore.helpers.treeNodeThumbnailPreviewHide();
     },
 
     onDragEnd : function () {
-
-        pimcore.helpers.dndUnmaskFrames();
+        // nothing to do
     },
 
     onTreeNodeClick: function () {
         if(this.attributes.permissions.view) {
+            pimcore.helpers.treeNodeThumbnailPreviewHide();
             pimcore.helpers.openDocument(this.id, this.attributes.type);
         }
     },
@@ -494,6 +493,15 @@ pimcore.document.tree = Class.create({
             }));
         }
 
+        if (this.attributes.permissions.create) {
+            menu.add(new Ext.menu.Item({
+                text: t('search_and_move'),
+                iconCls: "pimcore_icon_search_and_move",
+                handler: this.attributes.reference.searchAndMove.bind(this, this.id)
+            }));
+        }
+
+
         // site-mgnt
         var user = pimcore.globalmanager.get("user");
 
@@ -566,6 +574,26 @@ pimcore.document.tree = Class.create({
                             }.bind(this)
                         });
                     }
+                }
+
+                if(this.attributes["locked"]) {
+                    // add unlock and propagate to children functionality
+                    lockMenu.push({
+                        text: t('unlock_and_propagate_to_children'),
+                        iconCls: "pimcore_icon_lock_delete",
+                        handler: function () {
+                            Ext.Ajax.request({
+                                url: "/admin/element/unlock-propagate",
+                                params: {
+                                    id: this.id,
+                                    type: "document"
+                                },
+                                success: function () {
+                                    this.parentNode.reload();
+                                }.bind(this)
+                            });
+                        }.bind(this)
+                    });
                 }
 
                 menu.add(new Ext.menu.Item({
@@ -782,7 +810,7 @@ pimcore.document.tree = Class.create({
                     width: 300,
                     height: 150,
                     style: "word-wrap: normal;",
-                    fieldLabel: t("additional_domains"),
+                    fieldLabel: t("additional_domains") + "<br /><br />RegExp are supported. eg. .*example.com",
                     value: data.domains.join("\n")
                 }, {
                     xtype: "textfield",
@@ -878,20 +906,26 @@ pimcore.document.tree = Class.create({
                     itemId: "key",
                     name: 'key',
                     width: '200px',
+                    enableKeyEvents: true,
                     listeners: {
                         afterrender: function () {
                             this.focus(true,500);
+                        },
+                        keyup: function (el) {
+                            pageForm.getComponent("name").setValue(el.getValue());
                         }
                     }
                 },{
                     xtype: "textfield",
-                    fieldLabel: t('title'),
-                    name: 'title',
+                    itemId: "name",
+                    fieldLabel: t('navigation'),
+                    name: 'name',
                     width: '200px'
                 },{
                     xtype: "textfield",
-                    fieldLabel: t('navigation'),
-                    name: 'name',
+                    itemId: "title",
+                    fieldLabel: t('title'),
+                    name: 'title',
                     width: '200px'
                 }]
             });
@@ -899,7 +933,7 @@ pimcore.document.tree = Class.create({
             var submitFunction = function() {
                 var params = pageForm.getForm().getFieldValues();
                 messageBox.close();
-                if(params["key"].length > 1) {
+                if(params["key"].length >= 1) {
                     params["type"] = type;
                     params["docTypeId"] = docTypeId;
                     this.attributes.reference.addDocumentCreate(params, this);
@@ -1183,6 +1217,13 @@ pimcore.document.tree = Class.create({
             }.bind(this, type)
         });
     },
+
+    searchAndMove: function(parentId) {
+        pimcore.helpers.searchAndMove(parentId, function() {
+            this.reload();
+        }.bind(this), "document");
+    },
+
 
     isKeyValid: function (key) {
 

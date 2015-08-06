@@ -2,17 +2,23 @@
 
 include_once("../../pimcore/cli/startup.php");
 
-$backup = new Pimcore_Backup($backupFile);
+// get tables which are already in install.sql
+$installSql = file_get_contents(PIMCORE_PATH . "/modules/install/mysql/install.sql");
+preg_match_all("/CREATE TABLE `(.*)`/", $installSql, $matches);
+$existingTables = $matches[1];
+
+
+$backup = new \Pimcore\Backup($backupFile);
 $initInfo = $backup->init();
 
-
-$stepMethodMapping = array(
-    "mysql-tables" => "mysqlTables",
+$stepMethodMapping = [
     "mysql" => "mysqlData"
-);
-
+];
 
 if(empty($initInfo["errors"])) {
+
+    $backup->mysqlTables($existingTables);
+
     foreach ($initInfo["steps"] as $step) {
         if(!is_array($step[1])) {
             $step[1] = array();
@@ -20,13 +26,13 @@ if(empty($initInfo["errors"])) {
 
         if(array_key_exists($step[0], $stepMethodMapping)) {
 
-            // skip these tables
-            if(in_array($step[1]["name"], array("tracking_events", "cache_tags", "http_error_log", "versions"))) {
+            // skip these tables => content / data
+            if(in_array($step[1]["name"], ["tracking_events", "cache", "cache_tags", "http_error_log", "versions", "edit_lock", "locks", "email_log", "tmp_store"])) {
                 continue;
             }
 
             verboseMessage("execute: " . $step[0] . " | with the following parameters: " . implode(",",$step[1]));
-            $return = call_user_func_array(array($backup, $stepMethodMapping[$step[0]]), $step[1]);
+            $return = call_user_func_array([$backup, $stepMethodMapping[$step[0]]], $step[1]);
             if($return["filesize"]) {
                 verboseMessage("current filesize of the backup is: " . $return["filesize"]);
             }

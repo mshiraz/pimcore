@@ -9,10 +9,14 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
+chdir(__DIR__);
+
 include_once("startup.php");
 
-Asset_Video_Thumbnail_Processor::execute($argv[1]);
+use Pimcore\Model\Asset;
+
+Asset\Video\Thumbnail\Processor::execute($argv[1]);

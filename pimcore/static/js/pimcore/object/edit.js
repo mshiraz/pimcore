@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -18,13 +18,16 @@ pimcore.object.edit = Class.create({
     initialize: function(object) {
         this.object = object;
         this.dataFields = {};
-
-        this.fieldsToMask = [];
     },
 
     getLayout: function (conf) {
 
         if (this.layout == null) {
+            var items = [];
+            if (conf) {
+                items = [this.getRecursiveLayout(conf).items];
+            }
+
             this.layout = new Ext.Panel({
                 title: t('edit'),
                 bodyStyle:'background-color: #fff;',
@@ -36,7 +39,7 @@ pimcore.object.edit = Class.create({
                     forceLayout: true
                 },
                 iconCls: "pimcore_icon_tab_edit",
-                items: [this.getRecursiveLayout(conf).items],
+                items: items,
                 listeners: {
                     afterrender: function () {
                         pimcore.layout.refresh();
@@ -48,48 +51,26 @@ pimcore.object.edit = Class.create({
         return this.layout;
     },
 
-    getDataForField: function (name) {
+    getDataForField: function (fieldConfig) {
+        var name = fieldConfig.name;
         return this.object.data.data[name];
     },
 
-    getMetaDataForField: function (name) {
+    getMetaDataForField: function (fieldConfig) {
+        var name = fieldConfig.name;
         return this.object.data.metaData[name];
     },
 
     addToDataFields: function (field, name) {
-        this.dataFields[name] = field;
-    },
-
-    addFieldsToMask: function (field) {
-        this.fieldsToMask.push(field);
-    },
-
-    unmaskFrames: function () {
-
-        // unmask wysiwyg editors
-        for (var i = 0; i < this.fieldsToMask.length; i++) {
-            this.fieldsToMask[i].unmask();
-        }
-    },
-
-    maskFrames: function () {
-        // this is for dnd over iframes, with this method it's not nessercery to register the dnd manager in each
-        // iframe (wysiwyg)
-
-        // mask wysiwyg editors
-        for (var i = 0; i < this.fieldsToMask.length; i++) {
-            this.fieldsToMask[i].mask();
-        }
-    },
-
-    disableFieldMasks: function () {
-        this.fieldsToMaskBackup = this.fieldsToMask;
-        this.fieldsToMask = [];
-    },
-
-    enableFieldMasks: function () {
-        if(this.fieldsToMaskBackup) {
-            this.fieldsToMask = this.fieldsToMaskBackup;
+        if(this.dataFields[name]) {
+            // this is especially for localized fields which get aggregated here into one field definition
+            // in the case that there are more than one localized fields in the class definition
+            // see also Object_Class::extractDataDefinitions();
+            if(typeof this.dataFields[name]["addReferencedField"]){
+                this.dataFields[name].addReferencedField(field);
+            }
+        } else {
+            this.dataFields[name] = field;
         }
     },
 

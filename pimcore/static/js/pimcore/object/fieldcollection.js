@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -121,6 +121,12 @@ pimcore.object.fieldcollection = Class.create({
     },
 
     openFieldcollection: function (id) {
+
+        if(Ext.getCmp("pimcore_fieldcollection_editor_panel_" + id)) {
+            this.getEditPanel().activate(Ext.getCmp("pimcore_class_editor_panel_" + id));
+            return;
+        }
+
         Ext.Ajax.request({
             url: "/admin/class/fieldcollection-get",
             params: {
@@ -139,7 +145,7 @@ pimcore.object.fieldcollection = Class.create({
             delete this.fieldPanel;
         }*/
 
-        var fieldPanel = new pimcore.object.fieldcollections.field(data, this);
+        var fieldPanel = new pimcore.object.fieldcollections.field(data, this, this.openFieldcollection.bind(this, data.key));
         pimcore.layout.refresh();
         
     },
@@ -172,7 +178,8 @@ pimcore.object.fieldcollection = Class.create({
             Ext.Ajax.request({
                 url: "/admin/class/fieldcollection-update",
                 params: {
-                    key: value
+                    key: value,
+                    task: "add"
                 },
                 success: function (response) {
                     this.tree.getRootNode().reload();
@@ -180,6 +187,8 @@ pimcore.object.fieldcollection = Class.create({
                     var data = Ext.decode(response.responseText);
                     if(data && data.success) {
                         this.openFieldcollection(data.id);
+                    } else {
+                        pimcore.helpers.showNotification(t("error"), data["message"], "error");
                     }
                 }.bind(this)
             });
@@ -192,20 +201,26 @@ pimcore.object.fieldcollection = Class.create({
         }
     },
 
-    deleteField: function () {
-        Ext.Ajax.request({
-            url: "/admin/class/fieldcollection-delete",
-            params: {
-                id: this.id
-            }
-        });
-
-        this.attributes.reference.getEditPanel().removeAll();
-        this.remove();
-    },
-
     activate: function () {
         Ext.getCmp("pimcore_panel_tabs").activate("pimcore_fieldcollections");
+    },
+
+    deleteField: function () {
+
+        Ext.Msg.confirm(t('delete'), t('delete_message'), function(btn){
+            if (btn == 'yes'){
+                Ext.Ajax.request({
+                    url: "/admin/class/fieldcollection-delete",
+                    params: {
+                        id: this.id
+                    }
+                });
+
+                this.attributes.reference.getEditPanel().removeAll();
+                this.remove();
+            }
+        }.bind(this));
     }
+
 
 });

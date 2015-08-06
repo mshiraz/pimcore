@@ -9,11 +9,13 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Pimcore_View_Helper_HeadMeta extends Zend_View_Helper_HeadMeta {
+namespace Pimcore\View\Helper;
+
+class HeadMeta extends \Zend_View_Helper_HeadMeta {
 
     /**
      * Determine if item is valid
@@ -24,6 +26,4 @@ class Pimcore_View_Helper_HeadMeta extends Zend_View_Helper_HeadMeta {
     protected function _isValid($item) {
         return true;
     }
-
 }
-

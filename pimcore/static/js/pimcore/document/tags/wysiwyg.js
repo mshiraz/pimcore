@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -25,40 +25,25 @@ pimcore.document.tags.wysiwyg = Class.create(pimcore.document.tag, {
         this.setupWrapper();
         options = this.parseOptions(options);
 
-        this.initialOptions = Object.clone(options);
-
         if (!data) {
             data = "";
         }
         this.data = data;
-
-        if (!options.width) {
-            options.width = Ext.get(id).getWidth();
-            if (options.width < 1) {
-                options.width = 400;
-            }
-        }
-
-        if (options.resize_disabled) {
-            options.resize_enabled = false;
-        }
-
         this.options = options;
 
 
         var textareaId = id + "_textarea";
         this.textarea = document.createElement("div");
-        if(this.options["inline"] !== false) {
-            this.textarea.setAttribute("contenteditable","true");
-        }
+        this.textarea.setAttribute("contenteditable","true");
+
         Ext.get(id).appendChild(this.textarea);
 
         Ext.get(id).insertHtml("beforeEnd",'<div class="pimcore_tag_droptarget"></div>');
 
         this.textarea.id = textareaId;
         this.textarea.innerHTML = data;
-        
-        var textareaHeight = 300;
+
+        var textareaHeight = 100;
         if (options.height) {
             textareaHeight = options.height;
         }
@@ -73,93 +58,23 @@ pimcore.document.tags.wysiwyg = Class.create(pimcore.document.tag, {
         Ext.get(this.textarea).applyStyles("width: " + inactiveContainerWidth  + "; min-height: " + textareaHeight
                                                                                                 + "px;");
 
-        // if the width is a % value get the current width of the container in px for further processing
-        if (typeof options.width == "string" && options.width.indexOf("%") >= 0) {
-            this.options.width = Ext.get(this.textarea).getWidth();
-            if (this.options.width < 1) {
-                this.options.width = 400;
-            }
-            // apply the width again in px
-            Ext.get(this.textarea).applyStyles("width: " + this.options.width + "px");
-        }
-
-        Ext.get(id).setStyle({
-            width: options.width + "px"
-        });
-
-        
-        // create mask for dnd, this is done here (in initialize) because we have to register the dom node in
-        // dndZones which is used in startup.js
-        var mask = document.createElement("div");
-        Ext.getBody().appendChild(mask);
-        mask = Ext.get(mask);
-
-        var offset = Ext.get(id).getOffsetsTo(Ext.getBody());
-
-        mask.addClass("pimcore_wysiwyg_mask");
-
-        // single applyStyles because of IE, he doesn't like setStyle() here
-        mask.applyStyles("top:" + offset[1] + "px;");
-        mask.applyStyles("left:" + offset[0] + "px;");
-        mask.applyStyles("width:" + options.width + "px;");
-        mask.applyStyles("height:" + textareaHeight + "px;");
-        mask.hide();
-
-
         // register at global DnD manager
-        dndManager.addDropTarget(mask, this.onNodeOver.bind(this), this.onNodeDrop.bind(this));
+        dndManager.addDropTarget(Ext.get(id), this.onNodeOver.bind(this), this.onNodeDrop.bind(this));
 
-        this.maskEl = mask;
+        this.startCKeditor();
 
-        if(this.options["inline"] === false) {
-            Ext.get(this.textarea).on("click", this.startCKeditor.bind(this));
-        } else {
-            this.startCKeditor();
-        }
-    },
-
-    mask: function () {
-        var offset = Ext.get(this.id).getOffsetsTo(Ext.getBody());
-
-        this.maskEl.setStyle({
-            width: this.options.width + "px",
-            height: Ext.get(this.id).getHeight() + "px",
-            top: offset[1] + "px",
-            left: offset[0] + "px",
-            backgroundColor: "#ff6600"
-        });
-        this.maskEl.show();
-    },
-
-    unmask: function () {
-        this.maskEl.hide();
+        this.checkValue();
     },
 
     startCKeditor: function () {
         
         try {
-            if(this.options["inline"] === false) {
-                Ext.get(this.textarea).un("click", this.startCKeditor.bind(this));
-                Ext.get(this.textarea).removeClass("pimcore_wysiwyg_inactive");
-            }
-
             CKEDITOR.config.language = pimcore.globalmanager.get("user").language;
-
-            // IE Hack see: http://dev.ckeditor.com/ticket/9958
-            // problem is that every button in a CKEDITOR window fires the onbeforeunload event
-            CKEDITOR.on('instanceReady', function (event) {
-                event.editor.on('dialogShow', function (dialogShowEvent) {
-                    if (CKEDITOR.env.ie) {
-                        $(dialogShowEvent.data._.element.$).find('a[href*="void(0)"]').removeAttr('href');
-                    }
-                });
-            });
-
             var eConfig = Object.clone(this.options);
 
             // if there is no toolbar defined use Full which is defined in CKEDITOR.config.toolbar_Full, possible
             // is also Basic
-            if (!this.options["toolbar"] && !this.options["toolbarGroups"]) {
+            if (!this.options["toolbarGroups"]) {
                 eConfig.toolbarGroups = [
                     { name: 'clipboard', groups: [ "sourcedialog", 'clipboard', 'undo', "find" ] },
                     { name: 'basicstyles', groups: [ 'basicstyles', 'list'] },
@@ -181,61 +96,45 @@ pimcore.document.tags.wysiwyg = Class.create(pimcore.document.tag, {
                 removePluginsAdd = "," + eConfig.removePlugins;
             }
 
-            eConfig.removePlugins = 'about,placeholder,flash,smiley,scayt,save,print,preview,newpage,maximize,forms,'
-                    + 'filebrowser,templates,divarea,bgcolor,magicline' + removePluginsAdd;
+            eConfig.language = pimcore.settings["language"];
+            eConfig.removePlugins = 'bgcolor,' + removePluginsAdd;
             eConfig.entities = false;
             eConfig.entities_greek = false;
             eConfig.entities_latin = false;
             eConfig.allowedContent = true; // disables CKEditor ACF (will remove pimcore_* attributes from links, etc.)
-            eConfig.resize_minWidth = this.options.width - 2;
-            eConfig.resize_maxWidth = this.options.width - 2;
 
-            if(this.options["inline"] === false) {
-                if(this.options["height"]) {
-                    eConfig.removePlugins += ",autogrow";
-                } else {
-                    eConfig.autogrow = true;
-                }
-                this.ckeditor = CKEDITOR.replace(this.textarea, eConfig);
-            } else {
-                if(!this.options['extraPlugins'] || this.options['extraPlugins']== ''){
-                    eConfig.extraPlugins = "sourcedialog";
-                }else{
-                    if(this.options['extraPlugins'].indexOf("sourcedialog") == -1){
-                        eConfig.extraPlugins += ",sourcedialog";
+            this.ckeditor = CKEDITOR.inline(this.textarea, eConfig);
+
+            this.ckeditor.on('focus', function () {
+                Ext.get(this.textarea).removeClass("pimcore_wysiwyg_inactive");
+            }.bind(this));
+
+            this.ckeditor.on('blur', function () {
+                Ext.get(this.textarea).addClass("pimcore_wysiwyg_inactive");
+            }.bind(this));
+
+            this.ckeditor.on('change', this.checkValue.bind(this));
+
+                // disable URL field in image dialog
+            this.ckeditor.on("dialogShow", function (e) {
+                var urlField = e.data.getElement().findOne("input");
+                if(urlField && urlField.getValue()) {
+                    if(urlField.getValue().indexOf("/image-thumbnails/") > 1) {
+                        urlField.getParent().getParent().getParent().hide();
                     }
+                } else if (urlField) {
+                    urlField.getParent().getParent().getParent().show();
                 }
-                this.ckeditor = CKEDITOR.inline(this.textarea, eConfig);
+            });
 
-                this.ckeditor.on('focus', function () {
-                    Ext.get(this.textarea).removeClass("pimcore_wysiwyg_inactive");
-                }.bind(this));
+            // HACK - clean all pasted html
+            this.ckeditor.on('paste', function(evt) {
+                evt.data.dataValue = '<!--class="Mso"-->' + evt.data.dataValue;
+            }, null, null, 1);
 
-                this.ckeditor.on('blur', function () {
-                    Ext.get(this.textarea).addClass("pimcore_wysiwyg_inactive");
-                }.bind(this));
-
-                // HACK - clean all pasted html
-                this.ckeditor.on('paste', function(evt) {
-                    evt.data.dataValue = '<!--class="Mso"-->' + evt.data.dataValue;
-                }, null, null, 1);
-            }
         }
         catch (e) {
             console.log(e);
-        }
-    },
-
-    endCKeditor : function (force) {
-
-        if (this.ckeditor && (this.options["inline"] === false || force === true)) {
-            this.data = this.ckeditor.getData();
-
-            this.ckeditor.destroy();
-            this.ckeditor = null;
-
-            Ext.get(this.textarea).on("click", this.startCKeditor.bind(this));
-            Ext.get(this.textarea).addClass("pimcore_wysiwyg_inactive");
         }
     },
 
@@ -244,6 +143,9 @@ pimcore.document.tags.wysiwyg = Class.create(pimcore.document.tag, {
         if (!this.ckeditor ||!this.dndAllowed(data)) {
             return;
         }
+
+        // we have to foxus the editor otherwise an error is thrown in the case the editor wasn't opend before a drop element
+        this.ckeditor.focus();
 
         var wrappedText = data.node.attributes.text;
         var textIsSelected = false;
@@ -332,6 +234,17 @@ pimcore.document.tags.wysiwyg = Class.create(pimcore.document.tag, {
 
     },
 
+    checkValue: function () {
+
+        var value = this.getValue();
+
+        if(trim(strip_tags(value)).length < 1) {
+            Ext.get(this.textarea).addClass("empty");
+        } else {
+            Ext.get(this.textarea).removeClass("empty");
+        }
+    },
+
     onNodeOver: function(target, dd, e, data) {
         if (this.dndAllowed(data)) {
             return Ext.dd.DropZone.prototype.dropAllowed;
@@ -374,13 +287,14 @@ pimcore.document.tags.wysiwyg = Class.create(pimcore.document.tag, {
     }
 });
 
-
 CKEDITOR.disableAutoInline = true;
 
-function closeCKeditors() {
-    for (var i = 0; i < editables.length; i++) {
-        if (editables[i].getType() == "wysiwyg") {
-            editables[i].endCKeditor();
+// IE Hack see: http://dev.ckeditor.com/ticket/9958
+// problem is that every button in a CKEDITOR window fires the onbeforeunload event
+CKEDITOR.on('instanceReady', function (event) {
+    event.editor.on('dialogShow', function (dialogShowEvent) {
+        if (CKEDITOR.env.ie) {
+            $(dialogShowEvent.data._.element.$).find('a[href*="void(0)"]').removeAttr('href');
         }
-    }
-}
+    });
+});

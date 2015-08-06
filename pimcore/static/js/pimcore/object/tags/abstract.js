@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -56,9 +56,29 @@ pimcore.object.tags.abstract = Class.create({
         return null;
     },
 
+    applyPermissionStyle: function (key, value, metaData, record) {
+        var metadata = record.data.metadata;
+
+        if (metadata && metadata.permission !== undefined) {
+            // evaluate permissions
+            if (metadata.permission[key] !== undefined) {
+                if (metadata.permission[key].noView) {
+                    metaData.css += " grid_value_noview";
+                }
+
+                if (metadata.permission[key].noEdit) {
+                    metaData.css += " grid_value_noedit";
+                }
+            }
+        }
+
+    },
+
     getGridColumnConfig:function (field) {
         var renderer = function (key, value, metaData, record) {
-            if (record.data.inheritedFields[key] && record.data.inheritedFields[key].inherited == true) {
+            this.applyPermissionStyle(key, value, metaData, record);
+
+            if (record.data.inheritedFields && record.data.inheritedFields[key] && record.data.inheritedFields[key].inherited == true) {
                 metaData.css += " grid_value_inherited";
             }
             return value;
@@ -157,7 +177,8 @@ pimcore.object.tags.abstract = Class.create({
 
     isInvalidMandatory:function () {
 
-        if (!this.isRendered() && !empty(this.getInitialData())) {
+        var initialData = this.getInitialData();
+        if (!this.isRendered() && initialData && initialData.length > 0) {
             return false;
         } else if (!this.isRendered()) {
             return true;

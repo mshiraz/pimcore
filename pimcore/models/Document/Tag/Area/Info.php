@@ -11,14 +11,28 @@
  *
  * @category   Pimcore
  * @package    Document
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Document_Tag_Area_Info {
+namespace Pimcore\Model\Document\Tag\Area;
+
+use Pimcore\Model;
+
+class Info {
 
     /**
-     * @var Zend_Config
+     * @var Model\Document\Tag
+     */
+    public $tag;
+
+    /**
+     * @var string
+     */
+    public $name;
+
+    /**
+     * @var \Zend_Config
      */
     public $config;
 
@@ -40,6 +54,7 @@ class Document_Tag_Area_Info {
 
     /**
      * @param \Zend_Config $config
+     * @return $this
      */
     public function setConfig($config)
     {
@@ -57,6 +72,7 @@ class Document_Tag_Area_Info {
 
     /**
      * @param string $id
+     * @return $this
      */
     public function setId($id)
     {
@@ -74,6 +90,7 @@ class Document_Tag_Area_Info {
 
     /**
      * @param int $index
+     * @return $this
      */
     public function setIndex($index)
     {
@@ -91,6 +108,7 @@ class Document_Tag_Area_Info {
 
     /**
      * @param string $path
+     * @return $this
      */
     public function setPath($path)
     {
@@ -104,6 +122,38 @@ class Document_Tag_Area_Info {
     public function getPath()
     {
         return $this->path;
+    }
+
+    /**
+     * @param string $name
+     */
+    public function setName($name)
+    {
+        $this->name = $name;
+    }
+
+    /**
+     * @return string
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    /**
+     * @return Model\Document\Tag
+     */
+    public function getTag()
+    {
+        return $this->tag;
+    }
+
+    /**
+     * @param Model\Document\Tag $tag
+     */
+    public function setTag($tag)
+    {
+        $this->tag = $tag;
     }
 }
     

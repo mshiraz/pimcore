@@ -11,15 +11,25 @@
  *
  * @category   Pimcore
  * @package    Translation
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Translation_Admin_Resource extends Translation_Abstract_Resource {
-    
+namespace Pimcore\Model\Translation\Admin;
+
+use Pimcore\Model;
+
+class Resource extends Model\Translation\AbstractTranslation\Resource {
+
+    /**
+     * @var string
+     */
     public static $_tableName = "translations_admin";
-    
+
+    /**
+     * @return string
+     */
     public static function getTableName(){
-        return Translation_Admin_Resource::$_tableName;
+        return Model\Translation\Admin\Resource::$_tableName;
     }
 }

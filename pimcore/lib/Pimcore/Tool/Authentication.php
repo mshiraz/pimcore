@@ -9,11 +9,36 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Pimcore_Tool_Authentication {
+namespace Pimcore\Tool;
+
+use Pimcore\Model\User;
+
+// PHP 5.5 Crypt-API password compatibility layer for PHP version < PHP 5.5
+include_once("password_compatibility.php");
+
+class Authentication {
+
+    /**
+     * @param $username
+     * @param $password
+     * @return null|User
+     */
+    public static function authenticatePlaintext($username, $password) {
+        $user = User::getByName($username);
+
+        // user needs to be active, needs a password and an ID (do not allow system user to login, ...)
+        if(self::isValidUser($user)) {
+            if(self::verifyPassword($user, $password)) {
+                return $user;
+            }
+        }
+
+        return null;
+    }
 
     /**
      * @static
@@ -21,18 +46,24 @@ class Pimcore_Tool_Authentication {
      * @return User
      */
     public static function authenticateSession () {
-        return Pimcore_Tool_Session::useSession(function($adminSession) {
-            $user = $adminSession->user;
-            if ($user instanceof User) {
-                // renew user
-                $user = User::getById($user->getId());
-                if($user && $user->isActive()) {
-                    return $user;
-                }
-            }
 
+        if(!isset($_COOKIE["pimcore_admin_sid"]) && !isset($_REQUEST["pimcore_admin_sid"])) {
+            // if no session cookie / ID no authentication possible, we don't need to start a session
             return null;
-        });
+        }
+
+        $session = Session::getReadOnly();
+        $user = $session->user;
+        if ($user instanceof User) {
+            // renew user
+            $user = User::getById($user->getId());
+
+            if(self::isValidUser($user)) {
+                return $user;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -40,61 +71,123 @@ class Pimcore_Tool_Authentication {
      * @throws Exception
      * @return User
      */
-    public static function authenticateDigest () {
+    public static function authenticateHttpBasic () {
 
-        // the following is a fix for Basic Auth in an FastCGI Environment
-        if (isset($_SERVER['Authorization']) && !empty($_SERVER['Authorization'])) {
-            $parts = explode(" ", $_SERVER['Authorization']);
-            $type = array_shift($parts);
-            $cred = implode(" ", $parts);
+        $auth = new \Sabre\HTTP\BasicAuth();
+        $auth->setRealm("pimcore");
+        $result = $auth->getUserPass();
 
-            if ($type == 'Digest') {
-                $_SERVER["PHP_AUTH_DIGEST"] = $cred;
-            }
+        if(is_array($result)) {
+            list($username, $password) = $result;
+            return self::authenticatePlaintext($username, $password);
         }
 
-        // only digest auth is supported anymore
-        try {
-            $auth = new Sabre_HTTP_DigestAuth();
-            $auth->setRealm("pimcore");
-            $auth->init();
-
-            if ($user = User::getByName($auth->getUsername())) {
-                if ($auth->validateA1($user->getPassword())) {
-                    return $user;
-                }
-            }
-            throw new Exception("Authentication required");
-        }
-        catch (Exception $e) {
-            $auth->requireLogin();
-            Logger::error("Authentication Digest (WebDAV) required");
-            echo "Authentication required\n";
-            die();
-        }
+        $auth->requireLogin();
+        \Logger::error("Authentication Basic (WebDAV) required");
+        echo "Authentication required\n";
+        die();
     }
 
+    /**
+     * @param $username
+     * @param $token
+     * @param bool $adminRequired
+     * @return null|User
+     */
+    public static function authenticateToken($username, $token, $adminRequired = false) {
 
+        $user = User::getByName($username);
 
+        if(self::isValidUser($user)) {
+
+            if ($adminRequired and !$user->isAdmin()) {
+                return null;
+            }
+
+            $passwordHash = $user->getPassword();
+            $decrypted = self::tokenDecrypt($passwordHash, $token);
+
+            $timestamp = $decrypted[0];
+            $timeZone = date_default_timezone_get();
+            date_default_timezone_set("UTC");
+
+            if ($timestamp > time() or $timestamp < (time() - (60 * 30))) {
+                return null;
+            }
+            date_default_timezone_set($timeZone);
+            return $user;
+        }
+
+        return null;
+    }
 
     /**
-     * @static
-     * @param  string $plainTextPassword
-     * @return string
+     * @param User $user
+     * @param $password
+     * @return bool
+     */
+    public static function verifyPassword($user, $password) {
+
+        $password = self::preparePlainTextPassword($user->getName(), $password);
+
+        if($user->getPassword()) { // do not allow logins for users without a password
+            if(password_verify($password, $user->getPassword())) {
+                if (password_needs_rehash($user->getPassword(), PASSWORD_DEFAULT)) {
+                    $user->setPassword(self::getPasswordHash($user->getName(), $password));
+                    $user->save();
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @param $user
+     * @return bool
+     */
+    public static function isValidUser($user) {
+
+        if($user instanceof User && $user->isActive() && $user->getId() && $user->getPassword()) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * @param $username
+     * @param $plainTextPassword
+     * @return bool|false|string
+     * @throws \Exception
      */
     public static function getPasswordHash($username, $plainTextPassword) {
+        $hash = password_hash(self::preparePlainTextPassword($username, $plainTextPassword), PASSWORD_DEFAULT);
+        if(!$hash) {
+            throw new \Exception("Unable to create password hash for user: " . $username);
+        }
+        return $hash;
+    }
+
+    /**
+     * @param $username
+     * @param $plainTextPassword
+     * @return string
+     */
+    public static function preparePlainTextPassword($username, $plainTextPassword) {
+        // plaintext password is prepared as digest A1 hash, this is to be backward compatible because this was
+        // the former hashing algorithm in pimcore (< version 2.1.1)
         return md5($username . ":pimcore:" . $plainTextPassword);
     }
 
     /**
-     * @static
-     * @param  string $username
-     * @param  string $passwordHash
-     * @param  string $algorithm
-     * @param  string $mode
+     * @param $username
+     * @param $passwordHash
      * @return string
      */
-    public static function generateToken($username, $passwordHash, $algorithm = MCRYPT_TRIPLEDES, $mode = MCRYPT_MODE_ECB) {
+    public static function generateToken($username, $passwordHash) {
+
+        $algorithm = MCRYPT_TRIPLEDES;
+        $mode = MCRYPT_MODE_ECB;
 
         $data = time() - 1 . '|' . $username;
 
@@ -121,8 +214,6 @@ class Pimcore_Tool_Authentication {
             $token .= bin2hex($raw[$i]);
         }
         return $token;
-
-
     }
 
     /**
@@ -140,13 +231,14 @@ class Pimcore_Tool_Authentication {
 
 
     /**
-     * @static
-     * @param  string $token
-     * @param  string $algorithm
-     * @param  string $mode
+     * @param $key
+     * @param $token
      * @return array
      */
-    public static function decrypt($key, $token, $algorithm, $mode) {
+    public static function tokenDecrypt($key, $token) {
+
+        $algorithm = MCRYPT_TRIPLEDES;
+        $mode = MCRYPT_MODE_ECB;
 
         $encrypted = base64_decode(self::hex2str($token));
 
@@ -166,46 +258,5 @@ class Pimcore_Tool_Authentication {
 
         $decrypted = str_replace(chr(8), "", $decrypted);
         return explode("|", $decrypted);
-    }
-
-
-    /**
-     * @static
-     * @throws Exception
-     * @param  string $username
-     * @param  string $token
-     * @param bool $adminRequired
-     * @return User
-     */
-    public static function tokenAuthentication($username, $token, $algorithm, $mode, $adminRequired = false) {
-
-
-        $user = User::getByName($username);
-
-            if (!$user instanceof User) {
-                throw new Exception("invalid username");
-            } else {
-                if (!$user->isActive()) {
-                    throw new Exception("user inactive");
-                } else {
-                    if ($adminRequired and !$user->isAdmin()) {
-                        throw new Exception("no permission");
-                    }
-                }
-            }
-
-        $passwordHash = $user->getPassword();
-        $decrypted = Pimcore_Tool_Authentication::decrypt($passwordHash, $token, $algorithm, $mode);
-
-        $timestamp = $decrypted[0];
-        $timeZone = date_default_timezone_get();
-        date_default_timezone_set("UTC");
-
-        if ($timestamp > time() or $timestamp < (time() - (60 * 30))) {
-            throw new Exception("invalid timestamp");
-        }
-        date_default_timezone_set($timeZone);
-        return $user;
-
     }
 }

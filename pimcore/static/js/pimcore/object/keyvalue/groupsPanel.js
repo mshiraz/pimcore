@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -35,7 +35,7 @@ pimcore.object.keyvalue.groupspanel = Class.create({
     },
 
     createGrid: function(response) {
-        this.fields = ['id', 'name', 'description'];
+        this.fields = ['id', 'name', 'description', 'creationDate', 'modificationDate'];
 
         var readerFields = [];
         for (var i = 0; i < this.fields.length; i++) {
@@ -83,9 +83,37 @@ pimcore.object.keyvalue.groupspanel = Class.create({
         var gridColumns = [];
 
         gridColumns.push({header: "ID", width: 40, sortable: true, dataIndex: 'id'});
-        gridColumns.push({header: t("name"), width: 200, sortable: true, dataIndex: 'name'});
-        gridColumns.push({header: t("description"), width: 200, sortable: true, dataIndex: 'description',
-                                                                            editor: new Ext.form.TextField({})});
+        gridColumns.push({header: t("name"), width: 200, sortable: true, dataIndex: 'name',editor: new Ext.form.TextField({})});
+        gridColumns.push({header: t("description"), width: 200, sortable: true, dataIndex: 'description', editor: new Ext.form.TextField({})});
+
+
+        gridColumns.push(
+            {header: t("creationDate"), sortable: true, dataIndex: 'creationDate', editable: false, width: 130,
+                hidden: true,
+                renderer: function(d) {
+                    if (d !== undefined) {
+                        var date = new Date(d * 1000);
+                        return date.format("Y-m-d H:i:s");
+                    } else {
+                        return "";
+                    }
+                }
+            }
+        );
+
+        gridColumns.push(
+            {header: t("modificationDate"), sortable: true, dataIndex: 'modificationDate', editable: false, width: 130,
+                hidden: true,
+                renderer: function(d) {
+                    if (d !== undefined) {
+                        var date = new Date(d * 1000);
+                        return date.format("Y-m-d H:i:s");
+                    } else {
+                        return "";
+                    }
+                }
+            }
+        );
 
         gridColumns.push({
             hideable: false,
@@ -197,8 +225,8 @@ pimcore.object.keyvalue.groupspanel = Class.create({
 
     addFieldComplete: function (button, value, object) {
 
-        var regresult = value.match(/[a-zA-Z0-9_\-]+/);
-        if (button == "ok" && value.length > 2 && regresult == value) {
+        value = value.trim();
+        if (button == "ok" && value.length > 1) {
             Ext.Ajax.request({
                 url: "/admin/key-value/addgroup",
                 params: {

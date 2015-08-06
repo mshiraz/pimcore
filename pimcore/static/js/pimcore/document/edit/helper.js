@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -27,19 +27,25 @@ pimcore.edithelpers = {
 
 pimcore.edithelpers.setBodyHeight = function () {
     try {
-        var body = document.body,
-            html = document.documentElement,
-            lastPageHeight = pimcore.edithelpers.__lastPageHeight;
+        var lastPageHeight = pimcore.edithelpers.__lastPageHeight;
 
-        var height = Math.max(body.scrollHeight, body.offsetHeight,
-            html.clientHeight, html.scrollHeight, html.offsetHeight);
+        var getCurrentHeight = function () {
+            var body = document.body,
+                html = document.documentElement;
 
+            return Math.max(body.scrollHeight, body.offsetHeight,
+                html.clientHeight, html.scrollHeight, html.offsetHeight);
+        };
+
+        var height = getCurrentHeight();
 
         if(!lastPageHeight || lastPageHeight < (height-100)) {
             Ext.getBody().setHeight(height);
             Ext.get(Ext.query("html")[0]).setHeight(height);
 
-            pimcore.edithelpers.__lastPageHeight = height;
+            // set the current height based based on the new height read from the dom
+            // (not the value in variable height, because the setHeight() above may changes the total height again)
+            pimcore.edithelpers.__lastPageHeight = getCurrentHeight();
         }
     } catch (e) {
         console.log(e);
@@ -98,7 +104,7 @@ pimcore.edithelpers.frameElement = function (el, body) {
         left: (offsets[0] - borderWidth) + "px",
         width: (width + borderWidth*2) + "px",
         height: borderWidth + "px",
-        backgroundColor: "#a3bae9",
+        backgroundColor: "#BABABA",
         zIndex: 10000
     });
 
@@ -111,7 +117,7 @@ pimcore.edithelpers.frameElement = function (el, body) {
         left: (offsets[0] - borderWidth) + "px",
         width: (width + borderWidth*2) + "px",
         height: borderWidth + "px",
-        backgroundColor: "#a3bae9",
+        backgroundColor: "#BABABA",
         zIndex: 10000
     });
 
@@ -124,7 +130,7 @@ pimcore.edithelpers.frameElement = function (el, body) {
         left: (offsets[0] - borderWidth) + "px",
         width: borderWidth + "px",
         height: (height + borderWidth*2) + "px",
-        backgroundColor: "#a3bae9",
+        backgroundColor: "#BABABA",
         zIndex: 10000
     });
 
@@ -137,7 +143,7 @@ pimcore.edithelpers.frameElement = function (el, body) {
         left: (offsets[0] + width ) + "px",
         width: borderWidth + "px",
         height: (height + borderWidth*2) + "px",
-        backgroundColor: "#a3bae9",
+        backgroundColor: "#BABABA",
         zIndex: 10000
     });
 

@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -36,6 +36,7 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
         fields.push("possiblevalues");
         fields.push("inherited");
         fields.push("source");
+        fields.push("mandatory");
         fields.push("altSource");
         fields.push("altValue");
         if (fieldConfig.metaVisible) {
@@ -97,11 +98,12 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
             }
 
             if (add) {
-            this.store.add(new this.store.recordType(pair));
-        }
+                this.store.add(new this.store.recordType(pair));
+            }
         }
 
         this.store.sort("description", "ASC");
+        this.updateMandatoryKeys();
 
         this.store.on("add", function() {
             this.dataChanged = true;
@@ -156,7 +158,7 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
         if (field.layout.gridType == "text" || field.layout.gridType == "translated") {
             return new Ext.form.TextField(editorConfig);
             // }
-        } else if (field.layout.gridType == "select") {
+        } else if (field.layout.gridType == "select"  || field.layout.gridType == "translatedSelect") {
             var store = new Ext.data.JsonStore({
                 autoDestroy: true,
                 root: 'options',
@@ -202,6 +204,7 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
         var valueWidth = 600;
         var metaWidth = 200;
         var maxHeight = 190;
+        var metawidth = 100;
 
         if (this.fieldConfig.maxheight > 0) {
             maxHeight = this.fieldConfig.maxheight;
@@ -238,7 +241,7 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
         var columns = [];
 
         // var visibleFields = ['key','description', 'value','type','possiblevalues'];
-        var visibleFields = ['group', 'groupDesc', 'keyName', 'keyDesc', 'value' /*, 'inherited', 'source' ,'altSource', 'altValue' */];
+        var visibleFields = ['group', 'groupDesc', 'keyName', 'keyDesc', 'value', 'unit'];
         if (this.fieldConfig.metaVisible) {
             visibleFields.push('metadata');
         }
@@ -279,6 +282,14 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
             } else if (col == "metadata") {
                 editable = true;
                 cellEditor = this.getCellEditor.bind(this, col);
+            } else if (col == "keyName") {
+                renderer = function (value, metaData, record, rowIndex, colIndex, store) {
+                    if (record.data.mandatory) {
+                        value = value + ' <span style="color:red;">*</span>';
+                    }
+                    return value;
+                }
+
             }
 
             gridWidth += colWidth;
@@ -329,7 +340,6 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
                                     record.set("source", data.altSource);
                                     this.isDeleteOperation = false;
                                 } else {
-                                    var store = grid.getStore();
                                     var key = data.key;
 
                                     store.removeAt(rowIndex);
@@ -342,7 +352,7 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
                                             var pair = store.getAt(i).data;
                                             if (pair.key == key && !pair.inherited) {
                                                 nonInheritedFound = true;
-                                }
+                                            }
                                         }
 
                                         if (!nonInheritedFound) {
@@ -352,7 +362,7 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
                                                 if (pair.key == key && pair.inherited) {
                                                     var newpair = JSON.parse(JSON.stringify(pair));
                                                     this.store.add(new this.store.recordType(newpair));
-                            }
+                                                }
                                             }
                                         }
                                     }
@@ -491,6 +501,13 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
                 metaData.css += " grid_value_inherited";
             }
         } else {
+            if (colIndex == 3) {
+                metaData.css += " grid_value_noedit";
+            }
+            if (this.isInvalid(record)) {
+                metaData.css += " keyvalue_mandatory_violation";
+            }
+
             if (type == "translated") {
                 if (data.translated) {
                     return data.translated;
@@ -498,13 +515,21 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
             } else if (type == "bool") {
                 metaData.css += ' x-grid3-check-col-td';
                 return String.format('<div class="x-grid3-check-col{0}" style="background-position:10px center;">&#160;</div>', value ? '-on' : '');
-            } else if (type == "select") {
+            } else if (type == "range") {
+                // render range value for list view [YouWe]
+                var rangeObject = Ext.util.JSON.decode(value);
+                if (typeof rangeObject == "object" && rangeObject.start != undefined && rangeObject.end != undefined) {
+                    return rangeObject.start + ' to ' + rangeObject.end;
+                }
+                return '';
+
+            } else if (type == "select"  || type == "translatedSelect") {
                 var decodedValues = Ext.util.JSON.decode(data.possiblevalues);
                 for (var i = 0;  i < decodedValues.length; i++) {
 
                     var val = decodedValues[i];
                     if (val.value == value) {
-                        return val.key;
+                        return (type == "translatedSelect") ? ts(val.key) : val.key;
                     }
                 }
             }
@@ -513,9 +538,19 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
         return value;
     },
 
+    /**
+     * Update store data
+     * @param data
+     * @author Yasar Kunduz <y.kunduz@youwe.nl>
+     */
+    updateStoreData : function (data) {
+        data.value = Ext.util.JSON.encode(data.value);
+        this.store.loadData(data, true);
+        this.dataChanged = true;
+    },
 
     getCellEditor: function (col, rowIndex) {
-
+        var parent = this;
         if (col == "metadata") {
             property = new Ext.form.TextField();
         } else {
@@ -532,7 +567,82 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
             } else if (type == "bool") {
                 property = new Ext.form.Checkbox();
                 return false;
-            } else if (type == "select") {
+            } else if (type == "range") {
+                // Added type range [YouWe]
+                var rangeObject = data.value ? Ext.util.JSON.decode(data.value) : {start: '', end: ''};
+
+                if (typeof rangeObject != "object" || rangeObject.start == undefined) {
+                    rangeObject = {start: '', end: ''};
+                }
+                var rangeWindow = new Ext.Window(
+                    {
+                        title : ts('Range'),
+                        modal: true,
+                        items : [{
+                            xtype: 'compositefield',
+                            fieldLabel: ts('Range'),
+                            width: 300,
+                            style: 'padding:10px; line-height: 20px;',
+                            items: [
+                                new Ext.form.Label({text: ts('Start')}),
+                                {
+                                    xtype       : 'textfield',
+                                    width       : 70,
+                                    value       : rangeObject.start,
+                                    enableKeyEvents : true,
+                                    listeners : {
+                                        change : function(el, e) {
+                                            rangeObject.start = el.getValue();
+                                        }
+                                    },
+                                    validator: function(val) {
+                                        if (!Ext.isEmpty(val)) {
+                                            return true;
+                                        } else {
+                                            return "Value cannot be empty";
+                                        }
+                                    }
+
+                                },
+                                new Ext.form.Label({text: ts('End')}),
+                                {
+                                    xtype       : 'textfield',
+                                    width       : 70,
+                                    value       : rangeObject.end,
+                                    enableKeyEvents : true,
+                                    listeners : {
+                                        change : function(el, e) {
+                                            rangeObject.end = el.getValue();
+                                        }
+                                    },
+                                    validator: function(val) {
+                                        if (!Ext.isEmpty(val)) {
+                                            return true;
+                                        } else {
+                                            return "Value cannot be empty";
+                                        }
+                                    }
+                                },
+                                new Ext.Button({
+                                    text: t("apply"),
+                                    iconCls: "pimcore_icon_apply",
+                                    listeners: {
+                                        click: function(){
+                                            data.value = rangeObject;
+                                            parent.updateStoreData(data);
+                                            rangeWindow.hide();
+                                        }
+                                    },
+                                    enableToggle: true
+                                })
+                            ]
+                        }],
+                        frame: true
+                    }
+                );
+                rangeWindow.show();
+                return false;
+            } else if (type == "select"  || type == "translatedSelect") {
                 var values = [];
                 var possiblevalues = data.possiblevalues;
 
@@ -625,11 +735,11 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
                     var record = this.store.getAt(x);
 
                     if (!this.fieldConfig.multivalent) {
-                    if (record.data.key == keyDef.id) {
-                        addKey = false;
-                        break;
+                        if (record.data.key == keyDef.id) {
+                            addKey = false;
+                            break;
+                        }
                     }
-                }
                 }
 
                 if (addKey) {
@@ -641,6 +751,8 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
                     colData.keyDesc = keyDef.description;
                     colData.group = keyDef.groupName;
                     colData.groupDesc = keyDef.groupdescription;
+                    colData.unit = keyDef.unit;
+                    colData.mandatory = keyDef.mandatory;
                     this.store.add(new this.store.recordType(colData));
 
                     if (this.fieldConfig.multivalent) {
@@ -650,13 +762,77 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
                             var p = this.store.getAt(k).data;
                             if (p.key == keyDef.id && p.inherited) {
                                 this.store.removeAt(k);
+                            }
+                        }
+                    }
                 }
             }
+
+            this.updateMandatoryKeys();
         }
-                }
+    },
+
+    updateMandatoryKeys: function() {
+        this.mandatoryKeyExists = false;
+        var totalCount = this.store.data.length;
+
+        for (var i = 0; i < totalCount; i++) {
+            var record = this.store.getAt(i);
+            if (record.data.mandatory) {
+                this.mandatoryKeyExists = true;
+                break;
             }
         }
     },
+
+
+    isInvalid: function(record) {
+
+        if (record.data.mandatory) {
+
+            if (record.data.type == "text" || record.data.type == "translated" || record.data.type == "select" || record.data.type == "translatedSelect") {
+                if (!record.data.value) {
+                    return true;
+                }
+            } else if (record.data.type == "number") {
+                var type = typeof(record.data.value);
+                if (type !=  "number" && !(type == "string" && record.data.value.length > 0)) {
+                    return true;
+                }
+            } else if (record.data.type == "range") {
+                if (!record.data.value) {
+                    return true;
+                } else {
+                    var rangeObject = Ext.util.JSON.decode(record.data.value);
+                    if (typeof rangeObject == "object" && (rangeObject.start == undefined || rangeObject.end == undefined || rangeObject.start == '' || rangeObject.end == '')) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    },
+
+    isInvalidMandatory:function () {
+
+        var totalCount = this.store.data.length;
+
+        for (var i = 0; i < totalCount; i++) {
+            var record = this.store.getAt(i);
+            if (this.isInvalid(record)) {
+                return true;
+            }
+
+        }
+
+        return false;
+    },
+
+
+    isMandatory:function () {
+        return this.mandatoryKeyExists;
+    },
+
 
     getGridColumnConfig:function (field) {
         var renderer;
@@ -665,6 +841,8 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
                 header:ts(field.label),
                 dataIndex:field.key,
                 renderer:function (key, value, metaData, record, rowIndex, colIndex, store) {
+                    this.applyPermissionStyle(key, value, metaData, record);
+
                     var multivalent = value instanceof  Array;
                     var inherited = record.data.inheritedFields[key] && record.data.inheritedFields[key].inherited;
 
@@ -676,7 +854,7 @@ pimcore.object.tags.keyValue = Class.create(pimcore.object.tags.abstract, {
                         metaData.css += " grid_value_locked";
                     }
 
-                    metaData.css += ' x-grid3-check-col-td';g
+                    metaData.css += ' x-grid3-check-col-td';
                     return String.format('<div class="x-grid3-check-col{0}">&#160;</div>', value ? '-on' : '');
                 }.bind(this, field.key)
             });

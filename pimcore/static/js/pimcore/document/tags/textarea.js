@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -25,36 +25,120 @@ pimcore.document.tags.textarea = Class.create(pimcore.document.tag, {
             data = "";
         }
 
-        options.value = data;
-        options.name = id + "_editable";
+        data = str_replace("\n","<br>", data);
 
-        if(!options.width) {
-            options.width = Ext.get(id).getWidth()-2;
+        this.element = Ext.get(id);
+        this.element.dom.setAttribute("contenteditable", true);
+
+        // set min height for IE, as he isn't able to update :after css selector
+        this.element.update("|"); // dummy content to get appropriate height
+        this.element.applyStyles({
+            "min-height": this.element.getHeight() + "px"
+        });
+
+        this.element.update(data);
+
+        this.checkValue();
+
+        this.element.on("keyup", this.checkValue.bind(this));
+        this.element.on("keydown", function (e, t, o) {
+
+            if(e.getCharCode() == 13) {
+
+                if (window.getSelection) {
+                    var selection = window.getSelection(),
+                        range = selection.getRangeAt(0),
+                        br = document.createElement("br"),
+                        textNode = document.createTextNode("\u00a0"); //Passing " " directly will not end up being shown correctly
+                    range.deleteContents();//required or not?
+                    range.insertNode(br);
+                    range.collapse(false);
+                    range.insertNode(textNode);
+                    range.selectNodeContents(textNode);
+
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+
+                e.stopEvent();
+            }
+        });
+
+        this.element.dom.addEventListener("paste", function(e) {
+            e.preventDefault();
+
+            var text = "";
+            if(e.clipboardData) {
+                text = e.clipboardData.getData("text/plain");
+            } else if (window.clipboardData) {
+                text = window.clipboardData.getData("Text");
+            }
+
+            text = htmlentities(text, 'ENT_NOQUOTES', null, false);
+
+            try {
+                document.execCommand("insertHTML", false, text);
+            } catch (e) {
+                // IE <= 10
+                document.selection.createRange().pasteHTML(text);
+            }
+        }.bind(this));
+
+        if(options["width"] || options["height"]) {
+            this.element.applyStyles({
+                display: "inline-block",
+                overflow: "auto"
+            });
+        }
+        if(options["width"]) {
+            this.element.applyStyles({
+                width: options["width"] + "px"
+            })
+        }
+        if(options["height"]) {
+            this.element.applyStyles({
+                height: options["height"] + "px"
+            })
         }
 
-        this.element = new Ext.form.TextArea(options);
-        this.element.render(id);
+        if(options["class"]) {
+            this.element.addClass(options["class"]);
+        }
 
-        if(options["autoStyle"] !== false) {
-            var styles = Ext.get(id).parent().getStyles("font-size","font-family","font-style","font-weight","font-stretch","font-variant","color","line-height","text-shadow","text-align","text-decoration","text-transform","direction");
-            styles["background"] = "none";
-            if(!options["height"]) {
-                styles["height"] = "auto";
-            }
-            this.element.getEl().applyStyles(styles);
+        if (options["placeholder"]) {
+            this.element.dom.setAttribute('data-placeholder', options["placeholder"]);
+        }
+    },
 
-            // necessary for IE9
-            window.setTimeout(function () {
-                this.element.getEl().repaint();
-            }.bind(this), 300);
+    checkValue: function () {
+        var value = this.element.dom.innerHTML;
+
+        if(trim(strip_tags(value)).length < 1) {
+            this.element.addClass("empty");
+        } else {
+            this.element.removeClass("empty");
         }
     },
 
     getValue: function () {
-        return this.element.getValue();
+        var value = this.element.dom.innerHTML;
+        value = value.replace(/<br>/g,"\n");
+        value = trim(value);
+        return value;
     },
 
     getType: function () {
         return "textarea";
+    },
+
+    setInherited: function($super, inherited, el) {
+
+        $super(inherited, el);
+
+        if(this.inherited) {
+            this.element.dom.setAttribute("contenteditable", false);
+        } else {
+            this.element.dom.setAttribute("contenteditable", true);
+        }
     }
 });

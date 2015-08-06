@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -103,41 +103,45 @@ pimcore.settings.user.role.panel = Class.create(pimcore.settings.user.panels.abs
 
     onTreeNodeContextmenu: function () {
 
-        var user = pimcore.globalmanager.get("user");
-        if (user.admin) {
+        this.select();
+        var menu = new Ext.menu.Menu();
 
-            this.select();
-            var menu = new Ext.menu.Menu();
-
-            if (this.allowChildren) {
-                menu.add(new Ext.menu.Item({
-                    text: t('add_folder'),
-                    iconCls: "pimcore_icon_folder_add",
-                    listeners: {
-                        "click": this.attributes.reference.add.bind(this, "rolefolder")
-                    }
-                }));
-                menu.add(new Ext.menu.Item({
-                    text: t('add_role'),
-                    iconCls: "pimcore_icon_role_add",
-                    listeners: {
-                        "click": this.attributes.reference.add.bind(this, "role")
-                    }
-                }));
-            }
-
+        if (this.allowChildren) {
             menu.add(new Ext.menu.Item({
-                text: t('delete'),
-                iconCls: "pimcore_icon_delete",
+                text: t('add_folder'),
+                iconCls: "pimcore_icon_folder_add",
                 listeners: {
-                    "click": this.attributes.reference.remove.bind(this)
+                    "click": this.attributes.reference.add.bind(this, "rolefolder", 0)
                 }
             }));
+            menu.add(new Ext.menu.Item({
+                text: t('add_role'),
+                iconCls: "pimcore_icon_role_add",
+                listeners: {
+                    "click": this.attributes.reference.add.bind(this, "role", 0)
+                }
+            }));
+        } else if (this.attributes.elementType == "role") {
+            menu.add(new Ext.menu.Item({
+                text: t('clone_role'),
+                iconCls: "pimcore_icon_role_add",
+                listeners: {
+                    "click": this.attributes.reference.add.bind(this, "role", this.attributes.id)
+                }
+            }));
+        }
 
-            if(typeof menu.items != "undefined" && typeof menu.items.items != "undefined"
-                                                                        && menu.items.items.length > 0) {
-                menu.show(this.ui.getAnchor());
+        menu.add(new Ext.menu.Item({
+            text: t('delete'),
+            iconCls: "pimcore_icon_delete",
+            listeners: {
+                "click": this.attributes.reference.remove.bind(this)
             }
+        }));
+
+        if(typeof menu.items != "undefined" && typeof menu.items.items != "undefined"
+                                                                    && menu.items.items.length > 0) {
+            menu.show(this.ui.getAnchor());
         }
     },
 

@@ -11,13 +11,15 @@
  *
  * @category   Pimcore
  * @package    Webservice
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Webservice_Data_Asset_Folder_Out extends Webservice_Data_Asset_Folder {
+namespace Pimcore\Model\Webservice\Data\Asset\Folder;
 
+use Pimcore\Model;
 
+class Out extends Model\Webservice\Data\Asset\Folder {
 
     /**
      * @var string
@@ -45,8 +47,4 @@ class Webservice_Data_Asset_Folder_Out extends Webservice_Data_Asset_Folder {
      */
     public $userModification;
 
-
-
-
-   
 }

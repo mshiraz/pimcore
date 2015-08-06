@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    Element
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Element_Reference_Placeholder {
+namespace Pimcore\Model\Element\Reference;
+
+use Pimcore\Model;
+
+class Placeholder {
 
     /**
      * @var int

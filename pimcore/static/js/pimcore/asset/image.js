@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -17,18 +17,18 @@ pimcore.asset.image = Class.create(pimcore.asset.asset, {
 
     initialize: function(id) {
 
+        this.id = intval(id);
         this.setType("image");
+        this.addLoadingPanel();
 
         pimcore.plugin.broker.fireEvent("preOpenAsset", this, "image");
-
-        this.addLoadingPanel();
-        this.id = intval(id);
 
         this.properties = new pimcore.element.properties(this, "asset");
         this.versions = new pimcore.asset.versions(this);
         this.scheduler = new pimcore.element.scheduler(this, "asset");
         this.dependencies = new pimcore.element.dependencies(this, "asset");
         this.notes = new pimcore.element.notes(this, "asset");
+        this.metadata = new pimcore.asset.metadata(this);
 
         this.getData();
     },
@@ -39,8 +39,11 @@ pimcore.asset.image = Class.create(pimcore.asset.asset, {
 
         items.push(this.getDisplayPanel());
 
-        if (this.isAllowed("save") || this.isAllowed("publish")) {
+        if (!pimcore.settings.asset_hide_edit && (this.isAllowed("save") || this.isAllowed("publish"))) {
             items.push(this.getEditPanel());
+        }
+        if (this.isAllowed("publish")) {
+            items.push(this.metadata.getLayout());
         }
         if (this.isAllowed("properties")) {
             items.push(this.properties.getLayout());

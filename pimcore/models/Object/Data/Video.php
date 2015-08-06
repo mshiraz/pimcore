@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    Object
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Object_Data_Video {
+namespace Pimcore\Model\Object\Data;
+
+use Pimcore\Model\Asset;
+
+class Video {
 
     /**
      * @var string

@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -85,6 +85,7 @@ pimcore.object.classes.data.nonownerobjects = Class.create(pimcore.object.classe
             fieldLabel: t('owner_class'),
             name: 'ownerClassName',
             value: this.datax.ownerClassName,
+            disabled: this.isInCustomLayoutEditor(),
             forceSelection:true,
             listeners: {
                 change: function(field, classNamevalue, oldValue) {
@@ -104,6 +105,7 @@ pimcore.object.classes.data.nonownerobjects = Class.create(pimcore.object.classe
             },
             root: "availableFields",
             fields: ['key', 'label'],
+            disabled: this.isInCustomLayoutEditor(),
             autoLoad: false,
             forceSelection:true
         });
@@ -119,6 +121,7 @@ pimcore.object.classes.data.nonownerobjects = Class.create(pimcore.object.classe
             valueField: 'key' ,
             lastQuery: '',
             name: 'ownerFieldName',
+            disabled: this.isInCustomLayoutEditor(),
             listeners: {
                 focus: function(){
                     if (this.datax.ownerClassName != null) {
@@ -140,6 +143,18 @@ pimcore.object.classes.data.nonownerobjects = Class.create(pimcore.object.classe
         }));
 
         return this.layout;
+    },
+
+    applySpecialData: function(source) {
+        if (source.datax) {
+            if (!this.datax) {
+                this.datax =  {};
+            }
+            Ext.apply(this.datax,
+                {
+                    remoteOwner: source.datax.remoteOwner
+                });
+        }
     }
 
 

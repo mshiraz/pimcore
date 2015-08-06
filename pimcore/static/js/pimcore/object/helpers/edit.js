@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -21,7 +21,7 @@
 pimcore.registerNS("pimcore.object.helpers.edit");
 pimcore.object.helpers.edit = {
 
-    getRecursiveLayout: function (l) {
+    getRecursiveLayout: function (l, noteditable) {
 
         var panelListenerConfig = {};
 
@@ -116,7 +116,7 @@ pimcore.object.helpers.edit = {
                 if (l.childs.length > 0) {
                     l.items = [];
                     for (var i = 0; i < l.childs.length; i++) {
-                        tmpItems = this.getRecursiveLayout(l.childs[i]);
+                        tmpItems = this.getRecursiveLayout(l.childs[i], noteditable);
                         if (tmpItems) {
                             l.items.push(tmpItems);
                         }
@@ -180,8 +180,8 @@ pimcore.object.helpers.edit = {
                 var metaData;
 
                 try {
-                    if (typeof this.getDataForField(l.name) != "function") {
-                        data = this.getDataForField(l.name);
+                    if (typeof this.getDataForField(l) != "function") {
+                        data = this.getDataForField(l);
                     }
                 } catch (e) {
                     data = null;
@@ -189,8 +189,8 @@ pimcore.object.helpers.edit = {
                 }
 
                 try {
-                    if (typeof this.getMetaDataForField(l.name) != "function") {
-                        metaData = this.getMetaDataForField(l.name);
+                    if (typeof this.getMetaDataForField(l) != "function") {
+                        metaData = this.getMetaDataForField(l);
                     }
                 } catch (e2) {
                     metaData = null;
@@ -212,12 +212,7 @@ pimcore.object.helpers.edit = {
 
                 this.addToDataFields(field, l.name);
 
-                // WYSIWYG is a frame that must be masked
-                if (l.fieldtype == "wysiwyg") {
-                    this.addFieldsToMask(field);
-                }
-
-                if (l.noteditable) {
+                if (l.noteditable || noteditable) {
                     dLayout = field.getLayoutShow();
                 }
                 else {

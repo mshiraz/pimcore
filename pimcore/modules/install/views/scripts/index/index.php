@@ -11,14 +11,7 @@
 
     <style type="text/css">
         body {
-            background: #323232; /* Old browsers */
-            background: -moz-linear-gradient(top, #323232 0%, #3f3f3f 100%); /* FF3.6+ */
-            background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#323232), color-stop(100%,#3f3f3f)); /* Chrome,Safari4+ */
-            background: -webkit-linear-gradient(top, #323232 0%,#3f3f3f 100%); /* Chrome10+,Safari5.1+ */
-            background: -o-linear-gradient(top, #323232 0%,#3f3f3f 100%); /* Opera 11.10+ */
-            background: -ms-linear-gradient(top, #323232 0%,#3f3f3f 100%); /* IE10+ */
-            background: linear-gradient(to bottom, #323232 0%,#3f3f3f 100%); /* W3C */
-            filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#323232', endColorstr='#3f3f3f',GradientType=0 ); /* IE6-9 */
+            background: #222;
         }
     </style>
 </head>
@@ -26,7 +19,7 @@
 <body>
 
 <script type="text/javascript">
-    var pimcore_version = "<?php echo Pimcore_Version::getVersion() ?>";
+    var pimcore_version = "<?php echo \Pimcore\Version::getVersion() ?>";
 </script>
 
 <?php
@@ -111,9 +104,15 @@ $scripts = array(
                                 },
                                 {
                                     xtype: "textfield",
-                                    name: "mysql_host",
-                                    fieldLabel: "Host",
+                                    name: "mysql_host_socket",
+                                    fieldLabel: "Host / Socket",
                                     value: "localhost"
+                                },
+                                {
+                                    xtype: "textfield",
+                                    name: "mysql_port",
+                                    fieldLabel: "Port",
+                                    value: "3306"
                                 },
                                 {
                                     xtype: "textfield",
@@ -128,14 +127,7 @@ $scripts = array(
                                 {
                                     xtype: "textfield",
                                     name: "mysql_database",
-                                    fieldLabel: "Database",
-                                    value: "_pimcore"
-                                },
-                                {
-                                    xtype: "textfield",
-                                    name: "mysql_port",
-                                    fieldLabel: "Port",
-                                    value: "3306"
+                                    fieldLabel: "Database"
                                 }
                             ]
                         },
@@ -173,7 +165,9 @@ $scripts = array(
                     text: "<b>Install Now!</b>",
                     icon: "/pimcore/static/img/icon/accept.png",
                     disabled: installdisabled,
-                    handler: function () {
+                    handler: function (btn) {
+
+                        btn.disable();
 
                         Ext.getCmp("install_errors").update("Installing ...");
 
@@ -190,10 +184,12 @@ $scripts = array(
                                 }
                                 catch (e) {
                                     Ext.getCmp("install_errors").update(transport.responseText);
+                                    btn.enable();
                                 }
                             },
                             failure: function (transport) {
                                 Ext.getCmp("install_errors").update("Failed: " + transport.responseText);
+                                btn.enable();
                             }
                         });
                     }

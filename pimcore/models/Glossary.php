@@ -11,11 +11,13 @@
  *
  * @category   Pimcore
  * @package    Glossary
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Glossary extends Pimcore_Model_Abstract {
+namespace Pimcore\Model;
+
+class Glossary extends AbstractModel {
 
     /**
      * @var integer
@@ -61,6 +63,17 @@ class Glossary extends Pimcore_Model_Abstract {
      * @var int
      */
     public $site;
+
+    /**
+     * @var integer
+     */
+    public $creationDate;
+
+    /**
+     * @var integer
+     */
+    public $modificationDate;
+
 
     /**
      * @param integer $id
@@ -187,7 +200,8 @@ class Glossary extends Pimcore_Model_Abstract {
     }
 
     /**
-     * @param boolean $casesensitive
+     * @param $casesensitive
+     * @return $this
      */
     public function setCasesensitive($casesensitive)
     {
@@ -204,7 +218,8 @@ class Glossary extends Pimcore_Model_Abstract {
     }
 
     /**
-     * @param boolean $exactmatch
+     * @param $exactmatch
+     * @return $this
      */
     public function setExactmatch($exactmatch)
     {
@@ -221,7 +236,8 @@ class Glossary extends Pimcore_Model_Abstract {
     }
 
     /**
-     * @param int $site
+     * @param $site
+     * @return $this
      */
     public function setSite($site)
     {
@@ -238,5 +254,41 @@ class Glossary extends Pimcore_Model_Abstract {
     public function getSite()
     {
         return $this->site;
+    }
+
+    /**
+     * @param $modificationDate
+     * @return $this
+     */
+    public function setModificationDate($modificationDate)
+    {
+        $this->modificationDate = (int) $modificationDate;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getModificationDate()
+    {
+        return $this->modificationDate;
+    }
+
+    /**
+     * @param $creationDate
+     * @return $this
+     */
+    public function setCreationDate($creationDate)
+    {
+        $this->creationDate = (int) $creationDate;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getCreationDate()
+    {
+        return $this->creationDate;
     }
 }

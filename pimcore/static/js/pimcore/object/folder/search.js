@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -31,8 +31,6 @@ pimcore.object.search = Class.create(pimcore.object.helpers.gridTabAbstract, {
 
         if (this.layout == null) {
 
-            var classStore = pimcore.globalmanager.get("object_types_store");
-
             // check for classtypes inside of the folder if there is only one type don't display the selection
             var toolbarConfig;
 
@@ -41,6 +39,27 @@ pimcore.object.search = Class.create(pimcore.object.helpers.gridTabAbstract, {
                 if (this.object.data.classes.length < 1) {
                     return;
                 }
+
+                var data = [];
+                for (i = 0; i < this.object.data.classes.length; i++) {
+                    var klass = this.object.data.classes[i];
+                    data.push([klass.id, klass.name, ts(klass.name)]);
+
+                }
+
+                var classStore = new Ext.data.ArrayStore({
+                    data: data,
+                    sortInfo: {
+                        field: 'translatedText',
+                        direction: 'ASC'
+                    },
+                    fields: [
+                        {name: 'id', type: 'number'},
+                        {name: 'name', type: 'string'},
+                        {name: 'translatedText', type: 'string'}
+                    ]
+                });
+
 
                 this.classSelector = new Ext.form.ComboBox({
                     name: "selectClass",
@@ -111,6 +130,11 @@ pimcore.object.search = Class.create(pimcore.object.helpers.gridTabAbstract, {
         var fields = [];
         if(response.responseText) {
             response = Ext.decode(response.responseText);
+
+            if (response.pageSize) {
+                itemsPerPage = response.pageSize;
+            }
+
             fields = response.availableFields;
             this.gridLanguage = response.language;
             this.sortinfo = response.sortinfo;
@@ -133,11 +157,13 @@ pimcore.object.search = Class.create(pimcore.object.helpers.gridTabAbstract, {
         var klass = classStore.getById(this.classId);
 
         var gridHelper = new pimcore.object.helpers.grid(
-                klass.data.text,
-                fields,
-                "/admin/object/grid-proxy/classId/" + this.classId + "/folderId/" + this.object.id,
-                {language: this.gridLanguage},
-                false
+            klass.data.text,
+            fields,
+            "/admin/object/grid-proxy/classId/" + this.classId + "/folderId/" + this.object.id,
+            {language: this.gridLanguage,
+             limit: itemsPerPage
+            },
+            false
         );
 
         gridHelper.showSubtype = false;
@@ -149,19 +175,19 @@ pimcore.object.search = Class.create(pimcore.object.helpers.gridTabAbstract, {
 
         this.store = gridHelper.getStore();
         if(this.sortinfo) {
-           this.store.setDefaultSort(this.sortinfo.field, this.sortinfo.direction);
+            this.store.setDefaultSort(this.sortinfo.field, this.sortinfo.direction);
         }
         this.store.setBaseParam("only_direct_children", this.onlyDirectChildren);
         this.store.load();
 
         var gridColumns = gridHelper.getGridColumns();
-        
+
 
         // add filters
         this.gridfilters = gridHelper.getGridFilters();
 
         plugins.push(this.gridfilters);
-        
+
 
         this.languageInfo = new Ext.Toolbar.TextItem({
             text: t("grid_current_language") + ": " + pimcore.available_languages[this.gridLanguage]
@@ -170,7 +196,7 @@ pimcore.object.search = Class.create(pimcore.object.helpers.gridTabAbstract, {
         this.toolbarFilterInfo = new Ext.Toolbar.TextItem({
             text: ""
         });
-        
+
         this.createSqlEditor();
 
         this.checkboxOnlyDirectChildren = new Ext.form.Checkbox({
@@ -189,7 +215,7 @@ pimcore.object.search = Class.create(pimcore.object.helpers.gridTabAbstract, {
                 }.bind(this)
             }
         });
-        
+
         // grid
         this.grid = new Ext.grid.EditorGridPanel({
             frame: false,
@@ -206,44 +232,47 @@ pimcore.object.search = Class.create(pimcore.object.helpers.gridTabAbstract, {
                 forceFit: false
             },
             tbar: [this.languageInfo, "-", this.toolbarFilterInfo
-            ,"->"
-            ,this.checkboxOnlyDirectChildren,t("only_children")
-            ,"-",this.sqlEditor
-            ,this.sqlButton,"-",{
-                text: t("add_childs"),
-                iconCls: "pimcore_icon_add_child",
-                handler: this.addChilds.bind(this)
-            },"-",{
-                text: t("export_csv"),
-                iconCls: "pimcore_icon_export",
-                handler: function(){
+                ,"->"
+                ,this.checkboxOnlyDirectChildren,t("only_children")
+                ,"-",this.sqlEditor
+                ,this.sqlButton,"-",{
+                    text: t("search_and_move"),
+                    iconCls: "pimcore_icon_search_and_move",
+                    handler: pimcore.helpers.searchAndMove.bind(this, this.object.id,
+                        function() {
+                            this.store.reload();
+                        }.bind(this), "object")
+                },"-",{
+                    text: t("export_csv"),
+                    iconCls: "pimcore_icon_export",
+                    handler: function(){
 
-                    Ext.MessageBox.show({
-                        title:t('warning'),
-                        msg: t('csv_object_export_warning'),
-                        buttons: Ext.Msg.OKCANCEL ,
-                        fn: function(btn){
-                            if (btn == 'ok'){
-                                this.startCsvExport();
-                            }
-                        }.bind(this),
-                        icon: Ext.MessageBox.WARNING
-                    });
+                        Ext.MessageBox.show({
+                            title:t('warning'),
+                            msg: t('csv_object_export_warning'),
+                            buttons: Ext.Msg.OKCANCEL ,
+                            fn: function(btn){
+                                if (btn == 'ok'){
+                                    this.startCsvExport();
+                                }
+                            }.bind(this),
+                            icon: Ext.MessageBox.WARNING
+                        });
 
 
 
-                }.bind(this)
-            },"-",{
-                text: t("grid_column_config"),
-                iconCls: "pimcore_icon_grid_column_config",
-                handler: this.openColumnConfig.bind(this)
-            }]
+                    }.bind(this)
+                },"-",{
+                    text: t("grid_column_config"),
+                    iconCls: "pimcore_icon_grid_column_config",
+                    handler: this.openColumnConfig.bind(this)
+                }]
         });
         this.grid.on("rowcontextmenu", this.onRowContextmenu);
 
         this.grid.on("afterrender", function (grid) {
             this.updateGridHeaderContextMenu(grid);
-        }.bind(this)); 
+        }.bind(this));
 
         this.grid.on("sortchange", function(grid, sortinfo) {
             this.sortinfo = sortinfo;
@@ -255,7 +284,7 @@ pimcore.object.search = Class.create(pimcore.object.helpers.gridTabAbstract, {
         }.bind(this));
 
         gridHelper.applyGridEvents(this.grid);
-        
+
         this.pagingtoolbar = new Ext.PagingToolbar({
             pageSize: itemsPerPage,
             store: this.store,
@@ -263,6 +292,7 @@ pimcore.object.search = Class.create(pimcore.object.helpers.gridTabAbstract, {
             displayMsg: '{0} - {1} / {2}',
             emptyMsg: t("no_objects_found")
         });
+
 
         // add per-page selection
         this.pagingtoolbar.add("-");
@@ -282,7 +312,7 @@ pimcore.object.search = Class.create(pimcore.object.helpers.gridTabAbstract, {
             ],
             mode: "local",
             width: 50,
-            value: 20,
+            value: itemsPerPage,
             triggerAction: "all",
             listeners: {
                 select: function (box, rec, index) {
@@ -309,132 +339,94 @@ pimcore.object.search = Class.create(pimcore.object.helpers.gridTabAbstract, {
 
     },
 
+
     getGridConfig: function($super) {
         var config = $super();
         config.onlyDirectChildren = this.onlyDirectChildren;
+        config.pageSize = this.pagingtoolbar.pageSize;
         return config;
     },
 
 
     onRowContextmenu: function (grid, rowIndex, event) {
-        
+
         $(grid.getView().getRow(rowIndex)).animate( { backgroundColor: '#E0EAEE' }, 100).animate( {
-                                                            backgroundColor: '#fff' }, 400);
-        
+            backgroundColor: '#fff' }, 400);
+
         var menu = new Ext.menu.Menu();
         var data = grid.getStore().getAt(rowIndex);
+        var selectedRows = grid.getSelectionModel().getSelections();
 
-        menu.add(new Ext.menu.Item({
-            text: t('open'),
-            iconCls: "pimcore_icon_open",
-            handler: function (data) {
-                pimcore.helpers.openObject(data.data.id, "object");
-            }.bind(this, data)
-        }));
-        menu.add(new Ext.menu.Item({
-            text: t('show_in_tree'),
-            iconCls: "pimcore_icon_show_in_tree",
-            handler: function (data) {
-                try {
+        if (selectedRows.length <= 1) {
+
+            menu.add(new Ext.menu.Item({
+                text: t('open'),
+                iconCls: "pimcore_icon_open",
+                handler: function (data) {
+                    pimcore.helpers.openObject(data.data.id, "object");
+                }.bind(this, data)
+            }));
+            menu.add(new Ext.menu.Item({
+                text: t('show_in_tree'),
+                iconCls: "pimcore_icon_show_in_tree",
+                handler: function (data) {
                     try {
-                        Ext.getCmp("pimcore_panel_tree_objects").expand();
-                        var tree = pimcore.globalmanager.get("layout_object_tree");
-                        pimcore.helpers.selectPathInTree(tree.tree, data.data.idPath);
-                    } catch (e) {
-                        console.log(e);
-                    }
+                        try {
+                            Ext.getCmp("pimcore_panel_tree_objects").expand();
+                            var tree = pimcore.globalmanager.get("layout_object_tree");
+                            pimcore.helpers.selectPathInTree(tree.tree, data.data.idPath);
+                        } catch (e) {
+                            console.log(e);
+                        }
 
-                } catch (e2) { console.log(e2); }
-            }.bind(grid, data)
-        }));
-        menu.add(new Ext.menu.Item({
-            text: t('delete'),
-            iconCls: "pimcore_icon_delete",
-            handler: function (data) {
-                pimcore.helpers.deleteObject(data.data.id, this.getStore().reload.bind(this.getStore()));
-            }.bind(grid, data)
-        }));
+                    } catch (e2) { console.log(e2); }
+                }.bind(grid, data)
+            }));
+            menu.add(new Ext.menu.Item({
+                text: t('delete'),
+                iconCls: "pimcore_icon_delete",
+                handler: function (data) {
+                    var store = this.getStore();
+                    pimcore.helpers.deleteObject(data.data.id, store.reload.bind(this.getStore()));
+                }.bind(grid, data)
+            }));
+        } else {
+            menu.add(new Ext.menu.Item({
+                text: t('open_selected'),
+                iconCls: "pimcore_icon_open",
+                handler: function (data) {
+                    var selectedRows = grid.getSelectionModel().getSelections();
+                    for (var i = 0; i < selectedRows.length; i++) {
+                        pimcore.helpers.openObject(selectedRows[i].data.id, "object");
+                    }
+                }.bind(this, data)
+            }));
+
+            menu.add(new Ext.menu.Item({
+                text: t('delete_selected'),
+                iconCls: "pimcore_icon_delete",
+                handler: function (data) {
+                    var ids = [];
+                    var selectedRows = grid.getSelectionModel().getSelections();
+                    for (var i = 0; i < selectedRows.length; i++) {
+                        ids.push(selectedRows[i].data.id);
+                    }
+                    ids = ids.join(',');
+
+                    pimcore.helpers.deleteObject(ids, function() {
+                        this.getStore().reload();
+                        pimcore.globalmanager.get("layout_object_tree").tree.getRootNode().reload();
+                    }.bind(this)
+                    );
+                }.bind(grid, data)
+            }));
+        }
 
         event.stopEvent();
         menu.showAt(event.getXY());
-    },
-
-    addChilds: function () {
-        pimcore.helpers.itemselector(true, function (selection) {
-
-            var jobs = [];
-
-            if(selection && selection.length > 0) {
-                for(var i=0; i<selection.length; i++) {
-                    jobs.push([{
-                        url: "/admin/object/update",
-                        params: {
-                            id: selection[i]["id"],
-                            values: Ext.encode({
-                                parentId: this.object.id
-                            })
-                        }
-                    }]);
-                }
-            }
-
-            this.addChildProgressBar = new Ext.ProgressBar({
-                text: t('initializing')
-            });
-
-            this.addChildWindow = new Ext.Window({
-                layout:'fit',
-                width:500,
-                bodyStyle: "padding: 10px;",
-                closable:false,
-                plain: true,
-                modal: true,
-                items: [this.addChildProgressBar]
-            });
-
-            this.addChildWindow.show();
-
-            var pj = new pimcore.tool.paralleljobs({
-                success: function () {
-
-                    if(this.addChildWindow) {
-                        this.addChildWindow.close();
-                    }
-
-                    this.deleteProgressBar = null;
-                    this.addChildWindow = null;
-
-                    this.store.reload();
-
-                    try {
-                        var node = pimcore.globalmanager.get("layout_object_tree").tree.getNodeById(this.object.id);
-                        node.reload();
-                    } catch (e) {
-                        // node is not present
-                    }
-                }.bind(this),
-                update: function (currentStep, steps, percent) {
-                    if(this.addChildProgressBar) {
-                        var status = currentStep / steps;
-                        this.addChildProgressBar.updateProgress(status, percent + "%");
-                    }
-                }.bind(this),
-                failure: function (message) {
-                    this.addChildWindow.close();
-                    Ext.MessageBox.alert(t("error"), message);
-                }.bind(this),
-                jobs: jobs
-            });
-
-        }.bind(this), {
-            type: ["object"],
-            subtype: {
-                object: ["object", "folder"]
-            },
-            specific: {
-                classes: null
-            }
-        });
     }
+
+
+
 
 });

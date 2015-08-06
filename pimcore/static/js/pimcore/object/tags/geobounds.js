@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 /*global google */
@@ -154,7 +154,7 @@ pimcore.object.tags.geobounds = Class.create(pimcore.object.tags.geo.abstract, {
                         this.data = {
                             ne: this.overlay.getBounds().getNorthEast(),
                             sw: this.overlay.getBounds().getSouthWest()
-                        }
+                        };
                     }
 
                     this.updatePreviewImage();

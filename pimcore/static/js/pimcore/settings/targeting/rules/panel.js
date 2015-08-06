@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -128,7 +128,7 @@ pimcore.settings.targeting.rules.panel= Class.create({
             return;
         }
         else {
-            Ext.Msg.alert(t('add_target'), t('problem_creating_new_target'));
+            Ext.Msg.alert(t('add_target'), t('naming_requirements_3chars'));
         }
     },
 

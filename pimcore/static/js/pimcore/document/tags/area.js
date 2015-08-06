@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -57,7 +57,7 @@ pimcore.document.tags.area = Class.create(pimcore.document.tag, {
             autoScroll: true,
             listeners: {
                 afterrender: function (content) {
-                    Ext.get(content).show();
+                    Ext.get(content).removeClass("pimcore_area_editmode_hidden");
 
                     var elements = Ext.get(content).query(".pimcore_editable");
                     for (var i=0; i<elements.length; i++) {

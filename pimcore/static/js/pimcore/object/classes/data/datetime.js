@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -112,12 +112,15 @@ pimcore.object.classes.data.datetime = Class.create(pimcore.object.classes.data.
                 name:"useCurrentDate",
                 value:this.datax.defaultValue,
                 checked:this.datax.useCurrentDate,
+                disabled: this.isInCustomLayoutEditor(),
                 listeners:{
                     check:this.toggleDefaultDate.bind(this)
                 }
-            },
-            new Ext.form.DisplayField({hideLabel:true,html:'<span class="object_field_setting_warning">'
-                                        +t('default_value_warning')+'</span>'})
+            }, {
+                xtype: "displayfield",
+                hideLabel:true,
+                html:'<span class="object_field_setting_warning">' +t('default_value_warning')+'</span>'
+            }
         ]);
 
         return this.layout;
@@ -155,6 +158,19 @@ pimcore.object.classes.data.datetime = Class.create(pimcore.object.classes.data.
             }
 
 
+    },
+
+    applySpecialData: function(source) {
+        if (source.datax) {
+            if (!this.datax) {
+                this.datax =  {};
+            }
+            Ext.apply(this.datax,
+                {
+                    defaultValue: source.datax.defaultValue,
+                    useCurrentDate: source.datax.useCurrentDate
+                });
         }
+    }
 
 });

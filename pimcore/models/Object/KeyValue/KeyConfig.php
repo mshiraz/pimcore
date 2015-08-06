@@ -11,14 +11,24 @@
  *
  * @category   Pimcore
  * @package    Object
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Object_KeyValue_KeyConfig extends Pimcore_Model_Abstract {
+namespace Pimcore\Model\Object\KeyValue;
 
+use Pimcore\Model;
+
+class KeyConfig extends Model\AbstractModel {
+
+    /**
+     * @var array
+     */
     static $cache = array();
 
+    /**
+     * @var bool
+     */
     static $cacheEnabled = false;
 
     /**
@@ -57,9 +67,24 @@ class Object_KeyValue_KeyConfig extends Pimcore_Model_Abstract {
     public $possiblevalues;
 
     /**
+     * @var integer
+     */
+    public $creationDate;
+
+    /**
+     * @var integer
+     */
+    public $modificationDate;
+
+    /**
      * @var
      */
     public $translator;
+
+    /**
+     * @var
+     */
+    public $mandatory;
 
     /** Sets the translator id.
      * @param $translator
@@ -77,57 +102,81 @@ class Object_KeyValue_KeyConfig extends Pimcore_Model_Abstract {
         return $this->translator;
     }
 
-
+    /**
+     * @param $unit
+     * @return $this
+     */
     public function setUnit($unit)
     {
         $this->unit = $unit;
         return $this;
     }
 
+    /**
+     * @return mixed
+     */
     public function getUnit()
     {
         return $this->unit;
     }
 
+    /**
+     * @param $values
+     * @return $this
+     */
     public function setPossibleValues($values)
     {
         $this->possiblevalues = $values;
         return $this;
     }
 
+    /**
+     * @return mixed
+     */
     public function getPossibleValues()
     {
         return $this->possiblevalues;
     }
 
-
-
+    /**
+     * @param $type
+     * @return $this
+     */
     public function setType($type)
     {
         $this->type = $type;
         return $this;
     }
 
+    /**
+     * @return mixed
+     */
     public function getType()
     {
         return $this->type;
     }
 
+    /**
+     * @param $group
+     * @return $this
+     */
     public function setGroup($group)
     {
         $this->group = $group;
         return $this;
     }
 
+    /**
+     * @return mixed
+     */
     public function getGroup()
     {
         return $this->group;
     }
 
-
     /**
      * @param integer $id
-     * @return Object_KeyValue_KeyConfig
+     * @return Model\Object\KeyValue\KeyConfig
      */
     public static function getById($id) {
         try {
@@ -143,7 +192,7 @@ class Object_KeyValue_KeyConfig extends Pimcore_Model_Abstract {
             }
 
             return $config;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
 
         }
     }
@@ -167,7 +216,11 @@ class Object_KeyValue_KeyConfig extends Pimcore_Model_Abstract {
         return self::$cacheEnabled;
     }
 
-
+    /**
+     * @param $name
+     * @param null $groupId
+     * @return KeyConfig
+     */
     public static function getByName ($name, $groupId = null) {
         try {
             $config = new self();
@@ -176,14 +229,13 @@ class Object_KeyValue_KeyConfig extends Pimcore_Model_Abstract {
             $config->getResource()->getByName();
 
             return $config;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
 
         }
     }
 
-
     /**
-     * @return Object_KeyValue_KeyConfig
+     * @return Model\Object\KeyValue\KeyConfig
      */
     public static function create() {
         $config = new self();
@@ -234,7 +286,7 @@ class Object_KeyValue_KeyConfig extends Pimcore_Model_Abstract {
 
     /** Sets the key description
      * @param $description
-     * @return Object_KeyValue_KeyConfig
+     * @return Model\Object\KeyValue\KeyConfig
      */
     public function setDescription($description) {
         $this->description = $description;
@@ -246,12 +298,12 @@ class Object_KeyValue_KeyConfig extends Pimcore_Model_Abstract {
      * Deletes the key value key configuration
      */
     public function delete() {
-        Pimcore_API_Plugin_Broker::getInstance()->preDeleteKeyValueKeyConfig($this);
+        \Pimcore::getEventManager()->trigger("object.keyValue.keyConfig.preDelete", $this);
         if ($this->getId()) {
             unset(self::$cache[$this->getId()]);
         }
         parent::delete();
-        Pimcore_API_Plugin_Broker::getInstance()->postDeleteKeyValueKeyConfig($this);
+        \Pimcore::getEventManager()->trigger("object.keyValue.keyConfig.postDelete", $this);
     }
 
     /**
@@ -264,17 +316,70 @@ class Object_KeyValue_KeyConfig extends Pimcore_Model_Abstract {
         if ($this->getId()) {
             unset(self::$cache[$this->getId()]);
             $isUpdate = true;
-            Pimcore_API_Plugin_Broker::getInstance()->preUpdateKeyValueKeyConfig($this);
+            \Pimcore::getEventManager()->trigger("object.keyValue.keyConfig.preUpdate", $this);
         } else {
-            Pimcore_API_Plugin_Broker::getInstance()->preAddKeyValueKeyConfig($this);
+            \Pimcore::getEventManager()->trigger("object.keyValue.keyConfig.preAdd", $this);
         }
 
-        parent::save();
+        $model = parent::save();
 
         if ($isUpdate) {
-            Pimcore_API_Plugin_Broker::getInstance()->postUpdateKeyValueKeyConfig($this);
+            \Pimcore::getEventManager()->trigger("object.keyValue.keyConfig.postUpdate", $this);
         } else {
-            Pimcore_API_Plugin_Broker::getInstance()->postAddKeyValueKeyConfig($this);
+            \Pimcore::getEventManager()->trigger("object.keyValue.keyConfig.postAdd", $this);
         }
+        return $model;
+    }
+
+    /**
+     * @param $creationDate
+     * @return $this
+     */
+    public function setCreationDate($creationDate)
+    {
+        $this->creationDate = (int) $creationDate;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getCreationDate()
+    {
+        return $this->creationDate;
+    }
+
+    /**
+     * @param $modificationDate
+     * @return $this
+     */
+    public function setModificationDate($modificationDate)
+    {
+        $this->modificationDate = (int) $modificationDate;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getModificationDate()
+    {
+        return $this->modificationDate;
+    }
+
+    /**
+     * @param mixed $mandatory
+     */
+    public function setMandatory($mandatory)
+    {
+        $this->mandatory = $mandatory;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getMandatory()
+    {
+        return $this->mandatory;
     }
 }

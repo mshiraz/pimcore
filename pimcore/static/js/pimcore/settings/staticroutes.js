@@ -8,19 +8,28 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
 pimcore.registerNS("pimcore.settings.staticroutes");
 pimcore.settings.staticroutes = Class.create({
 
-    initialize:function () {
+    preconfiguredFilter: "",
+
+    initialize:function (filter) {
+        if(filter)
+            this.preconfiguredFilter = filter;
 
         this.getTabPanel();
     },
 
-    activate:function () {
+    activate:function (filter) {
+        if(filter) {
+            this.filterField.setValue(filter);
+            this.store.baseParams.filter = filter;
+            this.store.load();
+        }
         var tabPanel = Ext.getCmp("pimcore_panel_tabs");
         tabPanel.activate("pimcore_staticroutes");
     },
@@ -73,7 +82,9 @@ pimcore.settings.staticroutes = Class.create({
             {name:'variables', allowBlank:true},
             {name:'defaults', allowBlank:true},
             {name:'siteId', allowBlank:true},
-            {name:'priority', type:'int', allowBlank:true}
+            {name:'priority', type:'int', allowBlank:true},
+            {name: 'creationDate', allowBlank: true},
+            {name: 'modificationDate', allowBlank: true}
         ]);
         var writer = new Ext.data.JsonWriter();
 
@@ -89,7 +100,7 @@ pimcore.settings.staticroutes = Class.create({
             remoteSort:true,
             baseParams:{
                 limit:itemsPerPage,
-                filter:""
+                filter:this.preconfiguredFilter
             },
             listeners:{
                 write:function (store, action, result, response, rs) {
@@ -103,6 +114,7 @@ pimcore.settings.staticroutes = Class.create({
             xtype:"textfield",
             width:200,
             style:"margin: 0 10px 0 0;",
+            value: this.preconfiguredFilter,
             enableKeyEvents:true,
             listeners:{
                 "keydown":function (field, key) {
@@ -120,7 +132,7 @@ pimcore.settings.staticroutes = Class.create({
             store:this.store,
             displayInfo:true,
             displayMsg:'{0} - {1} / {2}',
-            emptyMsg:t("no_objects_found")
+            emptyMsg:t("no_items_found")
         });
 
         // add per-page selection
@@ -158,7 +170,17 @@ pimcore.settings.staticroutes = Class.create({
             {header:t("reverse"), width:100, sortable:true, dataIndex:'reverse',
                 editor:new Ext.form.TextField({})},
             {header:t("module_optional"), width:50, sortable:false, dataIndex:'module',
-                editor:new Ext.form.TextField({})},
+                editor:new Ext.form.ComboBox({
+                    store: new Ext.data.JsonStore({
+                        autoDestroy: true,
+                        url: "/admin/misc/get-available-modules",
+                        root: "data",
+                        fields: ["name"]
+                    }),
+                    triggerAction: "all",
+                    displayField: 'name',
+                    valueField: 'name'
+                })},
             {header:t("controller"), width:50, sortable:false, dataIndex:'controller',
                 editor:new Ext.form.ComboBox({
                     store:new Ext.data.JsonStore({
@@ -169,7 +191,16 @@ pimcore.settings.staticroutes = Class.create({
                     }),
                     triggerAction:"all",
                     displayField:'name',
-                    valueField:'name'
+                    valueField:'name',
+                    listeners:{
+                        "focus":function (el) {
+                            el.getStore().reload({
+                                params:{
+                                    moduleName:this.store.data.items[el.gridEditor.row].data.module
+                                }
+                            });
+                        }.bind(this)
+                    }
                 })},
             {header:t("action"), width:50, sortable:false, dataIndex:'action',
                 editor:new Ext.form.ComboBox({
@@ -184,9 +215,9 @@ pimcore.settings.staticroutes = Class.create({
                     valueField:'name',
                     listeners:{
                         "focus":function (el) {
-                            console.log();
                             el.getStore().reload({
                                 params:{
+                                    moduleName:this.store.data.items[el.gridEditor.row].data.module,
                                     controllerName:this.store.data.items[el.gridEditor.row].data.controller
                                 }
                             });
@@ -215,6 +246,28 @@ pimcore.settings.staticroutes = Class.create({
                 mode:"local",
                 triggerAction:"all"
             })},
+            {header: t("creationDate"), sortable: true, dataIndex: 'creationDate', editable: false,
+                hidden: true,
+                renderer: function(d) {
+                    if (d !== undefined) {
+                        var date = new Date(d * 1000);
+                        return date.format("Y-m-d H:i:s");
+                    } else {
+                        return "";
+                    }
+                }
+            },
+            {header: t("modificationDate"), sortable: true, dataIndex: 'modificationDate', editable: false,
+                hidden: true,
+                renderer: function(d) {
+                    if (d !== undefined) {
+                        var date = new Date(d * 1000);
+                        return date.format("Y-m-d H:i:s");
+                    } else {
+                        return "";
+                    }
+                }
+            },
             {
                 xtype:'actioncolumn',
                 width:30,

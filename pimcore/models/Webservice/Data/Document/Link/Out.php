@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    Webservice
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Webservice_Data_Document_Link_Out extends Webservice_Data_Document_Link {
+namespace Pimcore\Model\Webservice\Data\Document\Link;
+
+use Pimcore\Model;
+
+class Out extends Model\Webservice\Data\Document\Link {
 
 
     /**

@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -24,7 +24,7 @@ pimcore.object.helpers.classTree = Class.create({
     },
 
 
-    getClassTree: function(url, id) {
+    getClassTree: function(url, classId, objectId) {
 
         var tree = new Ext.tree.TreePanel({
             title: t('class_definitions'),
@@ -48,7 +48,8 @@ pimcore.object.helpers.classTree = Class.create({
         Ext.Ajax.request({
             url: url, //"/admin/class/get",
             params: {
-                id: id // this.config.classid
+                id: classId, // this.config.classid,
+                oid: objectId
             },
             success: this.initLayoutFields.bind(this, tree)
         });
@@ -118,10 +119,13 @@ pimcore.object.helpers.classTree = Class.create({
         var nodeLabel = t(type);
 
         if (initData) {
-            if (initData.name) {
+            if (initData.title) {
+                nodeLabel = initData.title;
+            } else if (initData.name) {
                 nodeLabel = initData.name;
             }
         }
+
         var newNode = new Ext.tree.TreeNode({
             type: "layout",
             draggable: false,

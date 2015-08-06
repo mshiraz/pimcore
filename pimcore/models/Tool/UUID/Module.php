@@ -9,44 +9,41 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Tool_UUID_Module extends Pimcore_API_Module_Abstract{
+namespace Pimcore\Model\Tool\UUID;
 
-    protected function createUuid($item){
-        Tool_UUID::create($item);
-    }
+use Pimcore\Model\Tool\UUID;
 
-    protected function deleteUuid($item){
-        $uuidObject = Tool_UUID::getByItem($item);
-        if($uuidObject instanceof Tool_UUID){
-            $uuidObject->delete();
+class Module extends \Pimcore\API\Module\AbstractModule {
+
+    /**
+     * @throws \Zend_EventManager_Exception_InvalidArgumentException
+     */
+    public function init() {
+        // attach event-listener
+        foreach (["asset","object","document","object.class"] as $type) {
+            \Pimcore::getEventManager()->attach($type . ".postAdd", array($this, "createUuid"));
+            \Pimcore::getEventManager()->attach($type . ".postDelete", array($this, "deleteUuid"));
         }
     }
 
-    public function postAddObject($object){
-        $this->createUuid($object);
+    /**
+     * @param $e
+     */
+    public function createUuid($e){
+        UUID::create($e->getTarget());
     }
 
-    public function postDeleteObject($object){
-        $this->deleteUuid($object);
-    }
-
-    public function postAddAsset($asset) {
-        $this->createUuid($asset);
-    }
-
-    public function postDeleteAsset($asset) {
-        $this->deleteUuid($asset);
-    }
-
-    public function postAddDocument($document) {
-        $this->createUuid($document);
-    }
-
-    public function postDeleteDocument($document){
-        $this->deleteUuid($document);
+    /**
+     * @param $e
+     */
+    public function deleteUuid($e){
+        $uuidObject = UUID::getByItem($e->getTarget());
+        if($uuidObject instanceof UUID){
+            $uuidObject->delete();
+        }
     }
 }

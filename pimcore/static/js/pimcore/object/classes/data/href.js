@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -140,6 +140,7 @@ pimcore.object.classes.data.href = Class.create(pimcore.object.classes.data.data
                         xtype: "checkbox",
                         fieldLabel: t("lazy_loading"),
                         name: "lazyLoading",
+                        disabled: this.isInCustomLayoutEditor(),
                         checked: this.datax.lazyLoading
                     },
                     {
@@ -163,6 +164,7 @@ pimcore.object.classes.data.href = Class.create(pimcore.object.classes.data.data
                 title: t('document_restrictions'),
                 collapsible: false,
                 autoHeight:true,
+                disabled: this.isInCustomLayoutEditor(),
                 labelWidth: 100,
                 items :[
                     {
@@ -198,6 +200,7 @@ pimcore.object.classes.data.href = Class.create(pimcore.object.classes.data.data
             {
                 xtype:'fieldset',
                 title: t('asset_restrictions'),
+                disabled: this.isInCustomLayoutEditor(),
                 collapsible: false,
                 autoHeight:true,
                 labelWidth: 100,
@@ -269,6 +272,7 @@ pimcore.object.classes.data.href = Class.create(pimcore.object.classes.data.data
             {
                 xtype:'fieldset',
                 title: t('object_restrictions') ,
+                disabled: this.isInCustomLayoutEditor(),
                 collapsible: false,
                 autoHeight:true,
                 labelWidth: 100,
@@ -309,6 +313,28 @@ pimcore.object.classes.data.href = Class.create(pimcore.object.classes.data.data
 
 
         return this.layout;
+    },
+
+    applySpecialData: function(source) {
+        if (source.datax) {
+            if (!this.datax) {
+                this.datax =  {};
+            }
+            Ext.apply(this.datax,
+                {
+                    width: source.datax.width,
+                    assetUploadPath: source.datax.assetUploadPath,
+                    relationType: source.datax.relationType,
+                    remoteOwner: source.datax.remoteOwner,
+                    lazyLoading: source.datax.lazyLoading,
+                    classes: source.datax.classes,
+                    objectsAllowed: source.datax.objectsAllowed,
+                    assetsAllowed: source.datax.assetsAllowed,
+                    assetTypes: source.datax.assetTypes,
+                    documentsAllowed: source.datax.documentsAllowed,
+                    documentTypes: source.datax.documentTypes
+                });
+        }
     }
 
 });

@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -51,6 +51,8 @@ pimcore.object.tags.multihref = Class.create(pimcore.object.tags.abstract, {
     getGridColumnConfig: function(field) {
         return {header: ts(field.label), width: 150, sortable: false, dataIndex: field.key,
                 renderer: function (key, value, metaData, record) {
+                                this.applyPermissionStyle(key, value, metaData, record);
+
                                 if(record.data.inheritedFields[key]
                                                         && record.data.inheritedFields[key].inherited == true) {
                                     metaData.css += " grid_value_inherited";
@@ -105,6 +107,7 @@ pimcore.object.tags.multihref = Class.create(pimcore.object.tags.abstract, {
         if (this.fieldConfig.assetsAllowed) {
             toolbarItems.push({
                 xtype: "button",
+                cls: "pimcore_inline_upload",
                 iconCls: "pimcore_icon_upload_single",
                 handler: this.uploadDialog.bind(this)
             });
@@ -252,7 +255,7 @@ pimcore.object.tags.multihref = Class.create(pimcore.object.tags.abstract, {
 
                             // check for existing element
                             if (!this.elementAlreadyExists(initData.id, initData.type)) {
-                                this.store.add(new this.store.recordType(initData, this.store.getCount() + 1));
+                                this.store.add(new this.store.recordType(initData));
                                 return true;
                             }
                         }
@@ -321,7 +324,7 @@ pimcore.object.tags.multihref = Class.create(pimcore.object.tags.abstract, {
                         path: data["fullpath"],
                         type: "asset",
                         subtype: data["type"]
-                    }, this.store.getCount() + 1));
+                    }));
                 }
             } catch (e) {
                 console.log(e);
@@ -457,7 +460,7 @@ pimcore.object.tags.multihref = Class.create(pimcore.object.tags.abstract, {
                         path: items[i].fullpath,
                         type: items[i].type,
                         subtype: subtype
-                    }, this.store.getCount() + 1));
+                    }));
                 }
             }
         }

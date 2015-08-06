@@ -11,11 +11,20 @@
  *
  * @category   Pimcore
  * @package    Object
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Object_Localizedfield extends Pimcore_Model_Abstract {
+namespace Pimcore\Model\Object;
+
+use Pimcore\Model;
+use Pimcore\Tool; 
+
+class Localizedfield extends Model\AbstractModel {
+
+    const STRICT_DISABLED = 0;
+
+    const STRICT_ENABLED = 1;
 
     private static $getFallbackValues = false;
 
@@ -25,14 +34,19 @@ class Object_Localizedfield extends Pimcore_Model_Abstract {
     public $items = array();
 
     /**
-     * @var Object_Concrete
+     * @var Model\Object\Concrete
      */
     public $object;
 
     /**
-     * @var Object_Class
+     * @var Model\Object\ClassDefinition
      */
     public $class;
+
+    /**
+     * @var bool
+     */
+    private static $strictMode;
 
     /**
      * @param boolean $getFallbackValues
@@ -49,6 +63,23 @@ class Object_Localizedfield extends Pimcore_Model_Abstract {
     {
         return self::$getFallbackValues;
     }
+
+    /**
+     * @return boolean
+     */
+    public static function isStrictMode()
+    {
+        return self::$strictMode;
+    }
+
+    /**
+     * @param boolean $strictMode
+     */
+    public static function setStrictMode($strictMode)
+    {
+        self::$strictMode = $strictMode;
+    }
+
 
     /**
      * @return boolean
@@ -95,10 +126,10 @@ class Object_Localizedfield extends Pimcore_Model_Abstract {
     }
 
     /**
-     * @param Object_Concrete $object
+     * @param Concrete $object
      * @return void
      */
-    public function setObject(Object_Concrete $object)
+    public function setObject(Concrete $object)
     {
         $this->object = $object;
         //$this->setClass($this->getObject()->getClass());
@@ -106,7 +137,7 @@ class Object_Localizedfield extends Pimcore_Model_Abstract {
     }
 
     /**
-     * @return Object_Concrete
+     * @return Concrete
      */
     public function getObject()
     {
@@ -114,17 +145,17 @@ class Object_Localizedfield extends Pimcore_Model_Abstract {
     }
 
     /**
-     * @param Object_Class $class
+     * @param Model\Object\ClassDefinition $class
      * @return void
      */
-    public function setClass(Object_Class $class)
+    public function setClass(ClassDefinition $class)
     {
         $this->class = $class;
         return $this;
     }
 
     /**
-     * @return Object_Class
+     * @return Model\Object\ClassDefinition
      */
     public function getClass()
     {
@@ -135,7 +166,7 @@ class Object_Localizedfield extends Pimcore_Model_Abstract {
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      * @param null $language
      * @return string
      */
@@ -146,13 +177,13 @@ class Object_Localizedfield extends Pimcore_Model_Abstract {
 
         // try to get the language from the registry
         try {
-            $locale = Zend_Registry::get("Zend_Locale");
-            if(Pimcore_Tool::isValidLanguage((string) $locale)) {
+            $locale = \Zend_Registry::get("Zend_Locale");
+            if(Tool::isValidLanguage((string) $locale)) {
                 return (string) $locale;
             }
-            throw new Exception("Not supported language");
-        } catch (Exception $e) {
-            return Pimcore_Tool::getDefaultLanguage();
+            throw new \Exception("Not supported language");
+        } catch (\Exception $e) {
+            return Tool::getDefaultLanguage();
         }
     }
 
@@ -170,6 +201,8 @@ class Object_Localizedfield extends Pimcore_Model_Abstract {
      * @return 
      */
     public function getLocalizedValue ($name, $language = null, $ignoreFallbackLanguage = false) {
+
+        $fieldDefinition = $this->getObject()->getClass()->getFieldDefinition("localizedfields")->getFieldDefinition($name);
         $language = $this->getLanguage($language);
         $data = null;
         if($this->languageExists($language)) {
@@ -180,15 +213,15 @@ class Object_Localizedfield extends Pimcore_Model_Abstract {
 
 
         // check for inherited value
-        $doGetInheritedValues = Object_Abstract::doGetInheritedValues();
-        if(!$data && $doGetInheritedValues) {
+        $doGetInheritedValues = AbstractObject::doGetInheritedValues();
+        if($fieldDefinition->isEmpty($data) && $doGetInheritedValues) {
             $object = $this->getObject();
             $class = $object->getClass();
             $allowInherit = $class->getAllowInherit();
 
             if ($allowInherit) {
 
-                if ($object->getParent() instanceof Object_Abstract) {
+                if ($object->getParent() instanceof AbstractObject) {
                     $parent = $object->getParent();
                     while($parent && $parent->getType() == "folder") {
                         $parent = $parent->getParent();
@@ -199,8 +232,10 @@ class Object_Localizedfield extends Pimcore_Model_Abstract {
                             $method = "getLocalizedfields";
                             if (method_exists($parent, $method)) {
                                 $localizedFields = $parent->getLocalizedFields();
-                                if ($localizedFields instanceof Object_Localizedfield) {
-                                    $data = $localizedFields->getLocalizedValue($name, $language, true);
+                                if ($localizedFields instanceof Localizedfield) {
+                                    if($localizedFields->object->getId() != $this->object->getId()) {
+                                        $data = $localizedFields->getLocalizedValue($name, $language, true);
+                                    }
                                 }
                             }
                         }
@@ -210,8 +245,8 @@ class Object_Localizedfield extends Pimcore_Model_Abstract {
         }
 
         // check for fallback value
-        if(!$data && !$ignoreFallbackLanguage && self::doGetFallbackValues()) {
-            foreach (Pimcore_Tool::getFallbackLanguagesFor($language) as $l) {
+        if($fieldDefinition->isEmpty($data) && !$ignoreFallbackLanguage && self::doGetFallbackValues()) {
+            foreach (Tool::getFallbackLanguagesFor($language) as $l) {
                 if($this->languageExists($l)) {
                     if(array_key_exists($name, $this->items[$l])) {
                         $data = $this->getLocalizedValue($name, $l);
@@ -220,7 +255,6 @@ class Object_Localizedfield extends Pimcore_Model_Abstract {
             }
         }
 
-        $fieldDefinition = $this->getObject()->getClass()->getFieldDefinition("localizedfields")->getFieldDefinition($name);
         if($fieldDefinition && method_exists($fieldDefinition, "preGetData")) {
             $data =  $fieldDefinition->preGetData($this, array(
                 "data" => $data,
@@ -239,7 +273,14 @@ class Object_Localizedfield extends Pimcore_Model_Abstract {
      * @return void
      */
     public function setLocalizedValue ($name, $value, $language = null) {
-        $language = $this->getLanguage($language);
+
+        if (self::$strictMode) {
+            if (!$language || !in_array($language, Tool::getValidLanguages())) {
+                throw new \Exception("Language " . $language . " not accepted in strict mode");
+            }
+        }
+
+        $language  = $this->getLanguage($language);
         if(!$this->languageExists($language)) {
             $this->items[$language] = array();
         }

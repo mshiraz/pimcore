@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    User
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class User_Workspace_Object extends User_Workspace_Abstract {
+namespace Pimcore\Model\User\Workspace;
+
+use Pimcore\Model;
+
+class Object extends AbstractWorkspace {
 
     /**
      * @var bool
@@ -27,8 +31,25 @@ class User_Workspace_Object extends User_Workspace_Abstract {
      */
     public $unpublish = false;
 
+
     /**
-     * @param boolean $save
+     * @var string
+     */
+    public $lEdit = null;
+
+    /**
+     * @var string
+     */
+    public $lView = null;
+
+    /**
+     * @var string
+     */
+    public $layouts = null;
+
+    /**
+     * @param $save
+     * @return $this
      */
     public function setSave($save)
     {
@@ -45,7 +66,8 @@ class User_Workspace_Object extends User_Workspace_Abstract {
     }
 
     /**
-     * @param boolean $unpublish
+     * @param $unpublish
+     * @return $this
      */
     public function setUnpublish($unpublish)
     {
@@ -59,5 +81,53 @@ class User_Workspace_Object extends User_Workspace_Abstract {
     public function getUnpublish()
     {
         return $this->unpublish;
+    }
+
+    /**
+     * @param string $lEdit
+     */
+    public function setLEdit($lEdit)
+    {
+        $this->lEdit = $lEdit;
+    }
+
+    /**
+     * @return string
+     */
+    public function getLEdit()
+    {
+        return $this->lEdit;
+    }
+
+    /**
+     * @param string $lView
+     */
+    public function setLView($lView)
+    {
+        $this->lView = $lView;
+    }
+
+    /**
+     * @return string
+     */
+    public function getLView()
+    {
+        return $this->lView;
+    }
+
+    /**
+     * @param string $layouts
+     */
+    public function setLayouts($layouts)
+    {
+        $this->layouts = $layouts;
+    }
+
+    /**
+     * @return string
+     */
+    public function getLayouts()
+    {
+        return $this->layouts;
     }
 }

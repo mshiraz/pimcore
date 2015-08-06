@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -75,13 +75,15 @@ pimcore.object.classes.data.objects = Class.create(pimcore.object.classes.data.d
                 xtype: "spinnerfield",
                 fieldLabel: t("maximum_items"),
                 name: "maxItems",
-                value: this.datax.maxItems
+                value: this.datax.maxItems,
+                disabled: this.isInCustomLayoutEditor()
             },
             {
                 xtype: "checkbox",
                 fieldLabel: t("lazy_loading"),
                 name: "lazyLoading",
-                checked: this.datax.lazyLoading
+                checked: this.datax.lazyLoading,
+                disabled: this.isInCustomLayoutEditor()
             },
             {
                 xtype: "displayfield",
@@ -130,10 +132,29 @@ pimcore.object.classes.data.objects = Class.create(pimcore.object.classes.data.d
             displayField: "text",
             valueField: "text",
             store: classesStore,
-            width: 300
+            width: 300,
+            disabled: this.isInCustomLayoutEditor()
         }));
 
         return this.layout;
+    },
+
+    applySpecialData: function(source) {
+        if (source.datax) {
+            if (!this.datax) {
+                this.datax =  {};
+            }
+            Ext.apply(this.datax,
+                {
+                    width: source.datax.width,
+                    height: source.datax.height,
+                    maxItems: source.datax.maxItems,
+                    relationType: source.datax.relationType,
+                    remoteOwner: source.datax.remoteOwner,
+                    lazyLoading: source.datax.lazyLoading,
+                    classes: source.datax.classes
+                });
+        }
     }
 
 });

@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -17,12 +17,11 @@ pimcore.document.link = Class.create(pimcore.document.document, {
 
     initialize: function(id) {
 
+        this.id = intval(id);
         this.setType("link");
+        this.addLoadingPanel();
 
         pimcore.plugin.broker.fireEvent("preOpenDocument", this, "link");
-
-        this.addLoadingPanel();
-        this.id = intval(id);
         this.getData();
     },
 

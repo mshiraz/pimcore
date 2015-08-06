@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    User
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class User_UserRole extends User_Abstract {
+namespace Pimcore\Model\User;
+
+use Pimcore\Model;
+
+class UserRole extends AbstractUser {
 
     /**
      * @var array
@@ -37,6 +41,15 @@ class User_UserRole extends User_Abstract {
      */
     public $workspacesDocument = array();
 
+    /**
+     * @var array
+     */
+    public $classes = array();
+
+    /**
+     * @var array
+     */
+    public $docTypes = array();
 
     /**
      *
@@ -67,8 +80,9 @@ class User_UserRole extends User_Abstract {
     }
 
     /**
-     * @param string $permissionName
-     * @param bool $value
+     * @param $permissionName
+     * @param null $value
+     * @return $this
      */
     public function setPermission($permissionName, $value = null) {
 
@@ -89,9 +103,8 @@ class User_UserRole extends User_Abstract {
     }
 
     /**
-     *
-     * @param String $permissionName
-     * @return User_Permission $userPermission
+     * @param $permissionName
+     * @return bool
      */
     public function getPermission($permissionName) {
 
@@ -110,7 +123,7 @@ class User_UserRole extends User_Abstract {
     public function generatePermissionList() {
         $permissionInfo = null;
 
-        $list = new User_Permission_Definition_List();
+        $list = new Permission\Definition\Listing();
         $definitions = $list->load();
 
         foreach ($definitions as $definition) {
@@ -121,7 +134,8 @@ class User_UserRole extends User_Abstract {
     }
 
     /**
-     * @param array $permissions
+     * @param $permissions
+     * @return $this
      */
     public function setPermissions($permissions)
     {
@@ -134,7 +148,8 @@ class User_UserRole extends User_Abstract {
     }
 
     /**
-     * @param array $workspacesAsset
+     * @param $workspacesAsset
+     * @return $this
      */
     public function setWorkspacesAsset($workspacesAsset)
     {
@@ -151,7 +166,8 @@ class User_UserRole extends User_Abstract {
     }
 
     /**
-     * @param array $workspacesDocument
+     * @param $workspacesDocument
+     * @return $this
      */
     public function setWorkspacesDocument($workspacesDocument)
     {
@@ -168,7 +184,8 @@ class User_UserRole extends User_Abstract {
     }
 
     /**
-     * @param array $workspacesObject
+     * @param $workspacesObject
+     * @return $this
      */
     public function setWorkspacesObject($workspacesObject)
     {
@@ -182,5 +199,56 @@ class User_UserRole extends User_Abstract {
     public function getWorkspacesObject()
     {
         return $this->workspacesObject;
+    }
+
+    /**
+     * @param array $classes
+     */
+    public function setClasses($classes)
+    {
+        if (!\Pimcore\Tool\Admin::isExtJS5()) {
+            if (strlen($classes)) {
+                $classes = explode(",", $classes);
+            }
+        }
+
+        if(empty($classes)) {
+            $classes = array();
+        }
+        $this->classes = $classes;
+    }
+
+    /**
+     * @return array
+     */
+    public function getClasses()
+    {
+        return $this->classes;
+    }
+
+    /**
+     * @param array $docTypes
+     */
+    public function setDocTypes($docTypes)
+    {
+        if (!\Pimcore\Tool\Admin::isExtJS5()) {
+            if (strlen($docTypes)) {
+                $docTypes = explode(",", $docTypes);
+            }
+        }
+
+        if(empty($docTypes)) {
+            $docTypes = array();
+        }
+
+        $this->docTypes = $docTypes;
+    }
+
+    /**
+     * @return array
+     */
+    public function getDocTypes()
+    {
+        return $this->docTypes;
     }
 }

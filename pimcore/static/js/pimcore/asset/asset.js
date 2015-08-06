@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -53,50 +53,6 @@ pimcore.asset.asset = Class.create(pimcore.element.abstract, {
         } catch (e) {
             console.log(e);
         }
-    },
-
-    addLoadingPanel : function () {
-
-        // DEPRECATED loadingpanel not active
-        return;
-
-// commented this out as JSLINT would complain
-//        window.setTimeout(this.checkLoadingStatus.bind(this), 5000);
-//
-//        this.tabPanel = Ext.getCmp("pimcore_panel_tabs");
-//
-//        this.loadingPanel = new Ext.Panel({
-//            title: t("loading"),
-//            closable:false,
-//            html: "",
-//            iconCls: "pimcore_icon_loading"
-//        });
-//
-//        this.tabPanel.add(this.loadingPanel);
-    },
-
-    removeLoadingPanel: function () {
-
-        pimcore.helpers.removeTreeNodeLoadingIndicator("asset", this.id);
-
-        // DEPRECIATED loadingpanel not active
-        return;
-// commented this out, otherwise JSLint would complain
-//        if (this.loadingPanel) {
-//            this.tabPanel.remove(this.loadingPanel);
-//        }
-//        this.loadingPanel = null;
-    },
-
-    checkLoadingStatus: function () {
-
-        // DEPRECIATED loadingpanel not active
-        return;
-// // commented this out, otherwise JSLint would complain
-//        if (this.loadingPanel) {
-//            // loadingpanel is active close the whole asset
-//            pimcore.helpers.closeAsset(this.id);
-//        }
     },
 
     addTab: function () {
@@ -233,15 +189,14 @@ pimcore.asset.asset = Class.create(pimcore.element.abstract, {
                 handler: this.selectInTree.bind(this)
             });
 
-            var user = pimcore.globalmanager.get("user");
-            if (user.admin) {
-                buttons.push({
-                    text: t("show_metainfo"),
-                    scale: "medium",
-                    iconCls: "pimcore_icon_info_large",
-                    handler: this.showMetaInfo.bind(this)
-                });
-            }
+
+            buttons.push({
+                text: t("show_metainfo"),
+                scale: "medium",
+                iconCls: "pimcore_icon_info_large",
+                handler: this.showMetaInfo.bind(this)
+            });
+
 
             buttons.push("-");
 
@@ -255,7 +210,7 @@ pimcore.asset.asset = Class.create(pimcore.element.abstract, {
             });
 
             // only for videos and images
-            if (this.isAllowed("publish") && in_array(this.data.type,["image","video"])) {
+            if (this.isAllowed("publish") && in_array(this.data.type,["image","video","document"])) {
                 buttons.push({
                     text: t("clear_thumbnails"),
                     iconCls: "pimcore_icon_menu_clear_thumbnails",
@@ -274,7 +229,7 @@ pimcore.asset.asset = Class.create(pimcore.element.abstract, {
             buttons.push("-");
             buttons.push({
                 xtype: 'tbtext',
-                text: this.data.id,
+                text: t("id") + " " + this.data.id,
                 scale: "medium"
             });
 
@@ -315,6 +270,14 @@ pimcore.asset.asset = Class.create(pimcore.element.abstract, {
         }
 
 
+        // meta-data
+        try {
+            parameters.metadata = Ext.encode(this.metadata.getValues());
+        }
+        catch (e2) {
+            //console.log(e);
+        }
+
         // properties
         try {
             parameters.properties = Ext.encode(this.properties.getValues());
@@ -337,7 +300,13 @@ pimcore.asset.asset = Class.create(pimcore.element.abstract, {
         return parameters;
     },
 
-    save : function (only) {
+    save : function (only, callback) {
+
+        if(this.tab.disabled) {
+            return;
+        }
+
+        this.tab.disable();
         Ext.Ajax.request({
             url: '/admin/asset/save/',
             method: "post",
@@ -355,20 +324,30 @@ pimcore.asset.asset = Class.create(pimcore.element.abstract, {
                     pimcore.helpers.showNotification(t("error"), t("error_saving_asset"), "error");
                 }
                 // reload versions
-                if (this.versions) {
-                    if (typeof this.versions.reload == "function") {
+                if (this.isAllowed("versions")) {
+                    if (this["versions"] && typeof this.versions.reload == "function") {
                         this.versions.reload();
                     }
                 }
+
+                this.tab.enable();
+
+                if(typeof callback == "function") {
+                    callback();
+                }
             }.bind(this),
+            failure: function () {
+                this.tab.enable();
+            },
             params: this.getSaveData(only)
         });
     },
 
     saveClose: function(){
-        this.save();
-        var tabPanel = Ext.getCmp("pimcore_panel_tabs");
-        tabPanel.remove(this.tab);
+        this.save(null, function () {
+            var tabPanel = Ext.getCmp("pimcore_panel_tabs");
+            tabPanel.remove(this.tab);
+        }.bind(this));
     },
 
     remove: function () {
@@ -407,32 +386,42 @@ pimcore.asset.asset = Class.create(pimcore.element.abstract, {
 
     showMetaInfo: function() {
 
-        new pimcore.element.metainfo([{
-            name: "path",
-            value: this.data.path + this.data.filename
-        }, {
-            name: "type",
-            value: this.data.type
-        }, {
-            name: "mimetype",
-            value: this.data.mimetype
-        }, {
-            name: "modificationdate",
-            type: "date",
-            value: this.data.modificationDate
-        }, {
-            name: "creationdate",
-            type: "date",
-            value: this.data.creationDate
-        }, {
-            name: "usermodification",
-            type: "user",
-            value: this.data.userModification
-        }, {
-            name: "userowner",
-            type: "user",
-            value: this.data.userOwner
-        }], "asset");
+        new pimcore.element.metainfo([
+            {
+                name: "id",
+                value: this.data.id
+            },
+            {
+                name: "path",
+                value: this.data.path + this.data.filename
+            }, {
+                name: "type",
+                value: this.data.type
+            }, {
+                name: "mimetype",
+                value: this.data.mimetype
+            }, {
+                name: "modificationdate",
+                type: "date",
+                value: this.data.modificationDate
+            }, {
+                name: "creationdate",
+                type: "date",
+                value: this.data.creationDate
+            }, {
+                name: "usermodification",
+                type: "user",
+                value: this.data.userModification
+            }, {
+                name: "userowner",
+                type: "user",
+                value: this.data.userOwner
+            },
+            {
+                name: "deeplink",
+                value: window.location.protocol + "//" + window.location.hostname + "/admin/login/deeplink?asset_" + this.data.id + "_" + this.data.type
+            }
+        ], "asset");
     }
 
 });

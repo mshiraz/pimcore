@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    Document
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Document_DocType extends Pimcore_Model_Abstract {
+namespace Pimcore\Model\Document;
+
+use Pimcore\Model;
+
+class DocType extends Model\AbstractModel {
 
     /**
      * ID of the document-type
@@ -69,12 +73,21 @@ class Document_DocType extends Pimcore_Model_Abstract {
      */
     public $priority = 0;
 
+    /**
+     * @var integer
+     */
+    public $creationDate;
 
     /**
-     * Static helper to retrieve an instance of Document_DocType by the given ID
+     * @var integer
+     */
+    public $modificationDate;
+
+    /**
+     * Static helper to retrieve an instance of Document\DocType by the given ID
      *
      * @param integer $id
-     * @return Document_DocType
+     * @return DocType
      */
     public static function getById($id) {
 
@@ -93,7 +106,7 @@ class Document_DocType extends Pimcore_Model_Abstract {
     /**
      * Shortcut to quickly create a new instance
      *
-     * @return Document_DocType
+     * @return DocType
      */
     public static function create() {
         $type = new self();
@@ -216,7 +229,8 @@ class Document_DocType extends Pimcore_Model_Abstract {
     }
 
     /**
-     * @param string $module
+     * @param $module
+     * @return $this
      */
     public function setModule($module)
     {
@@ -230,5 +244,41 @@ class Document_DocType extends Pimcore_Model_Abstract {
     public function getModule()
     {
         return $this->module;
+    }
+
+    /**
+     * @param $modificationDate
+     * @return $this
+     */
+    public function setModificationDate($modificationDate)
+    {
+        $this->modificationDate = (int) $modificationDate;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getModificationDate()
+    {
+        return $this->modificationDate;
+    }
+
+    /**
+     * @param $creationDate
+     * @return $this
+     */
+    public function setCreationDate($creationDate)
+    {
+        $this->creationDate = (int) $creationDate;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getCreationDate()
+    {
+        return $this->creationDate;
     }
 }

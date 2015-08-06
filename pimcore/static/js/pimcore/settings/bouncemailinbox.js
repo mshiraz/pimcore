@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -56,7 +56,7 @@ pimcore.settings.bouncemailinbox = Class.create({
     getGrid: function () {
 
         this.store = new Ext.data.JsonStore({
-            url: '/admin/misc/bounce-mail-inbox-list',
+            url: '/admin/email/bounce-mail-inbox-list',
             restful: false,
             root: "data",
             remoteSort: true,
@@ -91,7 +91,7 @@ pimcore.settings.bouncemailinbox = Class.create({
             store: this.store,
             displayInfo: true,
             displayMsg: '{0} - {1} / {2}',
-            emptyMsg: t("no_objects_found")
+            emptyMsg: t("no_items_found")
         });
 
         // add per-page selection
@@ -156,7 +156,7 @@ pimcore.settings.bouncemailinbox = Class.create({
             height: 430,
             modal: true,
             bodyStyle: "background:#fff;",
-            html: '<iframe src="/admin/misc/bounce-mail-inbox-detail?id=' + id
+            html: '<iframe src="/admin/email/bounce-mail-inbox-detail?id=' + id
                                     + '" frameborder="0" width="100%" height="390"></iframe>'
         });
         win.show();

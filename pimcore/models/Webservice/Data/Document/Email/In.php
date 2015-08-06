@@ -11,10 +11,14 @@
  *
  * @category   Pimcore
  * @package    Webservice
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Webservice_Data_Document_Email_In extends Webservice_Data_Document_Snippet_In {
+namespace Pimcore\Model\Webservice\Data\Document\Email;
+
+use Pimcore\Model;
+
+class In extends Model\Webservice\Data\Document\Snippet\Out {
 
 }

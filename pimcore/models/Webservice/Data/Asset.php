@@ -11,11 +11,16 @@
  *
  * @category   Pimcore
  * @package    Webservice
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Webservice_Data_Asset extends Webservice_Data {
+namespace Pimcore\Model\Webservice\Data;
+
+use Pimcore\Model;
+use Pimcore\Model\Webservice;
+
+class Asset extends Model\Webservice\Data {
 
     /**
      * @var integer
@@ -68,7 +73,7 @@ class Webservice_Data_Asset extends Webservice_Data {
     public $userModification;
 
     /**
-     * @var Webservice_Data_Property[]
+     * @var Webservice\Data\Property[]
      */
     public $properties;
 
@@ -78,8 +83,19 @@ class Webservice_Data_Asset extends Webservice_Data {
     public $customSettings;
 
 
-    public function map($object) {
-        parent::map($object);
+    /**
+     * @var
+     */
+    public $metadata;
+
+
+
+    /**
+     * @param $object
+     * @param null $options
+     */
+    public function map($object, $options = null) {
+        parent::map($object, $options);
 
         $settings = $object->getCustomSettings();
         if (!empty($settings)) {
@@ -91,7 +107,7 @@ class Webservice_Data_Asset extends Webservice_Data {
             if ($object->hasChilds()) {
                 $this->childs = array();
                 foreach ($object->getChilds() as $child) {
-                    $item = new Webservice_Data_Asset_List_Item();
+                    $item = new Webservice\Data\Asset\Listing\Item();
                     $item->id = $child->getId();
                     $item->type = $child->getType();
 
@@ -100,5 +116,22 @@ class Webservice_Data_Asset extends Webservice_Data {
             }
         }
 
+        $this->metadata = $object->getMetadata();
+    }
+
+    /**
+     * @param $object
+     * @param bool $disableMappingExceptions
+     * @param null $idMapper
+     * @throws \Exception
+     */
+    public function reverseMap($object, $disableMappingExceptions = false, $idMapper = null) {
+        parent::reverseMap($object, $disableMappingExceptions, $idMapper);
+
+        $metadata = $this->metadata;
+        if (is_array($metadata)) {
+            $metadata = json_decode(json_encode($metadata), true);
+            $object->metadata = $metadata;
+        }
     }
 }

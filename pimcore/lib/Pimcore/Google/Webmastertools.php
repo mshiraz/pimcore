@@ -9,28 +9,43 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Pimcore_Google_Webmastertools {
-    
+namespace Pimcore\Google;
+
+use Pimcore\Config;
+use Pimcore\Model\Site;
+
+class Webmastertools {
+
+    /**
+     * @var array
+     */
     public static $stack = array();
-    
+
+    /**
+     * @param Site $site
+     * @return bool
+     */
     public static function isConfigured (Site $site = null) {
         if(self::getSiteConfig($site)) {
             return true;
         }
         return false;
     }
-    
 
+    /**
+     * @param null $site
+     * @return bool
+     */
     public static function getSiteConfig ($site = null) {
         
-        $siteKey = Pimcore_Tool_Frontend::getSiteKey($site);
+        $siteKey = \Pimcore\Tool\Frontend::getSiteKey($site);
         
-        if(Pimcore_Config::getReportConfig()->webmastertools->sites->$siteKey->verification) {
-            return Pimcore_Config::getReportConfig()->webmastertools->sites->$siteKey;
+        if(Config::getReportConfig()->webmastertools->sites->$siteKey->verification) {
+            return Config::getReportConfig()->webmastertools->sites->$siteKey;
         }
         return false;
     }

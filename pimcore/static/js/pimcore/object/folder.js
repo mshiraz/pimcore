@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -19,10 +19,10 @@ pimcore.object.folder = Class.create(pimcore.object.abstract, {
 
     initialize: function(id) {
 
-        pimcore.plugin.broker.fireEvent("preOpenObject", this, "folder");
-
-        this.addLoadingPanel();
         this.id = intval(id);
+        this.addLoadingPanel();
+
+        pimcore.plugin.broker.fireEvent("preOpenObject", this, "folder");
         this.getData();
     },
 
@@ -167,7 +167,7 @@ pimcore.object.folder = Class.create(pimcore.object.abstract, {
                 buttons.push(this.toolbarButtons.publish);
             }
 
-            if(this.isAllowed("delete") && !this.data.general.o_locked) {
+            if(this.isAllowed("delete") && !this.data.general.o_locked && this.data.general.o_id != 1) {
                 buttons.push(this.toolbarButtons.remove);
             }
 
@@ -188,15 +188,14 @@ pimcore.object.folder = Class.create(pimcore.object.abstract, {
                 handler: this.selectInTree.bind(this, "folder")
             });
 
-            var user = pimcore.globalmanager.get("user");
-            if (user.admin) {
-                buttons.push({
-                    text: t("show_metainfo"),
-                    scale: "medium",
-                    iconCls: "pimcore_icon_info_large",
-                    handler: this.showMetaInfo.bind(this)
-                });
-            }
+
+            buttons.push({
+                text: t("show_metainfo"),
+                scale: "medium",
+                iconCls: "pimcore_icon_info_large",
+                handler: this.showMetaInfo.bind(this)
+            });
+
 
             buttons.push("-");
             buttons.push({
@@ -262,7 +261,14 @@ pimcore.object.folder = Class.create(pimcore.object.abstract, {
 
 
         try {
-            data.general = Ext.encode(this.data.general);
+            data.general = Ext.apply({}, this.data.general);
+            // object shouldn't be relocated, renamed, or anything else that is evil
+            delete data.general["o_parentId"];
+            delete data.general["o_type"];
+            delete data.general["o_key"];
+            delete data.general["o_locked"];
+
+            data.general = Ext.encode(data.general);
         }
         catch (e2) {
             //console.log(e2);
@@ -278,6 +284,12 @@ pimcore.object.folder = Class.create(pimcore.object.abstract, {
     },
 
     save : function (task) {
+
+        if(this.tab.disabled) {
+            return;
+        }
+
+        this.tab.disable();
 
         Ext.Ajax.request({
             url: '/admin/object/save-folder/task/' + task,
@@ -297,7 +309,12 @@ pimcore.object.folder = Class.create(pimcore.object.abstract, {
                 } catch(e){
                     pimcore.helpers.showNotification(t("error"), t("error_saving_object"), "error");
                 }
-            }.bind(this)
+
+                this.tab.enable();
+            }.bind(this),
+            failure: function () {
+                this.tab.enable();
+            }
         });
 
     },
@@ -321,7 +338,12 @@ pimcore.object.folder = Class.create(pimcore.object.abstract, {
 
     showMetaInfo: function() {
 
-        new pimcore.element.metainfo([{
+        new pimcore.element.metainfo([
+        {
+            name: "id",
+            value: this.data.general.o_id
+        },
+        {
             name: "path",
             value: this.data.general.fullpath
         }, {
@@ -337,10 +359,15 @@ pimcore.object.folder = Class.create(pimcore.object.abstract, {
             type: "user",
             value: this.data.general.o_userModification
         }, {
-            name: " userowner",
+            name: "userowner",
             type: "user",
             value: this.data.general.o_userOwner
-        }], "folder");
+        },
+        {
+            name: "deeplink",
+            value: window.location.protocol + "//" + window.location.hostname + "/admin/login/deeplink?object_" + this.data.general.o_id + "_folder"
+        }
+        ], "folder");
     }
 
 });

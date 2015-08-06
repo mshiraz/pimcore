@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -101,18 +101,6 @@ pimcore.document.page_snippet = Class.create(pimcore.document.document, {
         this.removeFromSession();
     },
 
-    maskFrames: function () {
-        if (this.edit) {
-            this.edit.maskFrames();
-        }
-    },
-
-    unmaskFrames: function () {
-        if (this.edit) {
-            this.edit.unmaskFrames();
-        }
-    },
-
     getLayoutToolbar : function () {
 
         if (!this.toolbar) {
@@ -125,10 +113,10 @@ pimcore.document.page_snippet = Class.create(pimcore.document.document, {
                 scale: "medium",
                 handler: this.unpublish.bind(this),
                 menu: [{
-                        text: t('save_close'),
-                        iconCls: "pimcore_icon_save",
-                        handler: this.unpublishClose.bind(this)
-                    }]
+                    text: t('save_close'),
+                    iconCls: "pimcore_icon_save",
+                    handler: this.unpublishClose.bind(this)
+                }]
             });
 
 
@@ -233,7 +221,7 @@ pimcore.document.page_snippet = Class.create(pimcore.document.document, {
                 buttons.push(this.toolbarButtons.unpublish);
             }
 
-            if(this.isAllowed("delete") && !this.data.locked) {
+            if(this.isAllowed("delete") && !this.data.locked && this.data.id != 1) {
                 buttons.push(this.toolbarButtons.remove);
             }
 
@@ -248,15 +236,13 @@ pimcore.document.page_snippet = Class.create(pimcore.document.document, {
                 handler: this.selectInTree.bind(this)
             });
 
-            var user = pimcore.globalmanager.get("user");
-            if (user.admin) {
-                buttons.push({
-                    text: t("show_metainfo"),
-                    scale: "medium",
-                    iconCls: "pimcore_icon_info_large",
-                    handler: this.showMetaInfo.bind(this)
-                });
-            }
+            buttons.push({
+                text: t("show_metainfo"),
+                scale: "medium",
+                iconCls: "pimcore_icon_info_large",
+                handler: this.showMetaInfo.bind(this)
+            });
+
 
 
             if(typeof this.toolbarButtons.extras != "undefined") {
@@ -267,7 +253,7 @@ pimcore.document.page_snippet = Class.create(pimcore.document.document, {
 
             buttons.push("-");
             buttons.push({
-                text: this.data.path + this.data.key,
+                text: t("open"),
                 iconCls: "pimcore_icon_cursor_medium",
                 scale: "medium",
                 handler: function () {
@@ -295,7 +281,7 @@ pimcore.document.page_snippet = Class.create(pimcore.document.document, {
             this.newerVersionNotification = new Ext.Toolbar.TextItem({
                 xtype: 'tbtext',
                 text: '&nbsp;&nbsp;<img src="/pimcore/static/img/icon/error.png" align="absbottom" />&nbsp;&nbsp;'
-                                                                        + t("this_is_a_newer_not_published_version"),
+                    + t("this_is_a_newer_not_published_version"),
                 scale: "medium",
                 hidden: true
             });
@@ -304,7 +290,7 @@ pimcore.document.page_snippet = Class.create(pimcore.document.document, {
 
             // check for newer version than the published
             if (this.data.versions.length > 0) {
-                if (this.data.modificationDate != this.data.versions[0].date) {
+                if (this.data.modificationDate < this.data.versions[0].date) {
                     this.newerVersionNotification.show();
                 }
             }
@@ -360,41 +346,51 @@ pimcore.document.page_snippet = Class.create(pimcore.document.document, {
             if (this.edit && this.edit.layout.rendered) {
                 this.edit.reload(true);
             }
-            
+
             if (this.preview && this.preview.layout.rendered) {
                 this.preview.loadCurrentPreview();
             }
-        
+
         }.bind(this));
     },
 
     showMetaInfo: function() {
 
-        new pimcore.element.metainfo([{
-            name: "path",
-            value: this.data.path + this.data.key
-        }, {
-            name: "parentid",
-            value: this.data.parentId
-        }, {
-            name: "type",
-            value: this.data.type
-        }, {
-            name: "modificationdate",
-            type: "date",
-            value: this.data.modificationDate
-        }, {
-            name: "creationdate",
-            type: "date",
-            value: this.data.creationDate
-        }, {
-            name: "usermodification",
-            type: "user",
-            value: this.data.userModification
-        }, {
-            name: "userowner",
-            type: "user",
-            value: this.data.userOwner
-        }], "document");
+        new pimcore.element.metainfo([
+            {
+                name: "id",
+                value: this.data.id
+            },
+            {
+                name: "path",
+                value: this.data.path + this.data.key
+            }, {
+                name: "parentid",
+                value: this.data.parentId
+            }, {
+                name: "type",
+                value: this.data.type
+            }, {
+                name: "modificationdate",
+                type: "date",
+                value: this.data.modificationDate
+            }, {
+                name: "creationdate",
+                type: "date",
+                value: this.data.creationDate
+            }, {
+                name: "usermodification",
+                type: "user",
+                value: this.data.userModification
+            }, {
+                name: "userowner",
+                type: "user",
+                value: this.data.userOwner
+            },
+            {
+                name: "deeplink",
+                value: window.location.protocol + "//" + window.location.hostname + "/admin/login/deeplink?document_" + this.data.id + "_" + this.data.type
+            }
+        ], "document");
     }
 });

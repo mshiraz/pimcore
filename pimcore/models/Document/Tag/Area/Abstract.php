@@ -11,24 +11,28 @@
  *
  * @category   Pimcore
  * @package    Document
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-abstract class Document_Tag_Area_Abstract {
+namespace Pimcore\Model\Document\Tag\Area;
+
+use Pimcore\Model;
+
+abstract class AbstractArea {
 
     /**
-     * @var Zend_View
+     * @var \Zend_View
      */
     protected $view;
 
     /**
-     * @var Zend_Config
+     * @var \Zend_Config
      */
     protected $config;
 
     /**
-     * @var Document_Tag_Area_Info
+     * @var Info
      */
     protected $brick;
 
@@ -47,7 +51,7 @@ abstract class Document_Tag_Area_Abstract {
     }
 
     /**
-     * @return Zend_View
+     * @return \Zend_View
      */
     public function getView() {
         return $this->view;
@@ -63,7 +67,7 @@ abstract class Document_Tag_Area_Abstract {
     }
 
     /**
-     * @return Zend_Config
+     * @return \Zend_Config
      */
     public function getConfig() {
         return $this->config;
@@ -123,7 +127,8 @@ abstract class Document_Tag_Area_Abstract {
     }
 
     /**
-     * @param \Document_Tag_Area_Info $brick
+     * @param Info $brick
+     * @return $this
      */
     public function setBrick($brick)
     {
@@ -132,7 +137,7 @@ abstract class Document_Tag_Area_Abstract {
     }
 
     /**
-     * @return \Document_Tag_Area_Info
+     * @return Info
      */
     public function getBrick()
     {

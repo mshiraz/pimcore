@@ -11,11 +11,17 @@
  *
  * @category   Pimcore
  * @package    Asset
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Asset_WebDAV_File extends Sabre_DAV_File {
+namespace Pimcore\Model\Asset\WebDAV;
+
+use Sabre\DAV;
+use Pimcore\Tool\Admin as AdminTool;
+use Pimcore\Model\Asset;
+
+class File extends DAV\File {
 
     /**
      * @var Asset
@@ -23,12 +29,10 @@ class Asset_WebDAV_File extends Sabre_DAV_File {
     private $asset;
 
     /**
-     * @param Asset $asset
-     * @return void
+     * @param $asset
      */
     function __construct($asset) {
         $this->asset = $asset;
-        //$this->asset->loadData();
     }
 
     /**
@@ -40,48 +44,51 @@ class Asset_WebDAV_File extends Sabre_DAV_File {
 
     /**
      * @param string $name
-     * @return string
+     * @return $this|void
+     * @throws DAV\Exception\Forbidden
+     * @throws \Exception
      */
     function setName($name) {
 
         if($this->asset->isAllowed("rename")) {
-            $user = Pimcore_Tool_Admin::getCurrentUser();
+            $user = AdminTool::getCurrentUser();
             $this->asset->setUserModification($user->getId());
 
-            $this->asset->setFilename(Pimcore_File::getValidFilename($name));
+            $this->asset->setFilename(\Pimcore\File::getValidFilename($name));
             $this->asset->save();
         } else {
-            throw new Sabre_DAV_Exception_Forbidden();
+            throw new DAV\Exception\Forbidden();
         }
 
         return $this;
     }
 
     /**
-     * @return void
+     * @throws DAV\Exception\Forbidden
+     * @throws \Exception
      */
     function delete() {
 
         if($this->asset->isAllowed("delete")) {
-            Asset_Service::loadAllFields($this->asset);
+            Asset\Service::loadAllFields($this->asset);
             $this->asset->delete();
 
             // add the asset to the delete history, this is used so come over problems with programs like photoshop (delete, create instead of replace => move)
-            // for details see Asset_WebDAV_Tree::move()
-            $log = Asset_WebDAV_Service::getDeleteLog();
+            // for details see Asset\WebDAV\Tree::move()
+            $log = Asset\WebDAV\Service::getDeleteLog();
 
             $this->asset->_fulldump = true;
             $log[$this->asset->getFullpath()] = array(
                 "id" => $this->asset->getId(),
                 "timestamp" => time(),
-                "data" => Pimcore_Tool_Serialize::serialize($this->asset)
+                "data" => \Pimcore\Tool\Serialize::serialize($this->asset)
             );
 
             unset($this->asset->_fulldump);
 
-            Asset_WebDAV_Service::saveDeleteLog($log);
+            Asset\WebDAV\Service::saveDeleteLog($log);
         } else {
-            throw new Sabre_DAV_Exception_Forbidden();
+            throw new DAV\Exception\Forbidden();
         }
     }
 
@@ -93,37 +100,40 @@ class Asset_WebDAV_File extends Sabre_DAV_File {
     }
 
     /**
-     * Update data of the asset
-     *
-     * @param mixed $data
-     * @return void
+     * @param resource $data
+     * @throws DAV\Exception\Forbidden
+     * @throws \Exception
      */
     function put($data) {
 
         if($this->asset->isAllowed("publish")) {
             // read from resource -> default for SabreDAV
-            $data = stream_get_contents($data);
+            $tmpFile = PIMCORE_SYSTEM_TEMP_DIRECTORY . "/asset-dav-tmp-file-" . uniqid();
+            file_put_contents($tmpFile, $data);
+            $file = fopen($tmpFile, "r+");
 
-            $user = Pimcore_Tool_Admin::getCurrentUser();
+            $user = AdminTool::getCurrentUser();
             $this->asset->setUserModification($user->getId());
 
-            $this->asset->setData($data);
+            $this->asset->setStream($file);
             $this->asset->save();
+
+            fclose($file);
+            unlink($tmpFile);
         } else {
-            throw new Sabre_DAV_Exception_Forbidden();
+            throw new DAV\Exception\Forbidden();
         }
     }
 
     /**
-     * get a file-handle of the file
-     *
-     * @return mixed
+     * @return mixed|void
+     * @throws DAV\Exception\Forbidden
      */
     function get() {
         if($this->asset->isAllowed("view")) {
             return fopen($this->asset->getFileSystemPath(), "r");
         } else {
-            throw new Sabre_DAV_Exception_Forbidden();
+            throw new DAV\Exception\Forbidden();
         }
     }
 

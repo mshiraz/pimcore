@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -79,7 +79,9 @@ pimcore.settings.redirects = Class.create({
                     var d = new Date(intval(v) * 1000);
                     return d;
                 }
-            } ,allowBlank: true}
+            } ,allowBlank: true},
+            {name: 'creationDate', allowBlank: true},
+            {name: 'modificationDate', allowBlank: true}
         ]);
         var writer = new Ext.data.JsonWriter();
 
@@ -240,6 +242,28 @@ pimcore.settings.redirects = Class.create({
                     return d.format("Y-m-d");
                 }
             }},
+            {header: t("creationDate"), sortable: true, dataIndex: 'creationDate', editable: false,
+                hidden: true,
+                renderer: function(d) {
+                    if (d !== undefined) {
+                        var date = new Date(d * 1000);
+                        return date.format("Y-m-d H:i:s");
+                    } else {
+                        return "";
+                    }
+                }
+            },
+            {header: t("modificationDate"), sortable: true, dataIndex: 'modificationDate', editable: false,
+                hidden: true,
+                renderer: function(d) {
+                    if (d !== undefined) {
+                        var date = new Date(d * 1000);
+                        return date.format("Y-m-d H:i:s");
+                    } else {
+                        return "";
+                    }
+                }
+            },
             {
                 xtype: 'actioncolumn',
                 width: 30,

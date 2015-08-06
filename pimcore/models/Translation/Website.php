@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    Translation
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Translation_Website extends Translation_Abstract
+namespace Pimcore\Model\Translation;
+
+use Pimcore\Model;
+
+class Website extends AbstractTranslation
 {
 
 }

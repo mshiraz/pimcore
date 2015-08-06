@@ -8,261 +8,414 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
 pimcore.registerNS("pimcore.settings.website");
 pimcore.settings.website = Class.create({
 
-    initialize: function () {
+    initialize:function () {
 
-        this.getLayout();
+        this.getTabPanel();
     },
 
-    activate: function () {
+
+    activate:function () {
         var tabPanel = Ext.getCmp("pimcore_panel_tabs");
         tabPanel.activate("pimcore_website_settings");
     },
-    
-    getLayout: function () {
 
-        if (this.layout == null) {
 
-            var propertyTypes = new Ext.data.SimpleStore({
-                fields: ['id', 'name'],
-                data: [
-                    ["text", "Text"],
-                    ["document", "Document"],
-                    ["asset", "Asset"],
-                    ["object", "Object"],
-                    ["bool", "Checkbox"]
-                ]
-            });
-            
-            
-            var customPropertySet = new Ext.form.FormPanel({
-                title: t('add_setting'),
-                collapsible: true,
-                autoHeight:true,
-                layout: "pimcoreform",
-                defaultType: 'textfield',
-                bodyStyle:'padding:10px;',
-                items :[
-                    {
-                        fieldLabel: t('key'),
-                        name: 'key'
-                    },
-                    {
-                        fieldLabel: t('type'),
-                        name: "type",
-                        xtype: "combo",
-                        valueField: "id",
-                        displayField:'name',
-                        store: propertyTypes,
-                        editable: false,
-                        triggerAction: 'all',
-                        mode: "local",
-                        listWidth: 200
-                    }
-                ]
+    getTabPanel:function () {
+
+        if (!this.panel) {
+            this.panel = new Ext.Panel({
+                id:"pimcore_website_settings",
+                title: t('website_settings'),
+                iconCls: "pimcore_icon_website",
+                border:false,
+                layout:"fit",
+                closable:true,
+                items:[this.getRowEditor()]
             });
 
-            customPropertySet.addButton({
-                text: t('add'),
-                iconCls: "pimcore_icon_add",
-                listeners: {
-                    "click": this.addSetFromUserDefined.bind(this, customPropertySet)
+            var tabPanel = Ext.getCmp("pimcore_panel_tabs");
+            tabPanel.add(this.panel);
+            tabPanel.activate("pimcore_website_settings");
+
+            this.panel.on("destroy", function () {
+                pimcore.globalmanager.remove("settings_website");
+            }.bind(this));
+
+            pimcore.layout.refresh();
+        }
+
+        return this.panel;
+    },
+
+    getRowEditor:function () {
+
+        var proxy = new Ext.data.HttpProxy({
+            url:'/admin/settings/website-settings'
+        });
+        var reader = new Ext.data.JsonReader({
+            totalProperty:'total',
+            successProperty:'success',
+            root:'data'
+        },
+            ["id", 'name','type',{name: "data", type: "string", convert: function (v, rec) {
+                return v;
+            }},
+            {name: 'siteId', allowBlank: true},
+            {name: 'creationDate', allowBlank: true},
+            {name: 'modificationDate', allowBlank: true}
+
+            ]
+        );
+        var writer = new Ext.data.JsonWriter();
+
+
+        var itemsPerPage = 20;
+
+        this.store = new Ext.data.Store({
+            id:'settings_website_store',
+            restful:false,
+            proxy:proxy,
+            reader:reader,
+            writer:writer,
+            remoteSort:true,
+            baseParams:{
+                limit:itemsPerPage,
+                filter:""
+            },
+            listeners:{
+                write:function (store, action, result, response, rs) {
                 }
-            });
-            
-            
+            }
+        });
+        this.store.load();
 
-            // prepare store data
-            var property = null;
-            var key = null;
 
-            var store = new Ext.data.Store({
-                autoDestroy: true,
-                url: "/admin/settings/website-load",
-                reader: new Ext.data.JsonReader({
-                    root: 'settings',
-                    fields: ['name', 'type', 'siteId', {name: "data", type: "string", convert: function (v, rec) {
-                        if (rec.type == "document" || rec.type == "asset" || rec.type == "object") {
-                            var type = rec.type;
-                            if (type == "document") {
-                                if (v && typeof v == "object") {
-                                    return v.path + v.key;
-                                }
-                            }
-                            else if (type == "asset") {
-                                if (v && typeof v == "object") {
-                                    return v.path + v.filename;
-                                }
-                            }
-                            else if (type == "object") {
-                                if (v && typeof v == "object") {
-                                    return v.o_path + v.o_key;
-                                }
-                            }
-                        }
-
-                        return v;
-                    }}
-                    ]
-                })
-            });
-            
-            store.load();
-
-            this.settingsGrid = new Ext.grid.EditorGridPanel({
-                autoScroll: true,
-                region: "center",
-                reference: this,
-                trackMouseOver: true,
-                store: store,
-                clicksToEdit: 1,
-                viewConfig: {
-                    listeners: {
-                        rowupdated: this.updateRows.bind(this, "rowupdated"),
-                        refresh: this.updateRows.bind(this, "refresh")
+        this.filterField = new Ext.form.TextField({
+            xtype:"textfield",
+            width:200,
+            style:"margin: 0 10px 0 0;",
+            enableKeyEvents:true,
+            listeners:{
+                "keydown":function (field, key) {
+                    if (key.getKey() == key.ENTER) {
+                        var input = field;
+                        this.store.baseParams.filter = input.getValue();
+                        this.store.load();
                     }
-                },
-                autoExpandColumn: "property_value_col",
-                columnLines: true,
-                stripeRows: true,
-                columns: [
-                    {
-                        header: t("type"),
-                        dataIndex: 'type',
-                        editable: false,
-                        width: 40,
-                        renderer: this.getTypeRenderer.bind(this),
-                        sortable: true
-                    },
-                    {
-                        header: t("name"),
-                        dataIndex: 'name',
-                        editor: new Ext.form.TextField({
-                            allowBlank: false
-                        }),
-                        sortable: true
-                    },
-                    {
-                        id: "property_value_col",
-                        header: t("value"),
-                        dataIndex: 'data',
-                        getCellEditor: this.getCellEditor.bind(this),
-                        editable: true,
-                        renderer: this.getCellRenderer.bind(this),
-                        listeners: {
-                            "mousedown": this.cellMousedown.bind(this)
-                        }
-                    },
-                    {header: t("site"), width: 200, sortable:true, dataIndex: "siteId", editor: new Ext.form.ComboBox({
+                }.bind(this)
+            }
+        });
+
+        this.pagingtoolbar = new Ext.PagingToolbar({
+            pageSize:itemsPerPage,
+            store:this.store,
+            displayInfo:true,
+            displayMsg:'{0} - {1} / {2}',
+            emptyMsg:t("no_objects_found")
+        });
+
+        // add per-page selection
+        this.pagingtoolbar.add("-");
+
+        this.pagingtoolbar.add(new Ext.Toolbar.TextItem({
+            text:t("items_per_page")
+        }));
+        this.pagingtoolbar.add(new Ext.form.ComboBox({
+            store:[
+                [10, "10"],
+                [20, "20"],
+                [40, "40"],
+                [60, "60"],
+                [80, "80"],
+                [100, "100"]
+            ],
+            mode:"local",
+            width:50,
+            value:20,
+            triggerAction:"all",
+            listeners:{
+                select:function (box, rec, index) {
+                    this.pagingtoolbar.pageSize = intval(rec.data.field1);
+                    this.pagingtoolbar.moveFirst();
+                }.bind(this)
+            }
+        }));
+
+        var typesColumns = [
+            {
+                header: t("type"),
+                dataIndex: 'type',
+                editable: false,
+                width: 40,
+                renderer: this.getTypeRenderer.bind(this),
+                sortable: true
+            },
+            {
+                header: t("name"),
+                dataIndex: 'name',
+                editor: new Ext.form.TextField({
+                    allowBlank: false
+                }),
+                sortable: true
+            },
+            {
+                id: "property_value_col",
+                header: t("value"),
+                dataIndex: 'data',
+                getCellEditor: this.getCellEditor.bind(this),
+                editable: true,
+                renderer: this.getCellRenderer.bind(this),
+                listeners: {
+                    "mousedown": this.cellMousedown.bind(this)
+                }
+            },
+            {header: t("site"), width: 200, sortable:true, dataIndex: "siteId",
+                editor: new Ext.form.ComboBox({
                         store: pimcore.globalmanager.get("sites"),
                         valueField: "id",
                         displayField: "domain",
                         triggerAction: "all"
-                    }), renderer: function (siteId) {
-                        var store = pimcore.globalmanager.get("sites");
-                        var pos = store.findExact("id", siteId);
-                        if(pos >= 0) {
-                            return store.getAt(pos).get("domain");
-                        }
-                    }}
+                }),
+                renderer: function (siteId) {
+                    var store = pimcore.globalmanager.get("sites");
+                    var pos = store.findExact("id", siteId);
+                    if(pos >= 0) {
+                        var val = store.getAt(pos).get("domain");
+                        return val;
+                    }
+                }
+            }
+            ,
+            {header: t("creationDate"), sortable: true, dataIndex: 'creationDate', editable: false,
+                hidden: true,
+                renderer: function(d) {
+                    if (d !== undefined) {
+                        var date = new Date(d * 1000);
+                        return date.format("Y-m-d H:i:s");
+                    } else {
+                        return "";
+                    }
+                }
+            }
+            ,
+            {header: t("modificationDate"), sortable: true, dataIndex: 'modificationDate', editable: false,
+                hidden: true,
+                renderer: function(d) {
+                    if (d !== undefined) {
+                        var date = new Date(d * 1000);
+                        return date.format("Y-m-d H:i:s");
+                    } else {
+                        return "";
+                    }
+                }
+            }
+            ,
+            {
+                xtype:'actioncolumn',
+                width:30,
+                items:[
+                    {
+                        tooltip:t('empty'),
+                        icon: "/pimcore/static/img/icon/bin_empty.png",
+                        handler:function (grid, rowIndex) {
+                            grid.getStore().getAt(rowIndex).set("data","");
+                        }.bind(this)
+                    }
                 ]
-            });
-
-            store.on("update", this.updateRows.bind(this));
-            this.settingsGrid.on("viewready", this.updateRows.bind(this));
-            this.settingsGrid.on("afterrender", function() {
-                this.setAutoScroll(true);
-            });
-            this.settingsGrid.on("beforeedit", function (e) {
-                if (e.grid.getStore().getAt(e.row).data.inherited) {
-                    return false;
-                }
-                return true;
-            });
-            this.settingsGrid.on("rowcontextmenu", function (grid, rowIndex, event) {
-
-                if (grid.getStore().getAt(rowIndex).data.inherited) {
-                    event.stopEvent();
-                    return;
-                }
-                
-                $(grid.getView().getRow(rowIndex)).animate( { backgroundColor: '#E0EAEE' }, 100)
-                                                                    .animate( { backgroundColor: '#fff' }, 400);
-
-                var menu = new Ext.menu.Menu();
-
-                menu.add(new Ext.menu.Item({
-                    text: t('empty'),
-                    iconCls: "pimcore_icon_flush_recyclebin",
-                    handler: function (grid, index) {
-                        grid.getStore().getAt(index).set("data","");
-                    }.bind(this, grid, rowIndex)
-                }));
-
-                menu.add(new Ext.menu.Item({
-                    text: t('delete'),
-                    iconCls: "pimcore_icon_delete",
-                    handler: function (grid, index) {
-                        grid.getStore().removeAt(index);
-                    }.bind(this, grid, rowIndex)
-                }));
-
-                event.stopEvent();
-                menu.showAt(event.getXY());
-            }.bind(this));
-
-            this.eastLayout = new Ext.Panel({
-                region: "east",
-                width: 400,
-                autoScroll: true,
-                bodyStyle:'padding:10px;'
-            });
-
-            this.layout = new Ext.Panel({
-                title: t('website_settings'),
-                border: false,
-                id: "pimcore_website_settings",
-                iconCls: "pimcore_icon_website",
-                layout: "border",
-                closable:true,
-                items: [this.eastLayout, this.settingsGrid],
-                buttons: [{
-                    text: t("save"),
-                    handler: this.save.bind(this),
-                    iconCls: "pimcore_icon_apply"
-                }]
-            });
-
-            this.layout.on("activate", function (customPropertySet) {
-                if (customPropertySet.rendered != true) {
-                    this.eastLayout.add(customPropertySet);
-                    this.eastLayout.doLayout();
-                }
-            }.bind(this, customPropertySet));
-            
-            var tabPanel = Ext.getCmp("pimcore_panel_tabs");
-            tabPanel.add(this.layout);
-            tabPanel.activate("pimcore_website_settings");
+            }
+            ,
+            {
+                xtype:'actioncolumn',
+                width:30,
+                items:[
+                    {
+                        tooltip:t('delete'),
+                        icon:"/pimcore/static/img/icon/cross.png",
+                        handler:function (grid, rowIndex) {
+                            grid.getStore().removeAt(rowIndex);
+                        }.bind(this)
+                    }
+                ]
+            }
+        ];
 
 
-            this.layout.on("destroy", function () {
-                pimcore.globalmanager.remove("settings_website");
-            }.bind(this));
-        }
 
-        return this.layout;
+        var propertyTypes = new Ext.data.SimpleStore({
+            fields: ['id', 'name'],
+            data: [
+                ["text", "Text"],
+                ["document", "Document"],
+                ["asset", "Asset"],
+                ["object", "Object"],
+                ["bool", "Checkbox"]
+            ]
+        });
+
+        this.customKeyField = new Ext.form.TextField({
+            name: 'key',
+            emptyText: t('key')
+        });
+
+        var customType = new Ext.form.ComboBox({
+            fieldLabel: t('type'),
+            name: "type",
+            valueField: "id",
+            displayField:'name',
+            store: propertyTypes,
+            editable: false,
+            triggerAction: 'all',
+            mode: "local",
+            listWidth: 200,
+            emptyText: t('type')
+        });
+
+        this.grid = new Ext.grid.EditorGridPanel({
+            frame:false,
+            autoScroll:true,
+            store:this.store,
+            columnLines:true,
+            trackMouseOver:true,
+            stripeRows:true,
+            columns:typesColumns,
+            clicksToEdit: 1,
+            sm:new Ext.grid.RowSelectionModel({singleSelect:true}),
+            bbar:this.pagingtoolbar,
+            tbar:[
+                {
+                    xtype: "tbtext",
+                    text: t('add_setting') + " "
+                },
+                this.customKeyField, customType,
+                {
+                    xtype: "button",
+                    handler: this.addSetFromUserDefined.bind(this, this.customKeyField, customType),
+                    iconCls: "pimcore_icon_add"
+                },
+                '->',
+                {
+                    text:t("filter") + "/" + t("search"),
+                    xtype:"tbtext",
+                    style:"margin: 0 10px 0 0;"
+                },
+                this.filterField
+            ]
+            ,
+            viewConfig: {
+                listeners: {
+                    rowupdated: this.updateRows.bind(this, "rowupdated"),
+                    refresh: this.updateRows.bind(this, "refresh")
+                },
+                forceFit:true
+            }
+        });
+
+        this.store.on("update", this.updateRows.bind(this));
+        this.grid.on("viewready", this.updateRows.bind(this));
+        this.grid.on("afterrender", function() {
+            this.setAutoScroll(true);
+        });
+
+        return this.grid;
     },
 
     getTypeRenderer: function (value, metaData, record, rowIndex, colIndex, store) {
 
         return '<div style="background: url(/pimcore/static/img/icon/' + value + '.png) center center no-repeat; '
-                                + 'height: 16px;" name="' + record.data.name + '">&nbsp;</div>';
+            + 'height: 16px;" data-id="' + record.get("id") + '">&nbsp;</div>';
+    },
+
+    getCellEditor: function (rowIndex) {
+
+        var store = this.grid.getStore();
+        var data = store.getAt(rowIndex).data;
+        var value = data.all;
+
+        var type = data.type;
+        var property;
+
+        if (type == "text") {
+            property = new Ext.form.TextField();
+        }
+        else if (type == "document" || type == "asset" || type == "object") {
+
+            property = new Ext.form.TextField({
+                disabled: true,
+                grid: this.grid,
+                myRowIndex: rowIndex,
+                style: {
+                    visibility: "hidden"
+                }
+            });
+        }
+
+        else if (type == "bool") {
+            property = new Ext.form.Checkbox();
+            return;
+        }
+
+        else if (type == "select") {
+            var config = data.config;
+            property = new Ext.form.ComboBox({
+                triggerAction: 'all',
+                editable: false,
+                store: config.split(",")
+            });
+        }
+
+        return new Ext.grid.GridEditor(property);
+    },
+
+    updateRows: function (event) {
+        var rows = Ext.get(this.grid.getEl().dom).query(".x-grid3-row");
+
+        for (var i = 0; i < rows.length; i++) {
+            try {
+                var propertyName = Ext.get(rows[i]).query(".x-grid3-cell-first div div")[0].getAttribute("data-id");
+                var storeIndex = this.grid.getStore().find("id", propertyName);
+
+                var data = this.grid.getStore().getAt(storeIndex).data;
+
+                if (data.type == "document" || data.type == "asset" || data.type == "object") {
+
+                    // add dnd support
+                    var dd = new Ext.dd.DropZone(rows[i], {
+                        ddGroup: "element",
+
+                        getTargetFromEvent: function(e) {
+                            return this.getEl();
+                        },
+
+                        onNodeOver : function(elementType, target, dd, e, data) {
+                            if (data.node.attributes.elementType != elementType) {
+                                return false;
+                            }
+
+                            return Ext.dd.DropZone.prototype.dropAllowed;
+                        }.bind(this, data.type),
+
+                        onNodeDrop : function(myRowIndex, target, dd, e, data) {
+                            var rec = this.grid.getStore().getAt(myRowIndex);
+                            rec.set("data", data.node.attributes.path);
+
+                            this.updateRows();
+
+                            return true;
+                        }.bind(this, storeIndex)
+                    });
+                }
+            }
+            catch (e) {
+                console.log(e);
+            }
+        }
     },
 
     getCellRenderer: function (value, metaData, record, rowIndex, colIndex, store) {
@@ -275,8 +428,8 @@ pimcore.settings.website = Class.create({
         } else if (type == "bool") {
             metaData.css += ' x-grid3-check-col-td';
             return String.format(
-                    '<div class="x-grid3-check-col{0}" style="background-position:10px center;">&#160;</div>',
-                    value ? '-on' : '');
+                '<div class="x-grid3-check-col{0}" style="background-position:10px center;">&#160;</div>',
+                value ? '-on' : '');
         }
 
         return value;
@@ -296,102 +449,22 @@ pimcore.settings.website = Class.create({
         }
     },
 
-    getCellEditor: function (rowIndex) {
-
-        var store = this.settingsGrid.getStore();
-        var data = store.getAt(rowIndex).data;
-        var value = data.all;
-
-        var type = data.type;
-        var property;
-
-        if (type == "text") {
-            property = new Ext.form.TextField();
+    addSetFromUserDefined: function (customKey, customType) {
+        if(in_array(customKey.getValue(), this.disallowedKeys)) {
+            Ext.MessageBox.alert(t("error"), t("name_is_not_allowed"));
         }
-        else if (type == "document" || type == "asset" || type == "object") {
-
-            property = new Ext.form.TextField({
-                disabled: true,
-                settingsGrid: this.settingsGrid,
-                myRowIndex: rowIndex,
-                style: {
-                    visibility: "hidden"
-                }
-            });
-        }
-
-        else if (type == "bool") {
-            property = new Ext.form.Checkbox();
-            return;
-        }
-        else if (type == "select") {
-            var config = data.config;
-            property = new Ext.form.ComboBox({
-                triggerAction: 'all',
-                editable: false,
-                store: config.split(",")
-            });
-        }
-
-        return new Ext.grid.GridEditor(property);
+        this.add(customKey.getValue(), customType.getValue(), false, false, false, true);
+        this.customKeyField.setValue(null);
     },
 
-    updateRows: function (event) {
-        var rows = Ext.get(this.settingsGrid.getEl().dom).query(".x-grid3-row");
-
-        for (var i = 0; i < rows.length; i++) {
-            try {
-                var propertyName = Ext.get(rows[i]).query(".x-grid3-cell-first div div")[0].getAttribute("name");
-                var storeIndex = this.settingsGrid.getStore().find("name", propertyName);
-
-                var data = this.settingsGrid.getStore().getAt(storeIndex).data;
-
-                if (data.type == "document" || data.type == "asset" || data.type == "object") {
-                    
-                    // add dnd support 
-                    var dd = new Ext.dd.DropZone(rows[i], {
-                        ddGroup: "element",
-
-                        getTargetFromEvent: function(e) {
-                            return this.getEl();
-                        },
-
-                        onNodeOver : function(target, dd, e, data) {
-                            return Ext.dd.DropZone.prototype.dropAllowed;
-                        },
-
-                        onNodeDrop : function(myRowIndex, target, dd, e, data) {
-                            var rec = this.settingsGrid.getStore().getAt(myRowIndex);
-                            rec.set("data", data.node.attributes.path);
-
-                            this.updateRows();
-
-                            return true;
-                        }.bind(this, storeIndex)
-                    });
-                }
-            }
-            catch (e) {
-                console.log(e);
-            }
-        }
-    },
-
-    addSetFromUserDefined: function (fieldset) {
-        var form = fieldset.getForm();
-        var selectedType = form.findField("type").getValue();
-        var key = form.findField("key").getValue();
-
-        this.add(key, selectedType, false, false, false, true);
-    },
 
     add: function (key, type, value, config, inherited, inheritable) {
 
-        var store = this.settingsGrid.getStore();
+        var store = this.grid.getStore();
 
         // check for duplicate name
         var dublicateIndex = store.findBy(function (key, record, id) {
-            if (record.data.name.toLowerCase() == key.toLowerCase()) {
+            if (record.get("name").toLowerCase() == key.toLowerCase()) {
                 return true;
             }
             return false;
@@ -436,52 +509,7 @@ pimcore.settings.website = Class.create({
         });
 
         store.add(newRecord);
-        this.settingsGrid.getView().refresh();
-    },
-
-    save : function () {
-
-        var values = {};
-        var store = this.settingsGrid.getStore();
-        store.commitChanges();
-
-        var records = store.getRange();
-
-        for (var i = 0; i < records.length; i++) {
-            var currentData = records[i];
-            if (currentData) {
-                if (!currentData.data.inherited) {
-                    values[currentData.data.name] = {
-                        data: currentData.data.data,
-                        type: currentData.data.type,
-                        siteId : typeof(currentData.data.siteId) != 'undefined' ? currentData.data.siteId
-                                        : '' //empty string because we want to have the siteId tag in the xml file
-                    };
-                }
-            }
-        }
-
-        var data = Ext.encode(values);
-        
-        Ext.Ajax.request({
-            url: "/admin/settings/website-save",
-            method: "post",
-            params: {
-                data: data
-            },
-            success: function (response) {
-                try{
-                    var res = Ext.decode(response.responseText);
-                    if (res.success) {
-                        pimcore.helpers.showNotification(t("success"), t("settings_save_success"), "success");
-                    } else {
-                        pimcore.helpers.showNotification(t("error"), t("settings_save_error"), "error",t(res.message));
-                    }
-                } catch(e){
-                    pimcore.helpers.showNotification(t("error"), t("settings_save_error"), "error");    
-                }
-            }
-        });
+        this.grid.getView().refresh();
     }
 
 });

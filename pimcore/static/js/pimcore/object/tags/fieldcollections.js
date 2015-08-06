@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -36,6 +36,8 @@ pimcore.object.tags.fieldcollections = Class.create(pimcore.object.tags.abstract
     getGridColumnConfig: function(field) {
         return {header: ts(field.label), width: 150, sortable: false, dataIndex: field.key,
                 renderer: function (key, value, metaData, record) {
+                    this.applyPermissionStyle(key, value, metaData, record);
+
                     return t("not_supported");
                 }.bind(this, field.key)};
     },
@@ -73,7 +75,9 @@ pimcore.object.tags.fieldcollections = Class.create(pimcore.object.tags.abstract
         
         var panelConf = {
             autoHeight: true,
-            cls: "object_field"
+            cls: "object_field",
+            collapsible: this.fieldConfig.collapsible,
+            collapsed: this.fieldConfig.collapsed
         };
         if(this.fieldConfig.title) {
             panelConf.title = this.fieldConfig.title;
@@ -119,12 +123,14 @@ pimcore.object.tags.fieldcollections = Class.create(pimcore.object.tags.abstract
         
         if(collectionMenu.length == 1) {
             items.push({
+                disabled: this.fieldConfig.disallowAddRemove,
                 cls: "pimcore_block_button_plus",
                 iconCls: "pimcore_icon_plus",
                 handler: collectionMenu[0].handler
             });
         } else if (collectionMenu.length > 1) {
             items.push({
+                disabled: this.fieldConfig.disallowAddRemove,
                 cls: "pimcore_block_button_plus",
                 iconCls: "pimcore_icon_plus",
                 menu: collectionMenu
@@ -140,6 +146,7 @@ pimcore.object.tags.fieldcollections = Class.create(pimcore.object.tags.abstract
         
         if(blockElement) {
             items.push({
+                disabled: this.fieldConfig.disallowAddRemove,
                 cls: "pimcore_block_button_minus",
                 iconCls: "pimcore_icon_minus",
                 listeners: {
@@ -148,6 +155,7 @@ pimcore.object.tags.fieldcollections = Class.create(pimcore.object.tags.abstract
             });
             
             items.push({
+                disabled: this.fieldConfig.disallowReorder,
                 cls: "pimcore_block_button_up",
                 iconCls: "pimcore_icon_up",
                 listeners: {
@@ -156,6 +164,7 @@ pimcore.object.tags.fieldcollections = Class.create(pimcore.object.tags.abstract
             });
             
             items.push({
+                disabled: this.fieldConfig.disallowReorder,
                 cls: "pimcore_block_button_down",
                 iconCls: "pimcore_icon_down",
                 listeners: {
@@ -221,7 +230,7 @@ pimcore.object.tags.fieldcollections = Class.create(pimcore.object.tags.abstract
             index = this.detectBlockIndex(blockElement);
         }
         
-        this.addBlockElement(index, type);
+        this.addBlockElement(index + 1, type);
     },
     
     removeBlock: function (blockElement) {
@@ -344,11 +353,12 @@ pimcore.object.tags.fieldcollections = Class.create(pimcore.object.tags.abstract
         this.currentData = {};
     },
 
-    getDataForField: function (name) {
+    getDataForField: function (fieldConfig) {
+        var name = fieldConfig.name;
         return this.currentData[name];
     },
 
-    getMetaDataForField: function(name) {
+    getMetaDataForField: function(fieldConfig) {
         return null;
     },
 
@@ -356,10 +366,6 @@ pimcore.object.tags.fieldcollections = Class.create(pimcore.object.tags.abstract
         this.dataFields.push(field);
     },
 
-    addFieldsToMask: function (field) {
-        this.object.edit.fieldsToMask.push(field);
-    },
-    
     getLayoutShow: function () {
 
         this.component = this.getLayoutEdit();

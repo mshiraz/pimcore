@@ -11,10 +11,14 @@
  *
  * @category   Pimcore
  * @package    User
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class User_Workspace_Asset extends User_Workspace_Abstract {
+namespace Pimcore\Model\User\Workspace;
+
+use Pimcore\Model;
+
+class Asset extends AbstractWorkspace {
 
 }

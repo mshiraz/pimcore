@@ -1,8 +1,7 @@
-
 <?php $this->template("/includes/content-headline.php"); ?>
 
 
-<?php echo $this->areablock("content"); ?>
+<?= $this->areablock("content"); ?>
 
 <?php
     // this is just used for demonstration
@@ -10,7 +9,7 @@
 ?>
 
 <h2>
-    <?php echo $this->translate("Original Dimensions of the Image"); ?>:
+    <?= $this->translate("Original Dimensions of the Image"); ?>:
     <?php
         echo $image->getWidth() . "x" . $image->getHeight();
     ?>
@@ -18,7 +17,7 @@
 
 <section class="thumbnail-examples">
     <?php
-        $thumbnails = array(
+        $thumbnails = [
             "Cover" => "exampleCover",
             "Contain" => "exampleContain",
             "Frame" => "exampleFrame",
@@ -33,7 +32,7 @@
             "Mask" => "exampleMask",
             "Combined 1" => "exampleCombined1",
             "Combined 2" => "exampleCombined2",
-        );
+        ];
     ?>
 
     <?php
@@ -45,11 +44,11 @@
                     $thumbnail = $image->getThumbnail($name);
                 ?>
                 <div class="img-container">
-                    <img src="<?php echo $thumbnail; ?>">
+                    <?= $thumbnail->getHTML() ?>
                 </div>
-                <h3><?php echo $this->translate($title); ?></h3>
+                <h3><?= $this->translate($title); ?></h3>
                 <div>
-                    <?php echo $this->translate("Dimensions"); ?>:
+                    <?= $this->translate("Dimensions"); ?>:
                     <?php
                         echo $thumbnail->getWidth() . "x" . $thumbnail->getHeight()
                     ?>
@@ -61,4 +60,4 @@
 
 
 
-<?php echo $this->areablock("content_bottom"); ?>
+<?= $this->areablock("content_bottom"); ?>

@@ -11,11 +11,18 @@
  *
  * @category   Pimcore
  * @package    Asset
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Asset_WebDAV_Folder extends Sabre_DAV_Directory {
+namespace Pimcore\Model\Asset\WebDAV;
+
+use Sabre\DAV;
+use Pimcore\File; 
+use Pimcore\Tool\Admin as AdminTool;
+use Pimcore\Model\Asset;
+
+class Folder extends DAV\Collection {
 
     /**
      * @var Asset
@@ -23,8 +30,7 @@ class Asset_WebDAV_Folder extends Sabre_DAV_Directory {
     private $asset;
 
     /**
-     * @param Asset $asset
-     * @return void
+     * @param $asset
      */
     function __construct($asset) {
         $this->asset = $asset;
@@ -47,8 +53,8 @@ class Asset_WebDAV_Folder extends Sabre_DAV_Directory {
                             $children[] = $child;
                         }
                     }
-                    catch (Exception $e) {
-                        Logger::warning($e);
+                    catch (\Exception $e) {
+                        \Logger::warning($e);
                     }
                 }
             }
@@ -57,15 +63,14 @@ class Asset_WebDAV_Folder extends Sabre_DAV_Directory {
     }
 
     /**
-     * Returns a children by the filename
-     *
-     * @param string $asset
-     * @return array
+     * @param string $name
+     * @return DAV\INode|void
+     * @throws DAV\Exception\NotFound
      */
     function getChild($name) {
         
         $nameParts = explode("/",$name);
-        $name = Pimcore_File::getValidFilename($nameParts[count($nameParts)-1]);
+        $name = File::getValidFilename($nameParts[count($nameParts)-1]);
         
         //$name = implode("/",$nameParts);
         
@@ -76,7 +81,7 @@ class Asset_WebDAV_Folder extends Sabre_DAV_Directory {
             }
 
             if (!$asset = Asset::getByPath($parentPath . "/" . $name)) {
-                throw new Sabre_DAV_Exception_NotFound('File not found: ' . $name);
+                throw new DAV\Exception\NotFound('File not found: ' . $name);
             }
         }
         else if ($name instanceof Asset) {
@@ -85,13 +90,13 @@ class Asset_WebDAV_Folder extends Sabre_DAV_Directory {
 
         if ($asset instanceof Asset) {
             if ($asset->getType() == "folder") {
-                return new Asset_WebDAV_Folder($asset);
+                return new Asset\WebDAV\Folder($asset);
             }
             else {
-                return new Asset_WebDAV_File($asset);
+                return new Asset\WebDAV\File($asset);
             }
         }
-        throw new Sabre_DAV_Exception_NotFound('File not found: ' . $name);
+        throw new DAV\Exception\NotFound('File not found: ' . $name);
     }
 
     /**
@@ -102,71 +107,76 @@ class Asset_WebDAV_Folder extends Sabre_DAV_Directory {
     }
 
     /**
-     * creates a new file in current directory
-     *
      * @param string $name
-     * @param mixed $data
-     * @return string
+     * @param null $data
+     * @return null|string|void
+     * @throws DAV\Exception\Forbidden
      */
     function createFile($name, $data = null) {
 
-        $data = stream_get_contents($data);
-        $user = Pimcore_Tool_Admin::getCurrentUser();
+        $tmpFile = PIMCORE_SYSTEM_TEMP_DIRECTORY . "/asset-dav-tmp-file-" . uniqid();
+        file_put_contents($tmpFile, $data);
+
+        $user = AdminTool::getCurrentUser();
 
         if($this->asset->isAllowed("create")) {
             $asset = Asset::create($this->asset->getId(), array(
-                "filename" => Pimcore_File::getValidFilename($name),
-                "data" => $data,
+                "filename" => File::getValidFilename($name),
+                "sourcePath" => $tmpFile,
                 "userModification" => $user->getId(),
                 "userOwner" => $user->getId()
             ));
+
+            unlink($tmpFile);
         } else {
-            throw new Sabre_DAV_Exception_Forbidden();
+            throw new DAV\Exception\Forbidden();
         }
     }
 
     /**
-     * creates a new folder in current directory
-     *
      * @param string $name
-     * @return string
+     * @throws DAV\Exception\Forbidden
      */
     function createDirectory($name) {
-        $user = Pimcore_Tool_Admin::getCurrentUser();
+        $user = AdminTool::getCurrentUser();
 
         if($this->asset->isAllowed("create")) {
             $asset = Asset::create($this->asset->getId(), array(
-                "filename" => Pimcore_File::getValidFilename($name),
+                "filename" => File::getValidFilename($name),
                 "type" => "folder",
                 "userModification" => $user->getId(),
                 "userOwner" => $user->getId()
             ));
         } else {
-            throw new Sabre_DAV_Exception_Forbidden();
+            throw new DAV\Exception\Forbidden();
         }
     }
 
     /**
-     * @return void
+     * @throws DAV\Exception\Forbidden
+     * @throws \Exception
      */
     function delete() {
         if($this->asset->isAllowed("delete")) {
             $this->asset->delete();
         } else {
-            throw new Sabre_DAV_Exception_Forbidden();
+            throw new DAV\Exception\Forbidden();
         }
     }
 
     /**
-     * @return void
+     * @param string $name
+     * @return $this|void
+     * @throws DAV\Exception\Forbidden
+     * @throws \Exception
      */
     function setName($name) {
 
         if($this->asset->isAllowed("rename")) {
-            $this->asset->setFilename(Pimcore_File::getValidFilename($name));
+            $this->asset->setFilename(File::getValidFilename($name));
             $this->asset->save();
         } else {
-            throw new Sabre_DAV_Exception_Forbidden();
+            throw new DAV\Exception\Forbidden();
         }
 
         return $this;

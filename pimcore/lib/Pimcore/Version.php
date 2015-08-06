@@ -9,39 +9,37 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Pimcore_Version {
+namespace Pimcore;
 
-    public static $version = "2.0";
+class Version {
 
-    public static $revision = 2975;
+    /**
+     * @var string
+     */
+    public static $version = "3.0.6";
 
-    public static $svnInfo = array (
-  'Path' => 'trunk',
-  'URL' => 'http',
-  'Repository Root' => 'http',
-  'Repository UUID' => '1f8fe7d8-47f0-464c-8d0a-336f4953ab05',
-  'Revision' => '3919',
-  'Node Kind' => 'directory',
-  'Last Changed Author' => 'brusch',
-  'Last Changed Rev' => '3919',
-  'Last Changed Date' => '2013-11-07 13',
-);
+    /**
+     * @var int
+     */
+    public static $revision = 3528;
 
+
+    /**
+     * @return string
+     */
     public static function getVersion() {
         return self::$version;
     }
 
+    /**
+     * @return int
+     */
     public static function getRevision()
     {
         return self::$revision;
-    }
-
-    public static function getSvnInfo()
-    {
-        return self::$svnInfo;
     }
 }

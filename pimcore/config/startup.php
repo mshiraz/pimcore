@@ -9,7 +9,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -46,10 +46,12 @@ if (!defined("PIMCORE_VERSION_DIRECTORY"))  define("PIMCORE_VERSION_DIRECTORY", 
 if (!defined("PIMCORE_WEBDAV_TEMP"))  define("PIMCORE_WEBDAV_TEMP", PIMCORE_WEBSITE_VAR . "/webdav");
 if (!defined("PIMCORE_LOG_DIRECTORY"))  define("PIMCORE_LOG_DIRECTORY", PIMCORE_WEBSITE_VAR . "/log");
 if (!defined("PIMCORE_LOG_DEBUG"))  define("PIMCORE_LOG_DEBUG", PIMCORE_LOG_DIRECTORY . "/debug.log");
+if (!defined("PIMCORE_LOG_FILEOBJECT_DIRECTORY"))  define("PIMCORE_LOG_FILEOBJECT_DIRECTORY", PIMCORE_LOG_DIRECTORY . "/fileobjects");
 if (!defined("PIMCORE_LOG_MAIL_TEMP"))  define("PIMCORE_LOG_MAIL_TEMP", PIMCORE_LOG_DIRECTORY . "/mail");
 if (!defined("PIMCORE_TEMPORARY_DIRECTORY"))  define("PIMCORE_TEMPORARY_DIRECTORY", PIMCORE_WEBSITE_VAR . "/tmp");
 if (!defined("PIMCORE_CACHE_DIRECTORY"))  define("PIMCORE_CACHE_DIRECTORY", PIMCORE_WEBSITE_VAR . "/cache");
 if (!defined("PIMCORE_CLASS_DIRECTORY"))  define("PIMCORE_CLASS_DIRECTORY", PIMCORE_WEBSITE_VAR . "/classes");
+if (!defined("PIMCORE_CUSTOMLAYOUT_DIRECTORY"))  define("PIMCORE_CUSTOMLAYOUT_DIRECTORY", PIMCORE_CLASS_DIRECTORY . "/customlayouts");
 if (!defined("PIMCORE_BACKUP_DIRECTORY"))  define("PIMCORE_BACKUP_DIRECTORY", PIMCORE_WEBSITE_VAR . "/backup");
 if (!defined("PIMCORE_RECYCLEBIN_DIRECTORY"))  define("PIMCORE_RECYCLEBIN_DIRECTORY", PIMCORE_WEBSITE_VAR . "/recyclebin");
 if (!defined("PIMCORE_SYSTEM_TEMP_DIRECTORY"))  define("PIMCORE_SYSTEM_TEMP_DIRECTORY", PIMCORE_WEBSITE_VAR . "/system");
@@ -64,7 +66,6 @@ $includePaths = array(
     PIMCORE_PATH . "/models",
     PIMCORE_WEBSITE_PATH . "/lib",
     PIMCORE_WEBSITE_PATH . "/models",
-    PIMCORE_PATH . "/modules/searchadmin/models",
     PIMCORE_CLASS_DIRECTORY
 );
 set_include_path(implode(PATH_SEPARATOR, $includePaths) . PATH_SEPARATOR);
@@ -73,10 +74,10 @@ set_include_path(implode(PATH_SEPARATOR, $includePaths) . PATH_SEPARATOR);
 include(dirname(__FILE__) . "/helper.php");
 
 // setup zend framework and pimcore
-require_once "Pimcore.php";
-require_once "Logger.php";
-require_once "Zend/Loader.php";
-require_once "Zend/Loader/Autoloader.php";
+require_once PIMCORE_PATH . "/lib/Pimcore.php";
+require_once PIMCORE_PATH . "/lib/Logger.php";
+require_once PIMCORE_PATH . "/lib/Zend/Loader.php";
+require_once PIMCORE_PATH . "/lib/Zend/Loader/Autoloader.php";
 
 $autoloader = Zend_Loader_Autoloader::getInstance();
 $autoloader->suppressNotFoundWarnings(false);
@@ -91,7 +92,7 @@ $autoloaderClassMapFiles = array(
 
 foreach ($autoloaderClassMapFiles as $autoloaderClassMapFile) {
     if(file_exists($autoloaderClassMapFile)) {
-        $classMapAutoLoader = new Zend_Loader_ClassMapAutoloader(array($autoloaderClassMapFile));
+        $classMapAutoLoader = new \Pimcore\Loader\ClassMapAutoloader(array($autoloaderClassMapFile));
         $classMapAutoLoader->register();
     }
 }
@@ -109,8 +110,9 @@ if(@is_file($composerStartup)) {
 }
 
 // on pimcore shutdown
-register_shutdown_function("Pimcore::shutdownHandler");
+register_shutdown_function(function () {
+    \Pimcore::getEventManager()->trigger("system.shutdown");
+});
 
-// register shutdown function
-Pimcore_Event::register("pimcore.shutdown", array("Pimcore", "shutdown"), array(), 999);
-
+// attach global shutdown event
+Pimcore::getEventManager()->attach("system.shutdown", array("Pimcore", "shutdown"), 9999);

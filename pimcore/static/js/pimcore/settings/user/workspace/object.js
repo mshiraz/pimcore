@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -30,6 +30,7 @@ pimcore.settings.user.workspace.object = Class.create({
 
         var availableRights = ["list","view","save","publish","unpublish","delete","rename","create","settings",
                                                                 "versions","properties"];
+
         var gridPlugins = [];
         var storeFields = ["path"];
 
@@ -55,6 +56,35 @@ pimcore.settings.user.workspace.object = Class.create({
             // store fields
             storeFields.push({name:availableRights[i], type: 'bool'});
         }
+
+        storeFields.push({name: "lEdit", type: 'text'});
+        storeFields.push({name: "lView", type: 'text'});
+        storeFields.push({name: "layouts", type: 'text'});
+
+        typesColumns.push({
+            xtype: 'actioncolumn',
+            header: t('special_settings'),
+            width: 30,
+            items: [{
+                tooltip: t('special_settings_tooltip'),
+                icon: "/pimcore/static/img/icon/cog_edit.png",
+                handler: function (grid, rowIndex) {
+                    var data = grid.getStore().getAt(rowIndex);
+                    var callback = this.applySpecialConfigs.bind(this, data, "special");
+                    var specialData = {
+                        lView: data.data.lView,
+                        lEdit: data.data.lEdit,
+                        layouts: data.data.layouts,
+                        path: data.data.path
+                    };
+
+                    var dialog = new pimcore.settings.user.workspace.special(callback, specialData, data.data.path);
+                    dialog.show();
+                }.bind(this)
+            }]
+        });
+
+
 
         typesColumns.push({
             xtype: 'actioncolumn',
@@ -174,5 +204,12 @@ pimcore.settings.user.workspace.object = Class.create({
         }
 
         return values;
+    },
+
+    applySpecialConfigs: function(rec, column, value) {
+        rec.set("lView", value["lView"]);
+        rec.set("lEdit", value["lEdit"]);
+        rec.set("layouts", value["layouts"]);
     }
+
 });

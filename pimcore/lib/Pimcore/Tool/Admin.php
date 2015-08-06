@@ -9,14 +9,18 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Pimcore_Tool_Admin {
+namespace Pimcore\Tool;
+
+use Pimcore\File;
+
+class Admin {
 
     /**
-     * finds the translation file for a given language
+     * Finds the translation file for a given language
      *
      * @static
      * @param  string $language
@@ -25,7 +29,7 @@ class Pimcore_Tool_Admin {
     public static function getLanguageFile($language){
 
         //first try website languages dir, as fallback the core dir
-       $languageFile = PIMCORE_CONFIGURATION_DIRECTORY . "/texts/" . $language . ".csv";
+        $languageFile = PIMCORE_CONFIGURATION_DIRECTORY . "/texts/" . $language . ".csv";
         if(!is_file($languageFile)){
             $languageFile =  PIMCORE_PATH . "/config/texts/" . $language . ".csv";
         }
@@ -50,7 +54,7 @@ class Pimcore_Tool_Admin {
                     if (is_file($filesDir . $file)) {
                         $parts = explode(".", $file);
                         if ($parts[1] == "csv") {
-                            if (Zend_Locale::isLocale($parts[0])) {
+                            if (\Zend_Locale::isLocale($parts[0])) {
                                 $languages[] = $parts[0];
                             }
                         }
@@ -72,12 +76,16 @@ class Pimcore_Tool_Admin {
 
         if(!is_file($scriptPath)) {
             //$scriptContent = JSMin::minify($scriptContent); // temp. disabled until we have a better library - just combine for now
-            Pimcore_File::put($scriptPath, $scriptContent);
+            File::put($scriptPath, $scriptContent);
         }
 
-        return str_replace(PIMCORE_DOCUMENT_ROOT,"",$scriptPath);
+        return preg_replace("@^" . preg_quote(PIMCORE_DOCUMENT_ROOT, "@") . "@", "", $scriptPath);
     }
 
+    /**
+     * @param $stylesheetContent
+     * @return mixed
+     */
     public static function getMinimizedStylesheetPath ($stylesheetContent) {
         $stylesheetPath = PIMCORE_TEMPORARY_DIRECTORY."/minified_css_core_".md5($stylesheetContent).".css";
 
@@ -85,19 +93,16 @@ class Pimcore_Tool_Admin {
             //$stylesheetContent = Minify_CSS::minify($stylesheetContent); // temp. disabled until we have a better library - just combine for now
 
             // put minified contents into one single file
-            Pimcore_File::put($stylesheetPath, $stylesheetContent);
+            File::put($stylesheetPath, $stylesheetContent);
         }
 
-        return str_replace(PIMCORE_DOCUMENT_ROOT,"",$stylesheetPath);
+        return preg_replace("@^" . preg_quote(PIMCORE_DOCUMENT_ROOT, "@") . "@", "", $stylesheetPath);
     }
 
 
     /**
-     * determines CSV Dialect
-     *
-     * @static
-     * @param  $file
-     * @return Csv_Dialect
+     * @param $file
+     * @return \Csv_Dialect
      */
     public static function determineCsvDialect ($file) {
 
@@ -108,11 +113,11 @@ class Pimcore_Tool_Admin {
         }
 
         try {
-            $sniffer = new Csv_AutoDetect();
+            $sniffer = new \Csv_AutoDetect();
             $dialect = $sniffer->detect($sample);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             // use default settings
-            $dialect = new Csv_Dialect();
+            $dialect = new \Csv_Dialect();
         }
 
         // validity check
@@ -133,32 +138,30 @@ class Pimcore_Tool_Admin {
     }
 
     /**
-     * Activates the maintenance mode, this means that only
-     *
-     * @static
-     * @param  $sessionId
-     * @return void
+     * @param null $sessionId
+     * @throws \Exception
+     * @throws \Zend_Config_Exception
      */
     public static function activateMaintenanceMode ($sessionId = null) {
 
         if(empty($sessionId)) {
             $sessionId = session_id();
         }
-        
+
         if(empty($sessionId)) {
-            throw new Exception("It's not possible to activate the maintenance mode without a session-id");
+            throw new \Exception("It's not possible to activate the maintenance mode without a session-id");
         }
 
-        $config = new Zend_Config(array(
-               "sessionId" => $sessionId
+        $config = new \Zend_Config(array(
+            "sessionId" => $sessionId
         ), true);
 
-        $writer = new Zend_Config_Writer_Xml(array(
-              "config" => $config,
-              "filename" => self::getMaintenanceModeFile()
+        $writer = new \Zend_Config_Writer_Xml(array(
+            "config" => $config,
+            "filename" => self::getMaintenanceModeFile()
         ));
         $writer->write();
-        chmod(self::getMaintenanceModeFile(), 0777); // so it can be removed also via FTP, ...
+        @chmod(self::getMaintenanceModeFile(), 0777); // so it can be removed also via FTP, ...
     }
 
     /**
@@ -174,10 +177,10 @@ class Pimcore_Tool_Admin {
      * @return bool
      */
     public static function isInMaintenanceMode() {
-        $file = Pimcore_Tool_Admin::getMaintenanceModeFile();
+        $file = self::getMaintenanceModeFile();
 
         if(is_file($file)) {
-            $conf = new Zend_Config_Xml($file);
+            $conf = new \Zend_Config_Xml($file);
             if($conf->sessionId) {
                 return true;
             } else {
@@ -190,15 +193,38 @@ class Pimcore_Tool_Admin {
 
     /**
      * @static
-     * @return User
+     * @return \Pimcore\Model\User
      */
     public static function getCurrentUser () {
 
-        if(Zend_Registry::isRegistered("pimcore_admin_user")) {
-            $user = Zend_Registry::get("pimcore_admin_user");
+        if(\Zend_Registry::isRegistered("pimcore_admin_user")) {
+            $user = \Zend_Registry::get("pimcore_admin_user");
             return $user;
         }
 
         return null;
+    }
+
+
+    /**
+     * @return true if in EXT JS5 mode
+     */
+    public static function isExtJS5() {
+        if (isset($_SERVER["HTTP_X_PIMCORE_EXTJS_VERSION_MAJOR"]) && $_SERVER["HTTP_X_PIMCORE_EXTJS_VERSION_MAJOR"] == 5) {
+            return true;
+        }
+
+        $config = \Pimcore\Config::getSystemConfig();
+
+        if(isset($_REQUEST["extjs5"])) {
+            return (bool) $_REQUEST["extjs5"];
+        }
+
+        $mainSwitch = $config->general->extjs5;
+        if ($mainSwitch) {
+            return true;
+        }
+
+        return false;
     }
 }

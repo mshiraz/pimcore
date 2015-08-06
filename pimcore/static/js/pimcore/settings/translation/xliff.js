@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -245,6 +245,10 @@ pimcore.settings.translation.xliff = Class.create({
             return true;
         });
 
+        // skip if no items are selected to export
+        if(data.items.length < 1) {
+            return;
+        }
 
         for (var i = 0; i < data.items.length; i++) {
             tmData.push(data.items[i].data);

@@ -8,18 +8,27 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
 pimcore.registerNS("pimcore.element.tag.imagecropper");
 pimcore.element.tag.imagecropper = Class.create({
 
-    initialize: function (imageId, data, saveCallback) {
+    initialize: function (imageId, data, saveCallback, config) {
         this.imageId = imageId;
         this.data = data;
         this.saveCallback = saveCallback;
         this.modal = true;
+
+        this.ratioX = null;
+        this.ratioY = null;
+        if(typeof config == "object") {
+            if(config["ratioX"] && config["ratioY"]) {
+                this.ratioX = config["ratioX"];
+                this.ratioY = config["ratioY"];
+            }
+        }
     },
 
     open: function (modal) {
@@ -35,7 +44,7 @@ pimcore.element.tag.imagecropper = Class.create({
             modal: this.modal,
             closeAction: "close",
             resizable: false,
-            bodyStyle: "background: url(" + imageUrl + ") center center no-repeat;",
+            bodyStyle: "background: url(" + imageUrl + ") center center no-repeat;position:relative;",
             bbar: ["->", {
                 xtype: "button",
                 iconCls: "pimcore_icon_apply",
@@ -94,6 +103,56 @@ pimcore.element.tag.imagecropper = Class.create({
 
                         Ext.get("selectorImage").remove();
 
+                        var checkSize = function () {
+                            // this function checks if the selected area fits into the image
+                            var sel = Ext.get("selector");
+                            var dimensions;
+                            var originalWidth = this.editWindow.getInnerWidth();
+                            var originalHeight = this.editWindow.getInnerHeight();
+                            var skip = false;
+
+                            while(!skip) {
+                                skip = true;
+                                 dimensions = sel.getStyles("top","left","width","height");
+
+                                if(intval(dimensions.top) < 0) {
+                                    sel.setStyle("top", "0");
+                                    skip = false;
+                                }
+                                if(intval(dimensions.left) < 0) {
+                                    sel.setStyle("left", "0");
+                                    skip = false;
+                                }
+                                if((intval(dimensions.left) + intval(dimensions.width)) > originalWidth) {
+                                    if(intval(dimensions.left) < originalWidth || intval(dimensions.left) > originalWidth) {
+                                        sel.setStyle("left", (originalWidth-intval(dimensions.width)) + "px");
+                                    }
+                                    if(intval(dimensions.width) > originalWidth) {
+                                        sel.setStyle("width", (originalWidth) + "px");
+                                    }
+                                    skip = false;
+                                }
+                                if((intval(dimensions.top) + intval(dimensions.height)) > originalHeight) {
+                                    if(intval(dimensions.top) < originalHeight || intval(dimensions.top) > originalHeight) {
+                                        sel.setStyle("top", (originalHeight-intval(dimensions.height)) + "px");
+                                    }
+                                    if(intval(dimensions.height) > originalHeight) {
+                                        sel.setStyle("height", (originalHeight) + "px");
+                                    }
+                                    skip = false;
+                                }
+                            }
+
+
+                            // check the ratio if given
+                            if(this.ratioX && this.ratioY) {
+                                dimensions = sel.getStyles("width","height");
+
+                                var height = intval(dimensions.width) * (this.ratioY / this.ratioX);
+                                sel.setStyle("height", (height) + "px");
+                            }
+                        };
+
                         this.resizer = new Ext.Resizable('selector', {
                             pinned:true,
                             minWidth:50,
@@ -103,8 +162,13 @@ pimcore.element.tag.imagecropper = Class.create({
                             handles: 'all',
                             draggable:true,
                             width: 100,
-                            height: 100
+                            height: 100,
+                            listeners: {
+                                resize: checkSize.bind(this)
+                            }
                         });
+
+                        this.resizer.dd.endDrag = checkSize.bind(this);
 
                         if(this.data && this.data["cropPercent"]) {
                             Ext.get("selector").applyStyles({

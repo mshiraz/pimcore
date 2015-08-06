@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -65,64 +65,24 @@ pimcore.document.document = Class.create(pimcore.element.abstract, {
         }
     },
 
-    addLoadingPanel : function () {
-
-        // DEPRECIATED loadingpanel not active
-        return;
-// // commented this out, otherwise JSLint would complain
-//        window.setTimeout(this.checkLoadingStatus.bind(this), 5000);
-//
-//        this.tabPanel = Ext.getCmp("pimcore_panel_tabs");
-//
-//        this.loadingPanel = new Ext.Panel({
-//            title: t("loading"),
-//            closable:false,
-//            html: "",
-//            iconCls: "pimcore_icon_loading"
-//        });
-//
-//        this.tabPanel.add(this.loadingPanel);
-    },
-
-    removeLoadingPanel: function () {
-
-        pimcore.helpers.removeTreeNodeLoadingIndicator("document", this.id);
-
-        // DEPRECIATED loadingpanel not active
-        return;
-//  // commented this out as JSLint would complain
-//        if (this.loadingPanel) {
-//            this.tabPanel.remove(this.loadingPanel);
-//        }
-//        this.loadingPanel = null;
-//
-    },
-
-    checkLoadingStatus: function () {
-
-        // DEPRECIATED loadingpanel not active
-        return;
-// commented this out, otherwise JSLint would complain
-//        if (this.loadingPanel) {
-//            // loadingpanel is active close the whole document
-//            pimcore.helpers.closeDocument(this.id);
-//        }
-    },
-
     activate: function () {
         var tabId = "document_" + this.id;
         this.tabPanel.activate(tabId);
     },
 
-    save : function (task, only) {
+    save : function (task, only, callback) {
 
+        if(this.tab.disabled) {
+            return;
+        }
+
+        this.tab.disable();
         var saveData = this.getSaveData(only);
 
         if (saveData) {
-
             // check for version notification
             if(this.newerVersionNotification) {
-                if(task == "publish") {
+                if(task == "publish" || task == "unpublish") {
                     this.newerVersionNotification.hide();
                 } else {
                     this.newerVersionNotification.show();
@@ -163,8 +123,19 @@ pimcore.document.document = Class.create(pimcore.element.abstract, {
                             this.versions.reload();
                         }
                     }
-                }.bind(this)
+
+                    this.tab.enable();
+
+                    if(typeof callback == "function") {
+                        callback();
+                    }
+                }.bind(this),
+                failure: function () {
+                    this.tab.enable();
+                }
             });
+        } else {
+            this.tab.enable();
         }
     },
     
@@ -184,12 +155,13 @@ pimcore.document.document = Class.create(pimcore.element.abstract, {
     },
 
     publishClose: function(){
-        this.publish();
-        var tabPanel = Ext.getCmp("pimcore_panel_tabs");
-        tabPanel.remove(this.tab);
+        this.publish(null, function () {
+            var tabPanel = Ext.getCmp("pimcore_panel_tabs");
+            tabPanel.remove(this.tab);
+        }.bind(this));
     },
 
-    publish: function (only) {
+    publish: function (only, callback) {
         this.data.published = true;
 
         // toogle buttons
@@ -207,7 +179,7 @@ pimcore.document.document = Class.create(pimcore.element.abstract, {
         }
 
 
-        this.save("publish", only);
+        this.save("publish", only, callback);
     },
 
     unpublish: function () {

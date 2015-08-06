@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    Webservice
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Webservice_Data_Document_Snippet_Out extends Webservice_Data_Document_Snippet {
+namespace Pimcore\Model\Webservice\Data\Document\Snippet;
+
+use Pimcore\Model;
+
+class Out extends Model\Webservice\Data\Document\Snippet {
 
 
     /**
@@ -39,7 +43,7 @@ class Webservice_Data_Document_Snippet_Out extends Webservice_Data_Document_Snip
     public $userModification;
 
     /**
-     * @var Webservice_Data_Document_List_Item[]
+     * @var Model\Webservice\Data\Document\Listing\Item[]
      */
     public $childs;
 

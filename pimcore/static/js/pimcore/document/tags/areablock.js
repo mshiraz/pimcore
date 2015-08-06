@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -153,8 +153,6 @@ pimcore.document.tags.areablock = Class.create(pimcore.document.tag, {
                     v.dragZone = new Ext.dd.DragZone(v.getEl(), {
                         hasOuterHandles: true,
                         getDragData: function(e) {
-                            closeCKeditors();
-
                             var sourceEl = element;
                             var proxyEl = null;
 
@@ -470,8 +468,14 @@ pimcore.document.tags.areablock = Class.create(pimcore.document.tag, {
     },
 
     getMenuConfigForBrick: function (brick, scope, element) {
+
+        var menuText = "<b>" + brick.name + "</b>";
+        if(brick.description) {
+            menuText += " | " + brick.description;
+        }
+
         var tmpEntry = {
-            text: "<b>" + brick.name + "</b> | " + brick.description,
+            text: menuText,
             iconCls: "pimcore_icon_area",
             listeners: {
                 "click": this.addBlock.bind(scope, element, brick.type)
@@ -636,7 +640,7 @@ pimcore.document.tags.areablock = Class.create(pimcore.document.tag, {
             autoScroll: true,
             listeners: {
                 afterrender: function (content) {
-                    Ext.get(content).show();
+                    Ext.get(content).removeClass("pimcore_area_editmode_hidden");
 
                     var elements = Ext.get(content).query(".pimcore_editable");
                     for (var i=0; i<elements.length; i++) {
@@ -674,9 +678,11 @@ pimcore.document.tags.areablock = Class.create(pimcore.document.tag, {
     },
 
     createToolBar: function () {
-        var areaBlockToolbarSettings = this.options["areablock_toolbar"];
         var buttons = [];
+        var button;
         var bricksInThisArea = [];
+        var groupsInThisArea = {};
+        var areaBlockToolbarSettings = this.options["areablock_toolbar"];
         var itemCount = 0;
 
         if(pimcore.document.tags[this.toolbarGlobalVar] != false
@@ -684,90 +690,68 @@ pimcore.document.tags.areablock = Class.create(pimcore.document.tag, {
             itemCount = pimcore.document.tags[this.toolbarGlobalVar].itemCount;
         }
 
-        for (var i=0; i<this.options.types.length; i++) {
+        if(typeof this.options.group != "undefined") {
+            var groupMenu;
+            var groupItemCount = 0;
+            var isExistingGroup;
+            var brickKey;
+            var groups = Object.keys(this.options.group);
 
-            var brick = this.options.types[i];
+            for (var g=0; g<groups.length; g++) {
+                groupMenu = null;
+                isExistingGroup = false;
+                if(groups[g].length > 0) {
 
-            if(pimcore.document.tags[this.toolbarGlobalVar] != false) {
-                if(!in_array(brick.type, pimcore.document.tags[this.toolbarGlobalVar].bricks)) {
-                    bricksInThisArea.push(brick.type);
-                } else {
-                    continue;
-                }
-            } else {
-                bricksInThisArea.push(brick.type);
-            }
+                    if(pimcore.document.tags[this.toolbarGlobalVar] != false) {
+                        if(pimcore.document.tags[this.toolbarGlobalVar]["groups"][groups[g]]) {
+                            groupMenu = pimcore.document.tags[this.toolbarGlobalVar]["groups"][groups[g]];
+                            isExistingGroup = true;
+                        }
+                    }
 
-            itemCount++;
-
-
-            if(!brick.icon) {
-                // this contains fallback-icons
-                var iconStore = ["flag_black","flag_blue","flag_checked","flag_france","flag_green","flag_grey",
-                    "flag_orange","flag_pink","flag_purple","flag_red","flag_white","flag_yellow",
-                    "award_star_bronze_1","award_star_bronze_2","award_star_bronze_3","award_star_gold_1",
-                    "award_star_gold_1","award_star_gold_1","award_star_silver_1","award_star_silver_2",
-                    "award_star_silver_3","medal_bronze_1","medal_bronze_2","medal_bronze_3","medal_gold_1",
-                    "medal_gold_1","medal_gold_1","medal_silver_1","medal_silver_2","medal_silver_3"];
-                brick.icon = "/pimcore/static/img/icon/" + iconStore[itemCount] + ".png";
-            }
-
-            var maxButtonCharacters = areaBlockToolbarSettings.buttonMaxCharacters;
-            buttons.push({
-                xtype: "button",
-                tooltip: "<b>" + brick.name + "</b><br />" + brick.description,
-                icon: brick.icon,
-                text: brick.name.length > maxButtonCharacters ? brick.name.substr(0,maxButtonCharacters) + "..."
-                                                                                                : brick.name,
-                width: areaBlockToolbarSettings.buttonWidth,
-                listeners: {
-                    "afterrender": function (brick, v) {
-
-                        v.dragZone = new Ext.dd.DragZone(v.getEl(), {
-                            getDragData: function(e) {
-                                closeCKeditors();
-                                var sourceEl = v.getEl().dom;
-                                if (sourceEl) {
-                                    d = sourceEl.cloneNode(true);
-                                    d.id = Ext.id();
-                                    return v.dragData = {
-                                        sourceEl: sourceEl,
-                                        repairXY: Ext.fly(sourceEl).getXY(),
-                                        ddel: d,
-                                        fromToolbar: true,
-                                        brick: brick
-                                    }
-                                }
-                            },
-
-                            onStartDrag: function () {
-                                var areablocks = pimcore.document.tags[this.toolbarGlobalVar].areablocks;
-                                for(var i=0; i<areablocks.length; i++) {
-                                    if(in_array(brick.type, areablocks[i].allowedTypes)) {
-                                        areablocks[i].createDropZones();
-                                    }
-                                }
-                            }.bind(this),
-                            afterDragDrop: function () {
-                                var areablocks = pimcore.document.tags[this.toolbarGlobalVar].areablocks;
-                                for(var i=0; i<areablocks.length; i++) {
-                                    areablocks[i].removeDropZones();
-                                }
-                            }.bind(this),
-                            afterInvalidDrop: function () {
-                                var areablocks = pimcore.document.tags[this.toolbarGlobalVar].areablocks;
-                                for(var i=0; i<areablocks.length; i++) {
-                                    areablocks[i].removeDropZones();
-                                }
-                            }.bind(this),
-
-                            getRepairXY: function() {
-                                return this.dragData.repairXY;
-                            }
+                    if(!groupMenu) {
+                        groupMenu = new Ext.Button({
+                            xtype: "button",
+                            text: groups[g],
+                            iconCls: "pimcore_icon_area",
+                            hideOnClick: false,
+                            width: areaBlockToolbarSettings.buttonWidth,
+                            menu: []
                         });
-                    }.bind(this, brick)
+                    }
+
+                    groupsInThisArea[groups[g]] = groupMenu;
+
+                    for (var i=0; i<this.options.types.length; i++) {
+                        if(in_array(this.options.types[i].type,this.options.group[groups[g]])) {
+                            itemCount++;
+                            brickKey = groups[g] + " - " + this.options.types[i].type;
+                            button = this.getToolBarButton(this.options.types[i], brickKey, itemCount, "menu");
+                            if(button) {
+                                bricksInThisArea.push(brickKey);
+                                groupMenu.menu.add(button);
+                                groupItemCount++;
+                            }
+                        }
+                    }
+
+                    if(!isExistingGroup && groupItemCount > 0) {
+                        buttons.push(groupMenu);
+                    }
                 }
-            });
+            }
+        } else {
+            for (var i=0; i<this.options.types.length; i++) {
+                var brick = this.options.types[i];
+                itemCount++;
+
+                brickKey = brick.type;
+                button = this.getToolBarButton(brick, brickKey, itemCount);
+                if(button) {
+                    bricksInThisArea.push(brickKey);
+                    buttons.push(button);
+                }
+            }
         }
 
         // only initialize the toolbar once, even when there are more than one area on the page
@@ -805,6 +789,7 @@ pimcore.document.tags.areablock = Class.create(pimcore.document.tag, {
 
             pimcore.document.tags[this.toolbarGlobalVar] = {
                 toolbar: toolbar,
+                groups: groupsInThisArea,
                 bricks: bricksInThisArea,
                 areablocks: [this],
                 itemCount: buttons.length
@@ -813,11 +798,108 @@ pimcore.document.tags.areablock = Class.create(pimcore.document.tag, {
             pimcore.document.tags[this.toolbarGlobalVar].toolbar.add(buttons);
             pimcore.document.tags[this.toolbarGlobalVar].bricks =
                                     array_merge(pimcore.document.tags[this.toolbarGlobalVar].bricks, bricksInThisArea);
+            pimcore.document.tags[this.toolbarGlobalVar].groups =
+                                    array_merge(pimcore.document.tags[this.toolbarGlobalVar].groups, groupsInThisArea);
             pimcore.document.tags[this.toolbarGlobalVar].itemCount += buttons.length;
             pimcore.document.tags[this.toolbarGlobalVar].areablocks.push(this);
             pimcore.document.tags[this.toolbarGlobalVar].toolbar.doLayout();
         }
 
+    },
+
+    getToolBarButton: function (brick, key, itemCount, type) {
+
+        if(pimcore.document.tags[this.toolbarGlobalVar] != false) {
+            if(in_array(key, pimcore.document.tags[this.toolbarGlobalVar].bricks)) {
+                return;
+            }
+        }
+
+        var areaBlockToolbarSettings = this.options["areablock_toolbar"];
+        var maxButtonCharacters = areaBlockToolbarSettings.buttonMaxCharacters;
+        // this contains fallback-icons
+        var iconStore = ["flag_black","flag_blue","flag_checked","flag_france","flag_green","flag_grey",
+            "flag_orange","flag_pink","flag_purple","flag_red","flag_white","flag_yellow",
+            "award_star_bronze_1","award_star_bronze_2","award_star_bronze_3","award_star_gold_1",
+            "award_star_gold_1","award_star_gold_1","award_star_silver_1","award_star_silver_2",
+            "award_star_silver_3","medal_bronze_1","medal_bronze_2","medal_bronze_3","medal_gold_1",
+            "medal_gold_1","medal_gold_1","medal_silver_1","medal_silver_2","medal_silver_3"];
+
+
+        if(!brick.icon) {
+            brick.icon = "/pimcore/static/img/icon/" + iconStore[itemCount] + ".png";
+        }
+
+        var button = {
+            xtype: "button",
+            icon: brick.icon,
+            text: brick.name.length > maxButtonCharacters ? brick.name.substr(0,maxButtonCharacters) + "..."
+                : brick.name,
+            width: areaBlockToolbarSettings.buttonWidth,
+            listeners: {
+                "afterrender": function (brick, v) {
+
+                    var el = v.getEl();
+                    if(el.hasClass("x-menu-item")) {
+                        el = el.parent();
+                    }
+
+                    v.dragZone = new Ext.dd.DragZone(el, {
+                        getDragData: function(e) {
+                            var sourceEl = el.dom;
+                            if (sourceEl) {
+                                d = sourceEl.cloneNode(true);
+                                d.id = Ext.id();
+                                return v.dragData = {
+                                    sourceEl: sourceEl,
+                                    repairXY: Ext.fly(sourceEl).getXY(),
+                                    ddel: d,
+                                    fromToolbar: true,
+                                    brick: brick
+                                }
+                            }
+                        },
+
+                        onStartDrag: function () {
+                            var areablocks = pimcore.document.tags[this.toolbarGlobalVar].areablocks;
+                            for(var i=0; i<areablocks.length; i++) {
+                                if(in_array(brick.type, areablocks[i].allowedTypes)) {
+                                    areablocks[i].createDropZones();
+                                }
+                            }
+                        }.bind(this),
+                        afterDragDrop: function () {
+                            var areablocks = pimcore.document.tags[this.toolbarGlobalVar].areablocks;
+                            for(var i=0; i<areablocks.length; i++) {
+                                areablocks[i].removeDropZones();
+                            }
+                        }.bind(this),
+                        afterInvalidDrop: function () {
+                            var areablocks = pimcore.document.tags[this.toolbarGlobalVar].areablocks;
+                            for(var i=0; i<areablocks.length; i++) {
+                                areablocks[i].removeDropZones();
+                            }
+                        }.bind(this),
+
+                        getRepairXY: function() {
+                            return this.dragData.repairXY;
+                        }
+                    });
+                }.bind(this, brick)
+            }
+        };
+
+        if(brick.description) {
+            button["tooltip"] = brick.description;
+        }
+
+        if(type == "menu") {
+            delete button["width"];
+            delete button["xtype"];
+            button["text"] = brick.name;// not shortened
+        }
+
+        return button;
     },
 
     getValue: function () {

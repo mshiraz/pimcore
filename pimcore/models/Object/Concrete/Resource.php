@@ -11,30 +11,27 @@
  *
  * @category   Pimcore
  * @package    Object
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Object_Concrete_Resource extends Object_Abstract_Resource {
+namespace Pimcore\Model\Object\Concrete;
+
+use Pimcore\Model;
+use Pimcore\Model\Object;
+
+class Resource extends Model\Object\AbstractObject\Resource {
 
     /**
-     * Contains all valid columns in the database table
-     *
-     * @var array
-     */
-    protected $validColumnsObjectConcrete = array();
-
-    /**
-     * @var Object_Concrete_Resource_InheritanceHelper
+     * @var Object\Concrete\Resource\InheritanceHelper
      */
     protected $inheritanceHelper = null;
 
     /**
-     * @see Object_Abstract_Resource::init
+     *
      */
     public function init() {  
-        parent::init();
-        $this->inheritanceHelper = new Object_Concrete_Resource_InheritanceHelper($this->model->getClassId());
+        $this->inheritanceHelper = new Object\Concrete\Resource\InheritanceHelper($this->model->getClassId());
     }
 
     /**
@@ -54,12 +51,12 @@ class Object_Concrete_Resource extends Object_Abstract_Resource {
                 $this->getData();
             }
             else {
-                throw new Exception("Object with the ID " . $id . " doesn't exists");
+                throw new \Exception("Object with the ID " . $id . " doesn't exists");
             }
 
         }
-        catch (Exception $e) {
-            Logger::warning($e);
+        catch (\Exception $e) {
+            \Logger::warning($e);
         }
     }
 
@@ -164,39 +161,6 @@ class Object_Concrete_Resource extends Object_Abstract_Resource {
     }
 
     /**
-     * Create a new record for the object in database
-     *
-     * @return boolean
-     */
-    /*public function create() {
-
-        parent::create();
-
-        //$this->createDataRows();
-        //$this->model->save();
-    }*/
-
-
-    /**
-     * create data rows for query table and for the store table
-     *
-     * @return void
-     */
-    /*protected function createDataRows() {
-        try {
-            $this->db->insert("object_store_" . $this->model->getO_classId(), array("oo_id" => $this->model->getO_id()));
-        }
-        catch (Exception $e) {
-        }
-
-        try {
-            $this->db->insert("object_query_" . $this->model->getO_classId(), array("oo_id" => $this->model->getO_id()));
-        }
-        catch (Exception $e) {
-        }
-    }*/
-
-    /**
      * Save changes to database, it's an good idea to use save() instead
      *
      * @return void
@@ -204,8 +168,6 @@ class Object_Concrete_Resource extends Object_Abstract_Resource {
     public function update() {
 
         parent::update();
-
-        //$this->createDataRows();
 
         // get fields which shouldn't be updated
         $fd = $this->model->getClass()->getFieldDefinitions();
@@ -228,8 +190,8 @@ class Object_Concrete_Resource extends Object_Abstract_Resource {
         }
 
         
-        $inheritedValues = Object_Abstract::doGetInheritedValues();
-        Object_Abstract::setGetInheritedValues(false);
+        $inheritedValues = Object\AbstractObject::doGetInheritedValues();
+        Object\AbstractObject::setGetInheritedValues(false);
 
         $data = array();
         $data["oo_id"] = $this->model->getId();
@@ -256,15 +218,28 @@ class Object_Concrete_Resource extends Object_Abstract_Resource {
 
         $this->db->insertOrUpdate("object_store_" . $this->model->getClassId(), $data);
 
-        // get data for query table
-        // this is special because we have to call each getter to get the inherited values from a possible parent object
-        Object_Abstract::setGetInheritedValues(true);
 
+
+        // get data for query table
         $object = get_object_vars($this->model);
 
         $data = array();
         $this->inheritanceHelper->resetFieldsToCheck();
         $oldData = $this->db->fetchRow("SELECT * FROM object_query_" . $this->model->getClassId() . " WHERE oo_id = ?", $this->model->getId());
+
+        $inheritanceEnabled = $this->model->getClass()->getAllowInherit();
+        $parentData = null;
+        if($inheritanceEnabled) {
+            // get the next suitable parent for inheritance
+            $parentForInheritance = $this->model->getNextParentForInheritance();
+            if($parentForInheritance) {
+                // we don't use the getter (built in functionality to get inherited values) because we need to avoid race conditions
+                // we cannot Object\AbstractObject::setGetInheritedValues(true); and then $this->model->$method();
+                // so we select the data from the parent object using FOR UPDATE, which causes a lock on this row
+                // so the data of the parent cannot be changed while this transaction is on progress
+                $parentData = $this->db->fetchRow("SELECT * FROM object_query_" . $this->model->getClassId() . " WHERE oo_id = ? FOR UPDATE", $parentForInheritance->getId());
+            }
+        }
 
         foreach ($object as $key => $value) {
             $fd = $this->model->getClass()->getFieldDefinition($key);
@@ -274,50 +249,73 @@ class Object_Concrete_Resource extends Object_Abstract_Resource {
                     //exclude untouchables if value is not an array - this means data has not been loaded
                     if (!(in_array($key, $untouchable) and !is_array($this->model->$key))) {
                         $method = "get" . $key;
-                        $insertData = $fd->getDataForQueryResource($this->model->$method(), $this->model);
+                        $fieldValue = $this->model->$method();
+                        $insertData = $fd->getDataForQueryResource($fieldValue, $this->model);
+                        $isEmpty = $fd->isEmpty($fieldValue);
+
                         if (is_array($insertData)) {
+                            $columnNames = array_keys($insertData);
                             $data = array_merge($data, $insertData);
-                        }
-                        else {
+                        } else {
+                            $columnNames = [$key];
                             $data[$key] = $insertData;
                         }
 
-
-                        //get changed fields for inheritance
-                        if($fd->isRelationType()) {
-                            if (is_array($insertData)) {
-                                $doInsert = false;
-                                foreach($insertData as $insertDataKey => $insertDataValue) {
-                                    if($oldData[$insertDataKey] != $insertDataValue) {
-                                        $doInsert = true;
-                                    }
-                                }
-
-                                if($doInsert) {
-                                    $this->inheritanceHelper->addRelationToCheck($key, array_keys($insertData));
-                                }
-                            } else {
-                                if($oldData[$key] != $insertData) {
-                                    $this->inheritanceHelper->addRelationToCheck($key);
-                                }
-                            }
-
-                        } else {
-                            if (is_array($insertData)) {
-                                foreach($insertData as $insertDataKey => $insertDataValue) {
-                                    if($oldData[$insertDataKey] != $insertDataValue) {
-                                        $this->inheritanceHelper->addFieldToCheck($insertDataKey);
-                                    }
-                                }
-                            } else {
-                                if($oldData[$key] != $insertData) {
-                                    $this->inheritanceHelper->addFieldToCheck($key);
+                        // if the current value is empty and we have data from the parent, we just use it
+                        if($isEmpty && $parentData) {
+                            foreach($columnNames as $columnName) {
+                                if(array_key_exists($columnName, $parentData)) {
+                                    $data[$columnName] = $parentData[$columnName];
                                 }
                             }
                         }
 
+                        if($inheritanceEnabled) {
+                            //get changed fields for inheritance
+                            if ($fd->isRelationType()) {
+                                if (is_array($insertData)) {
+                                    $doInsert = false;
+                                    foreach ($insertData as $insertDataKey => $insertDataValue) {
+                                        if ($isEmpty && $oldData[$insertDataKey] == $parentData[$insertDataKey]) {
+                                            // do nothing, ... value is still empty and parent data is equal to current data in query table
+                                        } else if ($oldData[$insertDataKey] != $insertDataValue) {
+                                            $doInsert = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if ($doInsert) {
+                                        $this->inheritanceHelper->addRelationToCheck($key, $fd, array_keys($insertData));
+                                    }
+                                } else {
+                                    if ($isEmpty && $oldData[$key] == $parentData[$key]) {
+                                        // do nothing, ... value is still empty and parent data is equal to current data in query table
+                                    } else if ($oldData[$key] != $insertData) {
+                                        $this->inheritanceHelper->addRelationToCheck($key, $fd);
+                                    }
+                                }
+
+                            } else {
+                                if (is_array($insertData)) {
+                                    foreach ($insertData as $insertDataKey => $insertDataValue) {
+                                        if ($isEmpty && $oldData[$insertDataKey] == $parentData[$insertDataKey]) {
+                                            // do nothing, ... value is still empty and parent data is equal to current data in query table
+                                        } else if ($oldData[$insertDataKey] != $insertDataValue) {
+                                            $this->inheritanceHelper->addFieldToCheck($insertDataKey, $fd);
+                                        }
+                                    }
+                                } else {
+                                    if ($isEmpty && $oldData[$key] == $parentData[$key]) {
+                                        // do nothing, ... value is still empty and parent data is equal to current data in query table
+                                    } else if ($oldData[$key] != $insertData) {
+                                        // data changed, do check and update
+                                        $this->inheritanceHelper->addFieldToCheck($key, $fd);
+                                    }
+                                }
+                            }
+                        }
                     } else {
-                        Logger::debug("Excluding untouchable query value for object [ " . $this->model->getId() . " ]  key [ $key ] because it has not been loaded");
+                        \Logger::debug("Excluding untouchable query value for object [ " . $this->model->getId() . " ]  key [ $key ] because it has not been loaded");
                     }
                 }
             }
@@ -326,11 +324,13 @@ class Object_Concrete_Resource extends Object_Abstract_Resource {
 
         $this->db->insertOrUpdate("object_query_" . $this->model->getClassId(), $data);
 
-        Object_Abstract::setGetInheritedValues($inheritedValues);
+        Object\AbstractObject::setGetInheritedValues($inheritedValues);
     }
 
-    
-    public function saveChilds() {
+    /**
+     *
+     */
+    public function saveChildData() {
         $this->inheritanceHelper->doUpdate($this->model->getId());
         $this->inheritanceHelper->resetFieldsToCheck();
     }
@@ -344,7 +344,6 @@ class Object_Concrete_Resource extends Object_Abstract_Resource {
         $this->db->delete("object_query_" . $this->model->getClassId(), $this->db->quoteInto("oo_id = ?", $this->model->getId()));
         $this->db->delete("object_store_" . $this->model->getClassId(), $this->db->quoteInto("oo_id = ?", $this->model->getId()));
         $this->db->delete("object_relations_" . $this->model->getClassId(), $this->db->quoteInto("src_id = ?", $this->model->getId()));
-        $this->db->delete("object_relations_" . $this->model->getClassId(), $this->db->quoteInto("dest_id = ?", $this->model->getId()));
 
         // delete fields wich have their own delete algorithm
         foreach ($this->model->getClass()->getFieldDefinitions() as $fd) {
@@ -366,7 +365,7 @@ class Object_Concrete_Resource extends Object_Abstract_Resource {
 
         $versions = array();
         foreach ($versionIds as $versionId) {
-            $versions[] = Version::getById($versionId);
+            $versions[] = Model\Version::getById($versionId);
         }
 
         $this->model->setVersions($versions);
@@ -383,7 +382,7 @@ class Object_Concrete_Resource extends Object_Abstract_Resource {
         $versionData = $this->db->fetchRow("SELECT id,date FROM versions WHERE cid = ? AND ctype='object' ORDER BY `id` DESC LIMIT 1", $this->model->getId());
 
         if(($versionData["id"] && $versionData["date"] > $this->model->getModificationDate()) || $force) {
-            $version = Version::getById($versionData["id"]);
+            $version = Model\Version::getById($versionData["id"]);
             return $version;
         }
         return;

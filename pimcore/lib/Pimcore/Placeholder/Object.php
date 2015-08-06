@@ -9,11 +9,15 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Pimcore_Placeholder_Object extends Pimcore_Placeholder_Abstract
+namespace Pimcore\Placeholder;
+
+use Pimcore\Model;
+
+class Object extends AbstractPlaceholder
 {
 
     /**
@@ -35,7 +39,7 @@ class Pimcore_Placeholder_Object extends Pimcore_Placeholder_Abstract
     public function getReplacement()
     {
         $string = '';
-        $object = is_object($this->getValue()) ? $this->getValue() : Object_Concrete::getById($this->getValue());
+        $object = is_object($this->getValue()) ? $this->getValue() : Model\Object\Concrete::getById($this->getValue());
 
         if ($object) {
             if (is_string($this->getPlaceholderConfig()->method) && method_exists($object, $this->getPlaceholderConfig()->method)) {

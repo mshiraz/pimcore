@@ -8,20 +8,22 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
 pimcore.registerNS("pimcore.settings.translation.website");
 pimcore.settings.translation.website = Class.create(pimcore.settings.translations,{
 
+    translationType: 'website',
     dataUrl: '/admin/translation/translations',
     exportUrl: '/admin/translation/export',
     importUrl:'/admin/translation/import/?pimcore_admin_sid=' + pimcore.settings.sessionId,
+    mergeUrl:'/admin/translation/import/?merge=1&pimcore_admin_sid=' + pimcore.settings.sessionId,
     cleanupUrl: "/admin/translation/cleanup/type/website",
 
 
-   activate: function (filter) {
+    activate: function (filter) {
         if(filter){
             this.store.baseParams.filter = filter;
             this.store.load();
@@ -45,8 +47,8 @@ pimcore.settings.translation.website = Class.create(pimcore.settings.translation
                 }
                 catch (e) {
                     Ext.MessageBox.alert(t('error'), t('translations_are_not_configured')
-                        + '<br /><br /><a href="http://www.pimcore.org/documentation/" target="_blank">'
-                        + t("read_more_here") + '</a>');
+                    + '<br /><br /><a href="http://www.pimcore.org/documentation/" target="_blank">'
+                    + t("read_more_here") + '</a>');
                 }
             }.bind(this)
         });
@@ -83,4 +85,3 @@ pimcore.settings.translation.website = Class.create(pimcore.settings.translation
 
 
 });
-

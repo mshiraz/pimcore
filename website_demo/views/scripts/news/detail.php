@@ -1,14 +1,19 @@
+<?php
+    // set page meta-data
+    $this->headTitle()->set($this->news->getTitle());
+    $this->headMeta($this->news->getShortText(), "description");
+?>
 <section class="area-wysiwyg">
 
     <div class="page-header">
-        <h1><?php echo $this->news->getTitle(); ?></h1>
+        <h1><?= $this->news->getTitle(); ?></h1>
     </div>
 
     <div class="lead">
-        <p><?php echo $this->news->getShortText(); ?></p>
+        <p><?= $this->news->getShortText(); ?></p>
     </div>
 
-    <?php echo $this->news->getText(); ?>
+    <?= $this->news->getText(); ?>
 
 
     <div class="row">
@@ -18,8 +23,8 @@
             ?>
             <?php if($image) { ?>
                 <div class="col-lg-3">
-                    <a href="<?php echo $image->getThumbnail("galleryLightbox"); ?>" class="thumbnail">
-                        <img src="<?php echo $image->getThumbnail("galleryThumbnail"); ?>">
+                    <a href="<?= $image->getThumbnail("galleryLightbox"); ?>" class="thumbnail">
+                        <?= $image->getThumbnail("galleryThumbnail")->getHTML(); ?>
                     </a>
                 </div>
             <?php } ?>

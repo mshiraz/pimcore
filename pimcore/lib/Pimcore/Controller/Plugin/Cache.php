@@ -9,31 +9,89 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Pimcore_Controller_Plugin_Cache extends Zend_Controller_Plugin_Abstract {
+namespace Pimcore\Controller\Plugin;
 
-    protected $cacheKey;
+use Pimcore\Tool;
+use Pimcore\Model\Cache as CacheManager;
+
+class Cache extends \Zend_Controller_Plugin_Abstract {
+
+    /**
+     * @var string
+     */
+    protected $defaultCacheKey;
+
+    /**
+     * @var bool
+     */
     protected $enabled = true;
+
+    /**
+     * @var null|int
+     */
     protected $lifetime = null;
+
+    /**
+     * @var bool
+     */
     protected $addExpireHeader = true;
 
+    /**
+     * @var string|null
+     */
+    protected $disableReason;
+
+    /**
+     *
+     */
     public function disableExpireHeader() {
         $this->addExpireHeader = false;
     }
 
+    /**
+     *
+     */
     public function enableExpireHeader() {
         $this->addExpireHeader = true;
     }
 
-    public function disable() {
+    /**
+     * @return bool
+     */
+    public function disable($reason = null) {
+
+        if($reason) {
+            $this->disableReason = $reason;
+        }
+
         $this->enabled = false;
         return true;
     }
 
-    public function routeStartup(Zend_Controller_Request_Abstract $request) {
+    /**
+     * @return bool
+     */
+    public function enable() {
+        $this->enabled = true;
+        return true;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isEnabled() {
+        return $this->enabled;
+    }
+
+    /**
+     * @param \Zend_Controller_Request_Abstract $request
+     * @return bool|void
+     */
+    public function routeStartup(\Zend_Controller_Request_Abstract $request) {
 
         $requestUri = $request->getRequestUri();
         $excludePatterns = array();
@@ -43,14 +101,30 @@ class Pimcore_Controller_Plugin_Cache extends Zend_Controller_Plugin_Abstract {
             return $this->disable();
         }
 
+        // disable the output-cache if browser wants the most recent version
+        // unfortunately only Chrome + Firefox if not using SSL
+        if(!$request->isSecure()) {
+            if (isset($_SERVER["HTTP_CACHE_CONTROL"]) && $_SERVER["HTTP_CACHE_CONTROL"] == "no-cache") {
+                return $this->disable("HTTP Header Cache-Control: no-cache was sent");
+            }
+
+            if (isset($_SERVER["HTTP_PRAGMA"]) && $_SERVER["HTTP_PRAGMA"] == "no-cache") {
+                return $this->disable("HTTP Header Pragma: no-cache was sent");
+            }
+        }
+
         try {
-            $conf = Pimcore_Config::getSystemConfig();
+            $conf = \Pimcore\Config::getSystemConfig();
             if ($conf->cache) {
 
                 $conf = $conf->cache;
 
                 if (!$conf->enabled) {
                     return $this->disable();
+                }
+
+                if(\Pimcore::inDebugMode()) {
+                    return $this->disable("in debug mode");
                 }
 
                 if ($conf->lifetime) {
@@ -69,29 +143,32 @@ class Pimcore_Controller_Plugin_Cache extends Zend_Controller_Plugin_Abstract {
 
                     foreach ($cookies as $cookie) {
                         if (!empty($cookie) && isset($_COOKIE[trim($cookie)])) {
-                            return $this->disable();
+                            return $this->disable("exclude cookie in system-settings matches");
                         }
                     }
                 }
 
                 // output-cache is always disabled when logged in at the admin ui
                 if(isset($_COOKIE["pimcore_admin_sid"])) {
-                    return $this->disable();
+                    return $this->disable("backend user is logged in");
                 }
-            }
-            else {
+            } else {
                 return $this->disable();
             }
-        }
-        catch (Exception $e) {
-            return $this->disable();
+        } catch (\Exception $e) {
+            \Logger::error($e);
+            return $this->disable("ERROR: Exception (see debug.log)");
         }
 
         foreach ($excludePatterns as $pattern) {
             if (@preg_match($pattern, $requestUri)) {
-                return $this->disable();
+                return $this->disable("exclude path pattern in system-settings matches");
             }
         }
+
+        $deviceDetector = Tool\DeviceDetector::getInstance();
+        $device = $deviceDetector->getDevice();
+        $deviceDetector->setWasUsed(false);
 
         $appendKey = "";
         // this is for example for the image-data-uri plugin
@@ -102,11 +179,21 @@ class Pimcore_Controller_Plugin_Cache extends Zend_Controller_Plugin_Abstract {
             }
         }
 
-        $this->cacheKey = "output_" . md5(Pimcore_Tool::getHostname() . $requestUri) . $appendKey;
+        $this->defaultCacheKey = "output_" . md5($request->getHttpHost() . $requestUri . $appendKey);
+        $cacheKeys = [
+            $this->defaultCacheKey . "_" . $device,
+            $this->defaultCacheKey,
+        ];
 
-        if ($cacheItem = Pimcore_Model_Cache::load($this->cacheKey, true)) {
-            header("X-Pimcore-Cache-Tag: " . $this->cacheKey, true, 200);
-            header("X-Pimcore-Cache-Date: " . $cacheItem["date"]);
+        $cacheItem = null;
+        foreach($cacheKeys as $cacheKey) {
+            $cacheItem = CacheManager::load($cacheKey, true);
+            if($cacheItem) break;
+        }
+
+        if (is_array($cacheItem) && !empty($cacheItem)) {
+            header("X-Pimcore-Output-Cache-Tag: " . $cacheKey, true, 200);
+            header("X-Pimcore-Output-Cache-Date: " . $cacheItem["date"]);
             
             foreach ($cacheItem["rawHeaders"] as $header) {
                 header($header);
@@ -121,14 +208,26 @@ class Pimcore_Controller_Plugin_Cache extends Zend_Controller_Plugin_Abstract {
         } else {
             // set headers to tell the client to not cache the contents
             // this can/will be overwritten in $this->dispatchLoopShutdown() if the cache is enabled
-            $date = new Zend_Date(1);
-            $this->getResponse()->setHeader("Expires", $date->get(Zend_Date::RFC_1123), true);
+            $date = new \Zend_Date(1);
+            $this->getResponse()->setHeader("Expires", $date->get(\Zend_Date::RFC_1123), true);
             $this->getResponse()->setHeader("Cache-Control", "max-age=0, no-cache", true);
         }
     }
 
+    /**
+     *
+     */
     public function dispatchLoopShutdown() {
-        if ($this->enabled && $this->getResponse()->getHttpResponseCode() == 200 && !session_id()) {
+
+        if($this->enabled && session_id()) {
+            $this->disable("session in use");
+        }
+
+        if($this->disableReason) {
+            $this->getResponse()->setHeader("X-Pimcore-Output-Cache-Disable-Reason", $this->disableReason, true);
+        }
+
+        if ($this->enabled && $this->getResponse()->getHttpResponseCode() == 200) {
             try {
 
                 if($this->lifetime && $this->addExpireHeader) {
@@ -136,31 +235,48 @@ class Pimcore_Controller_Plugin_Cache extends Zend_Controller_Plugin_Abstract {
                     $this->getResponse()->setHeader("Cache-Control", "public, max-age=" . $this->lifetime, true);
 
                     // add expire header
-                    $this->getResponse()->setHeader("Expires", Zend_Date::now()->add($this->lifetime)->get(Zend_Date::RFC_1123), true);
+                    $this->getResponse()->setHeader("Expires", \Zend_Date::now()->add($this->lifetime)->get(\Zend_Date::RFC_1123), true);
                 }
 
                 $cacheItem = array(
                     "headers" => $this->getResponse()->getHeaders(),
                     "rawHeaders" => $this->getResponse()->getRawHeaders(),
                     "content" => $this->getResponse()->getBody(),
-                    "date" => Zend_Date::now()->getIso()
+                    "date" => \Zend_Date::now()->getIso()
                 );
-                
-                Pimcore_Model_Cache::save($cacheItem, $this->cacheKey, array("output"), $this->lifetime, 1000);
+
+                $cacheKey = $this->defaultCacheKey;
+                $deviceDetector = Tool\DeviceDetector::getInstance();
+                if($deviceDetector->wasUsed()) {
+                    $cacheKey .= "_" . $deviceDetector->getDevice();
+                }
+
+                CacheManager::save($cacheItem, $cacheKey, array("output"), $this->lifetime, 1000);
             }
-            catch (Exception $e) {
-                Logger::error($e);
+            catch (\Exception $e) {
+                \Logger::error($e);
                 return;
             }
+        } else {
+            // output-cache was disabled, add "output" as cleared tag to ensure that no other "output" tagged elements
+            // like the inc and snippet cache get into the cache
+            CacheManager::addClearedTag("output_inline");
         }
     }
 
+    /**
+     * @param $lifetime
+     * @return $this
+     */
     public function setLifetime($lifetime)
     {
         $this->lifetime = $lifetime;
         return $this;
     }
 
+    /**
+     * @return int|null
+     */
     public function getLifetime()
     {
         return $this->lifetime;

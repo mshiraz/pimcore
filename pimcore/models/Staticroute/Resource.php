@@ -11,33 +11,19 @@
  *
  * @category   Pimcore
  * @package    Staticroute
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Staticroute_Resource extends Pimcore_Model_Resource_Abstract {
+namespace Pimcore\Model\Staticroute;
+
+use Pimcore\Model;
+
+class Resource extends Model\Resource\AbstractResource {
 
     /**
-     * Contains all valid columns in the database table
-     *
-     * @var array
-     */
-    protected $validColumns = array();
-
-    /**
-     * Get the valid columns from the database
-     *
-     * @return void
-     */
-    public function init() {
-        $this->validColumns = $this->getValidTableColumns("staticroutes");
-    }
-
-    /**
-     * Get the data for the object from database for the given id, or from the ID which is set in the object
-     *
-     * @param integer $id
-     * @return void
+     * @param null $id
+     * @throws \Exception
      */
     public function getById($id = null) {
 
@@ -51,15 +37,14 @@ class Staticroute_Resource extends Pimcore_Model_Resource_Abstract {
         if($data["id"]) {
             $this->assignVariablesToModel($data);
         } else {
-            throw new Exception("Route with id: " . $this->model->getId() . " does not exist");
+            throw new \Exception("Route with id: " . $this->model->getId() . " does not exist");
         }
     }
-    
+
     /**
-     * Get the data for the object from database for the given name, or from the Name which is set in the object
-     *
-     * @param integer $id
-     * @return void
+     * @param null $name
+     * @param null $siteId
+     * @throws \Exception
      */
     public function getByName($name = null, $siteId = null) {
 
@@ -71,7 +56,7 @@ class Staticroute_Resource extends Pimcore_Model_Resource_Abstract {
         if($data["id"]) {
             $this->assignVariablesToModel($data);
         } else {
-            throw new Exception("Route with name: " . $this->model->getName() . " does not exist");
+            throw new \Exception("Route with name: " . $this->model->getName() . " does not exist");
         }
     }
 
@@ -99,23 +84,25 @@ class Staticroute_Resource extends Pimcore_Model_Resource_Abstract {
     }
 
     /**
-     * Save changes to database, it's an good idea to use save() instead
-     *
-     * @return void
+     * @throws \Exception
      */
     public function update() {
         try {
+            $ts = time();
+            $this->model->setModificationDate($ts);
+
             $type = get_object_vars($this->model);
 
             foreach ($type as $key => $value) {
-                if (in_array($key, $this->validColumns)) {
+                if (in_array($key, $this->getValidTableColumns("staticroutes"))) {
                     $data[$key] = $value;
                 }
             }
 
+
             $this->db->update("staticroutes", $data, $this->db->quoteInto("id = ?", $this->model->getId()));
         }
-        catch (Exception $e) {
+        catch (\Exception $e) {
             throw $e;
         }
         
@@ -128,6 +115,10 @@ class Staticroute_Resource extends Pimcore_Model_Resource_Abstract {
      * @return boolean
      */
     public function create() {
+        $ts = time();
+        $this->model->setModificationDate($ts);
+        $this->model->setCreationDate($ts);
+
         $this->db->insert("staticroutes", array());
 
         $this->model->setId($this->db->lastInsertId());

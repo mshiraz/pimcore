@@ -9,13 +9,15 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
- 
-class Pimcore_Image_Adapter_GD extends Pimcore_Image_Adapter {
 
+namespace Pimcore\Image\Adapter;
 
+use Pimcore\Image\Adapter;
+
+class GD extends Adapter {
     /**
      * @var string
      */
@@ -29,9 +31,10 @@ class Pimcore_Image_Adapter_GD extends Pimcore_Image_Adapter {
 
     /**
      * @param $imagePath
-     * @return bool|Pimcore_Image_Adapter_GD
+     * @param array $options
+     * @return $this|self
      */
-    public function load ($imagePath) {
+    public function load ($imagePath, $options = []) {
 
         $this->path = $imagePath;
         if(!$this->resource = @imagecreatefromstring(file_get_contents($this->path))) {
@@ -43,18 +46,34 @@ class Pimcore_Image_Adapter_GD extends Pimcore_Image_Adapter {
         $this->setWidth($width);
         $this->setHeight($height);
 
+        if(in_array(\Pimcore\File::getFileExtension($imagePath), ["png","gif"])) {
+            // in GD only gif and PNG can have an alphachannel
+            $this->setIsAlphaPossible(true);
+        }
+
+        $this->setModified(false);
+
         return $this;
     }
 
     /**
-     * @param  $path
-     * @return void
+     * @param $path
+     * @param null $format
+     * @param null $quality
+     * @return $this|mixed
      */
     public function save ($path, $format = null, $quality = null) {
 
         $format = strtolower($format);
         if(!$format) {
             $format = "png";
+        }
+
+        if(!$this->reinitializing && $this->getUseContentOptimizedFormat()) {
+            $format = "pjpeg";
+            if($this->hasAlphaChannel()) {
+                $format = "png";
+            }
         }
 
         // progressive jpeg
@@ -89,6 +108,30 @@ class Pimcore_Image_Adapter_GD extends Pimcore_Image_Adapter {
     }
 
     /**
+     * @return bool
+     */
+    protected function hasAlphaChannel() {
+
+        if($this->isAlphaPossible) {
+            $width = imagesx($this->resource); // Get the width of the image
+            $height = imagesy($this->resource); // Get the height of the image
+
+            // We run the image pixel by pixel and as soon as we find a transparent pixel we stop and return true.
+            for($i = 0; $i < $width; $i++) {
+                for($j = 0; $j < $height; $j++) {
+                    $rgba = imagecolorat($this->resource, $i, $j);
+                    if(($rgba & 0x7F000000) >> 24) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // If we dont find any pixel the function will return false.
+        return false;
+    }
+
+    /**
      * @return void
      */
     protected function destroy() {
@@ -105,7 +148,7 @@ class Pimcore_Image_Adapter_GD extends Pimcore_Image_Adapter {
 
         imagesavealpha($newImg, true);
         imagealphablending($newImg, false);
-        $trans_colour = imagecolorallocatealpha($newImg, 255, 0, 0, 127);
+        $trans_colour = imagecolorallocatealpha($newImg, 0, 0, 0, 127);
         imagefill($newImg, 0, 0, $trans_colour);
 
         return $newImg;
@@ -114,9 +157,11 @@ class Pimcore_Image_Adapter_GD extends Pimcore_Image_Adapter {
     /**
      * @param  $width
      * @param  $height
-     * @return Pimcore_Image_Adapter
+     * @return self
      */
     public function resize ($width, $height) {
+
+        $this->preModify();
 
         $newImg = $this->createImage($width, $height);
         ImageCopyResampled($newImg, $this->resource, 0, 0, 0, 0, $width, $height, $this->getWidth(), $this->getHeight());
@@ -125,7 +170,7 @@ class Pimcore_Image_Adapter_GD extends Pimcore_Image_Adapter {
         $this->setWidth($width);
         $this->setHeight($height);
 
-        $this->reinitializeImage();
+        $this->postModify();
 
         return $this;
     }
@@ -135,9 +180,11 @@ class Pimcore_Image_Adapter_GD extends Pimcore_Image_Adapter {
      * @param  $y
      * @param  $width
      * @param  $height
-     * @return Pimcore_Image_Adapter_GD
+     * @return self
      */
     public function crop($x, $y, $width, $height) {
+
+        $this->preModify();
 
         $x = min($this->getWidth(), max(0, $x));
         $y = min($this->getHeight(), max(0, $y));
@@ -152,7 +199,7 @@ class Pimcore_Image_Adapter_GD extends Pimcore_Image_Adapter {
         $this->setWidth($width);
         $this->setHeight($height);
 
-        $this->reinitializeImage();
+        $this->postModify();
 
         return $this;
     }
@@ -161,11 +208,11 @@ class Pimcore_Image_Adapter_GD extends Pimcore_Image_Adapter {
     /**
      * @param  $width
      * @param  $height
-     * @param string $color
-     * @param string $orientation
-     * @return Pimcore_Image_Adapter_GD
+     * @return self
      */
     public function frame ($width, $height) {
+
+        $this->preModify();
 
         $this->contain($width, $height);
 
@@ -179,7 +226,9 @@ class Pimcore_Image_Adapter_GD extends Pimcore_Image_Adapter {
         $this->setWidth($width);
         $this->setHeight($height);
 
-        $this->reinitializeImage();
+        $this->postModify();
+
+        $this->setIsAlphaPossible(true);
 
         return $this;
     }
@@ -189,6 +238,8 @@ class Pimcore_Image_Adapter_GD extends Pimcore_Image_Adapter {
      * @return Pimcore_Image_Adapter
      */
     public function setBackgroundColor ($color) {
+
+        $this->preModify();
 
         list($r,$g,$b) = $this->colorhex2colorarray($color);
 
@@ -201,36 +252,45 @@ class Pimcore_Image_Adapter_GD extends Pimcore_Image_Adapter {
         imagecopy($newImg, $this->resource,0, 0, 0, 0, $this->getWidth(), $this->getHeight());
         $this->resource = $newImg;
 
-        $this->reinitializeImage();
+        $this->postModify();
+
+        $this->setIsAlphaPossible(false);
 
         return $this;
     }
 
     /**
-     * @return Pimcore_Image_Adapter_GD
+     * @return self
      */
     public function grayscale () {
+
+        $this->preModify();
+
         imagefilter($this->resource, IMG_FILTER_GRAYSCALE);
 
-        $this->reinitializeImage();
+        $this->postModify();
 
         return $this;
     }
 
     /**
-     * @return Pimcore_Image_Adapter_GD
+     * @return self
      */
     public function sepia () {
+
+        $this->preModify();
 
         imagefilter($this->resource, IMG_FILTER_GRAYSCALE);
         imagefilter($this->resource, IMG_FILTER_COLORIZE, 100, 50, 0);
 
-        $this->reinitializeImage();
+        $this->postModify();
 
         return $this;
     }
 
     public function  addOverlay ($image, $x = 0, $y = 0, $alpha = 100, $composite = "COMPOSITE_DEFAULT", $origin = 'top-left') {
+
+        $this->preModify();
 
         $image = ltrim($image,"/");
         $image = PIMCORE_DOCUMENT_ROOT . "/" . $image;
@@ -263,7 +323,46 @@ class Pimcore_Image_Adapter_GD extends Pimcore_Image_Adapter {
             imagecopyresampled($this->resource, $overlay, $x, $y, 0, 0, $oWidth, $oHeight, $oWidth, $oHeight);
         }
 
-        $this->reinitializeImage();
+        $this->postModify();
+
+        return $this;
+    }
+
+    /**
+     * @param string $mode
+     * @return $this|self
+     */
+    public function mirror($mode) {
+
+        $this->preModify();
+
+        if($mode == "vertical") {
+            imageflip($this->resource, IMG_FLIP_VERTICAL);
+        } else if ($mode == "horizontal") {
+            imageflip($this->resource, IMG_FLIP_HORIZONTAL);
+        }
+
+        $this->postModify();
+
+        return $this;
+    }
+
+    /**
+     * @param $angle
+     * @return $this|self
+     */
+    public function rotate ($angle) {
+
+        $this->preModify();
+        $angle = 360 - $angle;
+        $this->resource = imagerotate($this->resource, $angle, imageColorAllocateAlpha($this->resource, 0, 0, 0, 127));
+
+        $this->setWidth(imagesx($this->resource));
+        $this->setHeight(imagesy($this->resource));
+
+        $this->postModify();
+
+        $this->setIsAlphaPossible(true);
 
         return $this;
     }

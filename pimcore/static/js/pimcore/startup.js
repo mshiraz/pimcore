@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -76,6 +76,9 @@ Ext.onReady(function () {
     Ext.Ajax.method = "GET";
     Ext.Ajax.disableCaching = true;
     Ext.Ajax.timeout = 900000;
+    Ext.Ajax.defaultHeaders = {
+        'X-pimcore-csrf-token': pimcore.settings["csrfToken"]
+    };
     Ext.Ajax.on('requestexception', function (conn, response, options) {
         console.log("xhr request failed");
 
@@ -105,7 +108,7 @@ Ext.onReady(function () {
                 if(options["params"]) {
                     errorMessage += "Params:\n";
                     Ext.iterate(options.params, function (key, value) {
-                        errorMessage += ( "-> " + key + ": " + value + "\n");
+                        errorMessage += ( "-> " + key + ": " + value.substr(0,500) + "\n");
                     });
                 }
                 if(options["method"]) {
@@ -138,8 +141,29 @@ Ext.onReady(function () {
         // redirect to login-page if session is expired
         if (typeof response.getResponseHeader == "function") {
             if (response.getResponseHeader("X-Pimcore-Auth") == "required") {
-                pimcore.settings.showCloseConfirmation = false;
-                window.location.href = "/admin/login/?session_expired=true";
+                //pimcore.settings.showCloseConfirmation = false;
+                //window.location.href = "/admin/login/?session_expired=true";
+
+                var errorMessage = "";
+
+                try {
+                    errorMessage = "Status: " + response.status + " | " + response.statusText + "\n";
+                    errorMessage += "URL: " + options.url + "\n";
+                    if(options["params"]) {
+                        errorMessage += "Params:\n";
+                        Ext.iterate(options.params, function (key, value) {
+                            errorMessage += ( "-> " + key + ": " + value + "\n");
+                        });
+                    }
+                    if(options["method"]) {
+                        errorMessage += "Method: " + options.method + "\n";
+                    }
+                    errorMessage += "Message: \n" + response.responseText;
+                } catch (e) {
+                    errorMessage = response.responseText;
+                }
+
+                pimcore.helpers.showNotification(t("session_error"), t("session_error_text"), "error", errorMessage);
             }
         }
     });
@@ -161,7 +185,9 @@ Ext.onReady(function () {
         {name:'action', allowBlank:true},
         {name:'template', allowBlank:true},
         {name:'type', allowBlank:false},
-        {name:'priority', allowBlank:true}
+        {name:'priority', allowBlank:true},
+        {name: 'creationDate', allowBlank: true},
+        {name: 'modificationDate', allowBlank: true}
     ]);
     var writer = new Ext.data.JsonWriter();
     var store = new Ext.data.Store({
@@ -269,6 +295,13 @@ Ext.onReady(function () {
         id:'pimcore_statusbar',
         statusAlign:'right'
     });
+    pimcore.globalmanager.add("statusbar", statusbar);
+
+    // check for devmode
+    if (pimcore.settings.devmode) {
+        statusbar.add('<div class="pimcore_statusbar_devmode">DEV-MODE</div>');
+        statusbar.add("-");
+    }
 
     // check for debug
     if (pimcore.settings.debug) {
@@ -278,8 +311,7 @@ Ext.onReady(function () {
     // check for maintenance
     if (!pimcore.settings.maintenance_active) {
         statusbar.add('<div class="pimcore_statusbar_maintenance">'
-                + '<a href="http://www.pimcore.org/wiki/display/PIMCORE/'
-                + 'Installation+and+Upgrade+Guide#InstallationandUpgradeGuide-SetuptheMaintenanceScript"'
+                + '<a href="http://www.pimcore.org/wiki/pages/viewpage.action?pageId=12124463" '
                 + 'target="_blank">'
                 + t("maintenance_not_active") + "</a></div>");
         statusbar.add("-");
@@ -291,20 +323,9 @@ Ext.onReady(function () {
         statusbar.add("-");
     }
 
-    // check for flash player
-    if (!swfobject.hasFlashPlayerVersion("11")) {
-        statusbar.add('<div class="pimcore_statusbar_flash">' + t("update_flash") + "</div>");
-        statusbar.add("-");
-    }
-
     statusbar.add("->");
     statusbar.add('&copy by <a href="http://www.pimcore.org/" target="_blank" style="color:#fff;">'
                 + 'pimcore GmbH</a> - pimcore Version: ' + pimcore.settings.version + " (Build: " + pimcore.settings.build + ")");
-
-    if (!empty(pimcore.settings.liveconnectToken)) {
-        pimcore.settings.liveconnect.setToken(pimcore.settings.liveconnectToken);
-        pimcore.settings.liveconnect.addToStatusBar();
-    }
 
     // check for updates
     window.setTimeout(function () {
@@ -342,7 +363,6 @@ Ext.onReady(function () {
                             split:true,
                             width:250,
                             minSize:175,
-                            maxSize:400,
                             collapsible:true,
                             animCollapse:false,
                             layout:'accordion',
@@ -371,7 +391,6 @@ Ext.onReady(function () {
                             split:true,
                             width:250,
                             minSize:175,
-                            maxSize:400,
                             collapsible:true,
                             collapsed:true,
                             animCollapse:false,
@@ -403,7 +422,7 @@ Ext.onReady(function () {
 
         // add sidebar panels
 
-        if (user.memorizeTabs) {
+        if (user.memorizeTabs || pimcore.helpers.forceOpenMemorizedTabsOnce()) {
             // open previous opened tabs after the trees are ready
             pimcore.layout.treepanelmanager.addOnReadyCallback(function () {
                 window.setTimeout(function () {
@@ -466,7 +485,7 @@ Ext.onReady(function () {
     }
 
 
-    if (pimcore.globalmanager.get("user").welcomescreen) {
+    if (user.isAllowed("dashboards") && pimcore.globalmanager.get("user").welcomescreen) {
         layoutPortal = new pimcore.layout.portal();
         pimcore.globalmanager.add("layout_portal", layoutPortal);
     }
@@ -480,8 +499,10 @@ Ext.onReady(function () {
 });
 
 
+pimcore["intervals"] = {};
+
 //add missing translation keys
-window.setInterval(function () {
+pimcore["intervals"]["translations_admin_missing"] = window.setInterval(function () {
     var missingTranslations = pimcore.globalmanager.get("translations_admin_missing");
     var addedTranslations = pimcore.globalmanager.get("translations_admin_added");
     if (missingTranslations.length > 0) {
@@ -500,7 +521,7 @@ window.setInterval(function () {
 }, 30000);
 
 // session renew
-window.setInterval(function () {
+pimcore["intervals"]["ping"] = window.setInterval(function () {
     Ext.Ajax.request({
         url:"/admin/misc/ping",
         success:function (response) {

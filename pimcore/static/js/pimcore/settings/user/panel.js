@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -58,7 +58,7 @@ pimcore.settings.user.panel = Class.create(pimcore.settings.user.panels.abstract
                 containerScroll: true,
                 border: true,
                 split:true,
-                width: 150,
+                width: 180,
                 minSize: 100,
                 maxSize: 350,
                 root: {
@@ -78,7 +78,12 @@ pimcore.settings.user.panel = Class.create(pimcore.settings.user.panels.abstract
                         allowChildren: true,
                         isTarget: true
                     }
-                })
+                }),
+                tbar: ["->", {
+                    text: t("search"),
+                    iconCls: "pimcore_icon_search",
+                    handler: this.openSearchPanel.bind(this)
+                }]
             });
 
 
@@ -90,60 +95,141 @@ pimcore.settings.user.panel = Class.create(pimcore.settings.user.panels.abstract
         return this.tree;
     },
 
+    openSearchPanel: function () {
+
+        var store = new Ext.data.JsonStore({
+            url: '/admin/user/search',
+            root: 'users',
+            fields: ["id", 'name', "email", "firstname", "lastname"]
+        });
+
+        var resultTpl = new Ext.XTemplate(
+            '<tpl for="."><div class="search-item" style="padding: 3px 10px 3px 10px; border: 1px solid #fff; border-bottom: 1px solid #eeeeee; color: #555;">',
+            '<img style="float:left; padding-right: 10px; max-height:30px;" src="/admin/user/get-image?id={id}" />',
+            '<h3>{name} - {firstname} {lastname}</h3>',
+            '{email} <b>ID: </b> {id}',
+            '</div></tpl>'
+        );
+
+        var win = new Ext.Window({
+            title: t("search"),
+            iconCls: "pimcore_icon_search",
+            width: 320,
+            height: 110,
+            modal: true,
+            bodyStyle:"padding:10px",
+            items: [{
+                xtype: "combo",
+                store: store,
+                displayField:'name',
+                valueField: "id",
+                typeAhead: false,
+                loadingText: t('searching'),
+                width: 285,
+                minChars: 1,
+                queryDelay: 100,
+                hideTrigger:true,
+                tpl: resultTpl,
+                itemSelector: 'div.search-item',
+                triggerAction: "all",
+                listeners: {
+                    select: function(combo, record, index){
+                        this.openUser(record.get("id"));
+                        win.close();
+                    }.bind(this),
+                    afterrender: function () {
+                        this.focus(true,500);
+                    }
+                }
+            }],
+            buttons: [{
+                text: t("close"),
+                iconCls: "pimcore_icon_delete",
+                handler: function () {
+                    win.close();
+                }
+            }]
+        });
+
+        win.show();
+    },
+
+    openUser: function(userId) {
+        var userPanelKey = "user_" + userId;
+        if(this.panels[userPanelKey]) {
+            this.panels[userPanelKey].activate();
+        } else {
+            var userPanel = new pimcore.settings.user.usertab(this, userId);
+            this.panels[userPanelKey] = userPanel;
+        }
+
+    },
+
     onTreeNodeClick: function (node) {
 
+        var user = pimcore.globalmanager.get("user");
+        if(node.attributes["admin"] && !user.admin) {
+            Ext.MessageBox.alert(t("error"), t("you_are_not_allowed_to_manage_admin_users"));
+            return;
+        }
+
         if(!node.attributes.allowChildren && node.id > 0) {
-            var userPanelKey = "user_" + node.id;
-            if(this.panels[userPanelKey]) {
-                this.panels[userPanelKey].activate();
-            } else {
-                var userPanel = new pimcore.settings.user.usertab(this, node.id);
-                this.panels[userPanelKey] = userPanel;
-            }
+            this.openUser(node.id);
         }
     },
 
     onTreeNodeContextmenu: function () {
 
         var user = pimcore.globalmanager.get("user");
-        if (user.admin) {
 
-            this.select();
-            var menu = new Ext.menu.Menu();
-
-            if (this.allowChildren) {
-                menu.add(new Ext.menu.Item({
-                    text: t('add_folder'),
-                    iconCls: "pimcore_icon_folder_add",
-                    listeners: {
-                        "click": this.attributes.reference.add.bind(this, "userfolder")
-                    }
-                }));
-                menu.add(new Ext.menu.Item({
-                    text: t('add_user'),
-                    iconCls: "pimcore_icon_user_add",
-                    listeners: {
-                        "click": this.attributes.reference.add.bind(this, "user")
-                    }
-                }));
-            }
-
-
-            if (this.id != user.id) {
-                menu.add(new Ext.menu.Item({
-                    text: t('delete'),
-                    iconCls: "pimcore_icon_delete",
-                    listeners: {
-                        "click": this.attributes.reference.remove.bind(this)
-                    }
-                }));
-            }
-
-            if(typeof menu.items != "undefined" && typeof menu.items.items != "undefined"
-                                                                && menu.items.items.length > 0) {
-                menu.show(this.ui.getAnchor());
-            }
+        if(this.attributes.admin && !user.admin) {
+            // only admin users are allowed to manage admin users
+            return;
         }
+
+        this.select();
+        var menu = new Ext.menu.Menu();
+
+        if (this.allowChildren) {
+            menu.add(new Ext.menu.Item({
+                text: t('add_folder'),
+                iconCls: "pimcore_icon_folder_add",
+                listeners: {
+                    "click": this.attributes.reference.add.bind(this, "userfolder", 0)
+                }
+            }));
+            menu.add(new Ext.menu.Item({
+                text: t('add_user'),
+                iconCls: "pimcore_icon_user_add",
+                listeners: {
+                    "click": this.attributes.reference.add.bind(this, "user", 0)
+                }
+            }));
+        } else if (this.attributes.elementType == "user") {
+            menu.add(new Ext.menu.Item({
+                text: t('clone_user'),
+                iconCls: "pimcore_icon_user_add",
+                listeners: {
+                    "click": this.attributes.reference.add.bind(this, "user", this.attributes.id)
+                }
+            }));
+        }
+
+        if (this.id != user.id && (this.attributes.type != "userfolder" || user.admin)) {
+            menu.add(new Ext.menu.Item({
+                text: t('delete'),
+                iconCls: "pimcore_icon_delete",
+                listeners: {
+                    "click": this.attributes.reference.remove.bind(this)
+                }
+            }));
+        }
+
+        if(typeof menu.items != "undefined" && typeof menu.items.items != "undefined"
+            && menu.items.items.length > 0) {
+            menu.show(this.ui.getAnchor());
+        }
+
     },
 
     addComplete: function (parentId, transport) {
@@ -152,11 +238,11 @@ pimcore.settings.user.panel = Class.create(pimcore.settings.user.panels.abstract
             if(data && data.success){
                 this.tree.getNodeById(parentId).reload();
             } else {
-                 pimcore.helpers.showNotification(t("error"), t("user_creation_error"), "error",t(data.message));
+                pimcore.helpers.showNotification(t("error"), t("user_creation_error"), "error",t(data.message));
             }
 
         } catch(e){
-             pimcore.helpers.showNotification(t("error"), t("user_creation_error"), "error");
+            pimcore.helpers.showNotification(t("error"), t("user_creation_error"), "error");
         }
     },
 

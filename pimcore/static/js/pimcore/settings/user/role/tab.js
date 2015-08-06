@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -19,7 +19,6 @@ pimcore.settings.user.role.tab = Class.create({
     initialize: function (parentPanel, id) {
         this.parentPanel = parentPanel;
         this.id = id;
-        this.data;
 
         Ext.Ajax.request({
             url: "/admin/user/role-get",

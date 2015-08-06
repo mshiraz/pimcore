@@ -9,15 +9,18 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
+namespace Pimcore\Cache\Backend;
 
-class Pimcore_Cache_Backend_MysqlTable extends Zend_Cache_Backend implements Zend_Cache_Backend_ExtendedInterface {
+use Pimcore\Resource;
+
+class MysqlTable extends \Zend_Cache_Backend implements \Zend_Cache_Backend_ExtendedInterface {
 
     /**
-     * @var Zend_Db_Adapter_Abstract
+     * @var \Zend_Db_Adapter_Abstract
      */
     protected $db;
 
@@ -35,21 +38,15 @@ class Pimcore_Cache_Backend_MysqlTable extends Zend_Cache_Backend implements Zen
     }
 
     /**
-     * @return Zend_Db_Adapter_Abstract
+     * @return \Zend_Db_Adapter_Abstract
      */
     protected function getDb () {
         if(!$this->db) {
-            $this->db = Pimcore_Resource::get();
+            // we're using a new mysql connection here to avoid problems with active (nested) transactions
+            \Logger::debug("Initialize dedicated MySQL connection for the cache adapter");
+            $this->db = Resource::getConnection();
         }
         return $this->db;
-    }
-
-    /**
-     * @return void
-     */
-    protected function clearTags () {
-        $this->getDb()->query("TRUNCATE TABLE `cache_tags`");
-        $this->getDb()->query("ALTER TABLE `cache_tags` ENGINE=MEMORY");
     }
 
     /**
@@ -96,17 +93,11 @@ class Pimcore_Cache_Backend_MysqlTable extends Zend_Cache_Backend implements Zen
                 }
             }
             $this->getDb()->commit();
-        } catch (Exception $e) {
-            Logger::error($e);
+        } catch (\Exception $e) {
+            \Logger::error($e);
             $this->getDb()->rollBack();
-
-            if(strpos(strtolower($e->getMessage()), "is full") !== false) {
-                // it seems that the MEMORY table is on the limit an full
-                // change the storage engine of the cache tags table to InnoDB
-                $this->getDb()->query("ALTER TABLE `cache_tags` ENGINE=InnoDB");
-            } else {
-                throw $e;
-            }
+            $this->truncate();
+            return false;
         }
 
         return true;
@@ -127,6 +118,8 @@ class Pimcore_Cache_Backend_MysqlTable extends Zend_Cache_Backend implements Zen
             $this->getDb()->commit();
         } catch (\Exception $e) {
             $this->getDb()->rollBack();
+            $this->truncate();
+            return false;
         }
 
         return true;
@@ -147,17 +140,15 @@ class Pimcore_Cache_Backend_MysqlTable extends Zend_Cache_Backend implements Zen
      * @param  array  $tags Array of tags
      * @return boolean True if no problem
      */
-    public function clean($mode = Zend_Cache::CLEANING_MODE_ALL, $tags = array()) {
+    public function clean($mode = \Zend_Cache::CLEANING_MODE_ALL, $tags = array()) {
 
-        if ($mode == Zend_Cache::CLEANING_MODE_ALL) {
-            $this->clearTags();
-            $this->getDb()->query("TRUNCATE TABLE `cache`");
+        if ($mode == \Zend_Cache::CLEANING_MODE_ALL) {
+            $this->truncate();
         }
-        if ($mode == Zend_Cache::CLEANING_MODE_OLD) {
-            // not supported
-            //$this->getDb()->delete("cache", "expire < " . time());
+        if ($mode == \Zend_Cache::CLEANING_MODE_OLD) {
+            $this->getDb()->delete("cache", "expire < unix_timestamp() OR mtime < (unix_timestamp()-864000)");
         }
-        if ($mode == Zend_Cache::CLEANING_MODE_MATCHING_TAG || $mode == Zend_Cache::CLEANING_MODE_MATCHING_ANY_TAG) {
+        if ($mode == \Zend_Cache::CLEANING_MODE_MATCHING_TAG || $mode == \Zend_Cache::CLEANING_MODE_MATCHING_ANY_TAG) {
             foreach ($tags as $tag) {
                 $items = $this->getItemsByTag($tag);
                 $quotedIds = array();
@@ -171,7 +162,7 @@ class Pimcore_Cache_Backend_MysqlTable extends Zend_Cache_Backend implements Zen
                         $this->getDb()->delete("cache", "id = " . $quotedId);
                         $quotedIds[] = $quotedId;
                     }
-                    //$this->getDb()->delete("cache_tags", "tag = '".$tag."'");
+
                     if(count($quotedIds) > 0) {
                         $this->getDb()->delete("cache_tags", "id IN (" . implode(",", $quotedIds) . ")");
                     }
@@ -179,11 +170,12 @@ class Pimcore_Cache_Backend_MysqlTable extends Zend_Cache_Backend implements Zen
                     $this->getDb()->commit();
                 } catch (\Exception $e) {
                     $this->getDb()->rollBack();
-                    Logger::error($e);
+                    $this->truncate();
+                    \Logger::error($e);
                 }
             }
         }
-        if ($mode == Zend_Cache::CLEANING_MODE_NOT_MATCHING_TAG) {
+        if ($mode == \Zend_Cache::CLEANING_MODE_NOT_MATCHING_TAG) {
             
             $condParts = array("1=1");
             foreach ($tags as $tag) {
@@ -200,7 +192,12 @@ class Pimcore_Cache_Backend_MysqlTable extends Zend_Cache_Backend implements Zen
         return true;
     }
     
-    
+    protected function truncate() {
+        $this->getDb()->query("TRUNCATE TABLE `cache`");
+        $this->getDb()->query("TRUNCATE TABLE `cache_tags`");
+        $this->getDb()->query("ALTER TABLE `cache_tags` ENGINE=InnoDB");
+    }
+
     /**
      * @param  string $id
      * @return array tags for given id
@@ -290,7 +287,7 @@ class Pimcore_Cache_Backend_MysqlTable extends Zend_Cache_Backend implements Zen
     /**
      * Return the filling percentage of the backend storage
      *
-     * @throws Zend_Cache_Exception
+     * @throws \Zend_Cache_Exception
      * @return int integer between 0 and 100
      */
     public function getFillingPercentage()

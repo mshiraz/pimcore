@@ -9,7 +9,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -24,18 +24,26 @@ function gzcompressfile($source,$level=null, $target = null){
 
     $mode='wb'.$level;
     $error=false;
-    if($fp_out=gzopen($dest,$mode)){
-        if($fp_in=fopen($source,'rb')){
-            while(!feof($fp_in))
-                gzwrite($fp_out,fread($fp_in,1024*512));
-            fclose($fp_in);
+
+    $fp_out = gzopen($dest,$mode);
+    $fp_in = fopen($source,'rb');
+
+    if($fp_out && $fp_in) {
+        while(!feof($fp_in)) {
+            gzwrite($fp_out, fread($fp_in,1024*512));
         }
-        else $error=true;
+
+        fclose($fp_in);
         gzclose($fp_out);
+    } else {
+        $error=true;
     }
-    else $error=true;
-    if($error) return false;
-    else return $dest;
+
+    if ($error) {
+        return false;
+    } else {
+        return $dest;
+    }
 }
 
 function is_json($string) {
@@ -122,14 +130,13 @@ function array_urlencode ($args) {
   $out = '';
   foreach($args as $name => $value)
   {
-    if(is_array($value))
-    {
+    if(is_array($value))  {
         foreach($value as $key => $val) {
             $out .= urlencode($name).'['.urlencode($key).']'.'=';
             $out .= urlencode($val).'&';
 
         }
-    }else{
+    } else {
         $out .= urlencode($name).'=';
         $out .= urlencode($value).'&';
     }
@@ -177,12 +184,12 @@ function urlencode_ignore_slash($var) {
 }
 
 /**
- * @depricated
+ * @deprecated
  * @param  $filename
  * @return bool
  */
 function is_includeable($filename) {
-    return Pimcore_File::isIncludeable($filename);
+    return \Pimcore\File::isIncludeable($filename);
 }
 
 /**
@@ -317,10 +324,12 @@ function recursiveDelete ($directory, $empty = true) {
     } elseif(!is_readable($directory)) { 
         return false; 
     } else { 
-        $directoryHandle = opendir($directory); 
-        
-        while ($contents = readdir($directoryHandle)) { 
-            if($contents != '.' && $contents != '..') { 
+        $directoryHandle = opendir($directory);
+        $contents = ".";
+
+        while ($contents) {
+            $contents = readdir($directoryHandle);
+            if(strlen($contents) && $contents != '.' && $contents != '..') {
                 $path = $directory . "/" . $contents; 
                 
                 if(is_dir($path)) { 

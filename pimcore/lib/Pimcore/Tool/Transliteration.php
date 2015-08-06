@@ -9,11 +9,13 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Pimcore_Tool_Transliteration {
+namespace Pimcore\Tool;
+
+class Transliteration {
 
     /**
      * @static
@@ -26,8 +28,8 @@ class Pimcore_Tool_Transliteration {
         // the transliteration is based on the locale
         // äüö is in EN auo in DE  aeueoe
         if(!$language) {
-            if(Zend_Registry::isRegistered("Zend_Locale")) {
-                $locale = Zend_Registry::get("Zend_Locale");
+            if(\Zend_Registry::isRegistered("Zend_Locale")) {
+                $locale = \Zend_Registry::get("Zend_Locale");
                 $language = $locale->getLanguage();
             } else {
                 // there is no locale use default

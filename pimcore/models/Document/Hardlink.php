@@ -11,11 +11,17 @@
  *
  * @category   Pimcore
  * @package    Document
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Document_Hardlink extends Document
+namespace Pimcore\Model\Document;
+
+use Pimcore\Model;
+use Pimcore\Model\Document;
+use Pimcore\Model\Redirect;
+
+class Hardlink extends Document
 {
 
     /**
@@ -42,7 +48,7 @@ class Document_Hardlink extends Document
 
 
     /**
-     * @return Document_PageSnippet
+     * @return Document\PageSnippet
      */
     public function getSourceDocument () {
         if($this->getSourceId()) {
@@ -93,7 +99,8 @@ class Document_Hardlink extends Document
     }
 
     /**
-     * @param boolean $childsFromSource
+     * @param $childsFromSource
+     * @return $this
      */
     public function setChildsFromSource($childsFromSource)
     {
@@ -110,7 +117,8 @@ class Document_Hardlink extends Document
     }
 
     /**
-     * @param int $sourceId
+     * @param $sourceId
+     * @return $this
      */
     public function setSourceId($sourceId)
     {
@@ -127,7 +135,8 @@ class Document_Hardlink extends Document
     }
 
     /**
-     * @param boolean $propertiesFromSource
+     * @param $propertiesFromSource
+     * @return $this
      */
     public function setPropertiesFromSource($propertiesFromSource)
     {
@@ -143,7 +152,9 @@ class Document_Hardlink extends Document
         return $this->propertiesFromSource;
     }
 
-
+    /**
+     * @return array|null|Model\Property[]
+     */
     public function getProperties() {
 
         if ($this->properties === null) {
@@ -171,16 +182,20 @@ class Document_Hardlink extends Document
         return $this->properties;
     }
 
-    public function getChilds() {
+    /**
+     * @param bool $unpublished
+     * @return array|null
+     */
+    public function getChilds($unpublished = false) {
 
         if ($this->childs === null) {
             $childs = parent::getChilds();
 
             $sourceChilds = array();
-            if($this->getChildsFromSource() && $this->getSourceDocument() && !Pimcore::inAdmin()) {
+            if($this->getChildsFromSource() && $this->getSourceDocument() && !\Pimcore::inAdmin()) {
                 $sourceChilds = $this->getSourceDocument()->getChilds();
                 foreach($sourceChilds as &$c) {
-                    $c = Document_Hardlink_Service::wrap($c);
+                    $c = Document\Hardlink\Service::wrap($c);
                     $c->setHardLinkSource($this);
                     $c->setPath(preg_replace("@^" . preg_quote($this->getSourceDocument()->getFullpath()) . "@", $this->getFullpath(), $c->getPath()));
                 }
@@ -199,5 +214,52 @@ class Document_Hardlink extends Document
      */
     public function hasChilds() {
         return count($this->getChilds()) > 0;
+    }
+
+
+    /**
+     * @see Document::delete
+     * @return void
+     */
+    public function delete() {
+
+        // hardlinks cannot have direct children in "real" world, so we have to empty them before we delete it
+        $this->childs = [];
+
+        // check for redirects pointing to this document, and delete them too
+        $redirects = new Redirect\Listing();
+        $redirects->setCondition("target = ?", $this->getId());
+        $redirects->load();
+
+        foreach($redirects->getRedirects() as $redirect) {
+            $redirect->delete();
+        }
+
+        parent::delete();
+
+        // we re-enable the children functionality by setting them to NULL, if requested they'll be loaded again
+        // -> see $this->getChilds() , doesn't make sense when deleting an item but who knows, ... ;-)
+        $this->childs = null;
+    }
+
+    /**
+     *
+     */
+    protected function update() {
+
+        $oldPath = $this->getResource()->getCurrentFullPath();
+
+        parent::update();
+
+        $config = \Pimcore\Config::getSystemConfig();
+        if ($oldPath && $config->documents->createredirectwhenmoved && $oldPath != $this->getFullPath()) {
+            // create redirect for old path
+            $redirect = new Redirect();
+            $redirect->setTarget($this->getId());
+            $redirect->setSource("@" . $oldPath . "/?@");
+            $redirect->setStatusCode(301);
+            $redirect->setExpiry(time() + 86400 * 60); // this entry is removed automatically after 60 days
+            $redirect->save();
+        }
     }
 }

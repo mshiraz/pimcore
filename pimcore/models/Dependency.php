@@ -11,11 +11,13 @@
  *
  * @category   Pimcore
  * @package    Dependency
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Dependency extends Pimcore_Model_Abstract {
+namespace Pimcore\Model;
+
+class Dependency extends AbstractModel {
 
     /**
      * The ID of the object to get dependencies for
@@ -77,7 +79,7 @@ class Dependency extends Pimcore_Model_Abstract {
     }
 
     /**
-     * @param  Element_Interface $element
+     * @param  Element\ELementInterface $element
      * @return void
      */
     public function cleanAllForElement($element){

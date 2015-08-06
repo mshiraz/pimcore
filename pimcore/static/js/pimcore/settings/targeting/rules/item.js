@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -349,7 +349,7 @@ pimcore.settings.targeting.rules.item = Class.create({
             },
             method: "post",
             success: function () {
-
+                pimcore.helpers.showNotification(t("success"), t("item_saved_successfully"), "success");
             }.bind(this)
         });
     },
@@ -412,23 +412,24 @@ pimcore.settings.targeting.rules.item = Class.create({
 
 
             // apply specials :-)
-            if(ident == 0)
+            if(ident == 0) {
                 item.applyStyles({
                     "margin-top": "10px"
                 });
-            else if(ident == lastIdent)
+            } else if(ident == lastIdent) {
                 item.applyStyles({
                     "margin-top": "0px",
                     "margin-bottom": "0px",
                     "padding": "1px"
                 });
-            else
+            } else {
                 item.applyStyles({
                     "margin-top": "5px"
                 });
+            }
 
 
-            // remeber current ident
+            // remember current ident
             lastIdent = ident;
 
 

@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -22,15 +22,20 @@ pimcore.document.tags.image = Class.create(pimcore.document.tag, {
         this.options = this.parseOptions(options);
 
         this.options = options;
+        this.options.style = '';
+
+        if (!this.options["height"]) {
+            if (this.options["defautHeight"]){
+                this.options.style += (" min-height:" + this.options["defautHeight"] + "px");
+            }else{
+                this.options.style += (" min-height:100px");
+            }
+        }
 
         this.originalDimensions = {
             width: this.options.width,
             height: this.options.height
         };
-
-        if (!this.options.height) {
-            this.options.height = 100;
-        }
 
         if (data) {
             this.datax = data;
@@ -86,6 +91,17 @@ pimcore.document.tags.image = Class.create(pimcore.document.tag, {
 
             this.getBody().addClass("pimcore_tag_image_empty");
 
+            // add additional drop targets
+            if (this.options["dropClass"]) {
+                var extra_drop_targets = Ext.query('.' + this.options.dropClass);
+
+                for (var i = 0; i < extra_drop_targets.length; ++i) {
+                    var drop_el = Ext.get(extra_drop_targets[i]);
+                    dndManager.addDropTarget(drop_el, this.onNodeOver.bind(this), this.onNodeDrop.bind(this));
+                    drop_el.on("contextmenu", this.onContextMenu.bind(this));
+                }
+            }
+
         }.bind(this));
 
         this.element.render(id);
@@ -102,16 +118,6 @@ pimcore.document.tags.image = Class.create(pimcore.document.tag, {
         var menu = new Ext.menu.Menu();
 
         if(this.datax.id) {
-
-            menu.add(new Ext.menu.TextItem( {
-                iconCls: "none",
-                disabled: true,
-                text: this.name
-            })
-            );
-
-            menu.add(new Ext.menu.Separator());
-
             menu.add(new Ext.menu.Item({
                 text: t('select_specific_area_of_image'),
                 iconCls: "pimcore_icon_image_region",
@@ -172,6 +178,7 @@ pimcore.document.tags.image = Class.create(pimcore.document.tag, {
 
         menu.add(new Ext.menu.Item({
             text: t('upload'),
+            cls: "pimcore_inline_upload",
             iconCls: "pimcore_icon_upload_single",
             handler: function (item) {
                 item.parentMenu.destroy();
@@ -291,24 +298,28 @@ pimcore.document.tags.image = Class.create(pimcore.document.tag, {
         }
 
 
-        if (!this.options["thumbnail"] && !this.originalDimensions["width"] && !this.originalDimensions["height"]) {
-            path = "/admin/asset/get-image-thumbnail/id/" + this.datax.id + "/width/" + this.element.getEl().getWidth()
-                + "/aspectratio/true?" + Ext.urlEncode(this.datax);
-        } else if (this.originalDimensions["width"]) {
-            path = "/admin/asset/get-image-thumbnail/id/" + this.datax.id + "/width/" + this.originalDimensions["width"]
-                + "/aspectratio/true?" + Ext.urlEncode(this.datax);
-        } else if (this.originalDimensions["height"]) {
-            path = "/admin/asset/get-image-thumbnail/id/" + this.datax.id + "/height/"
+        if (!this.options["thumbnail"]) {
+            if(!this.originalDimensions["width"] && !this.originalDimensions["height"]) {
+                path = "/admin/asset/get-image-thumbnail/id/" + this.datax.id + "/width/" + this.element.getEl().getWidth()
+                    + "/aspectratio/true?" + Ext.urlEncode(this.datax);
+            } else if (this.originalDimensions["width"]) {
+                path = "/admin/asset/get-image-thumbnail/id/" + this.datax.id + "/width/" + this.originalDimensions["width"]
+                    + "/aspectratio/true?" + Ext.urlEncode(this.datax);
+            } else if (this.originalDimensions["height"]) {
+                path = "/admin/asset/get-image-thumbnail/id/" + this.datax.id + "/height/"
                 + this.originalDimensions["height"] + "/aspectratio/true?" + Ext.urlEncode(this.datax);
+            }
         } else {
             if (typeof this.options.thumbnail == "string") {
                 path = "/admin/asset/get-image-thumbnail/id/" + this.datax.id + "/thumbnail/" + this.options.thumbnail
                     + "?" + Ext.urlEncode(this.datax);
-            }
-            else if (this.options.thumbnail.width || this.options.thumbnail.height) {
+            } else if (this.options.thumbnail.width || this.options.thumbnail.height) {
                 path = "/admin/asset/get-image-thumbnail/id/" + this.datax.id + "/width/"
                     + this.options.thumbnail.width + "/height/" + this.options.thumbnail.height + "?"
                     + Ext.urlEncode(this.datax);
+            } else {
+                path = "/admin/asset/get-image-thumbnail/id/" + this.datax.id + "/?config="
+                    + encodeURIComponent(Ext.encode(this.options.thumbnail));
             }
         }
 
@@ -349,6 +360,10 @@ pimcore.document.tags.image = Class.create(pimcore.document.tag, {
 
             if(Ext.isIE && width==28 && height==30){
                 //IE missing image placeholder
+                return;
+            }
+            if(Ext.isGecko && width==24 && height==24){
+                // firefox missing image placeholder
                 return;
             }
 
@@ -404,7 +419,7 @@ pimcore.document.tags.image = Class.create(pimcore.document.tag, {
     },
 
     openEditWindow: function() {
-        var editor = new pimcore.element.tag.imagecropper(this.datax.id, this.datax, function (data) {
+        var editor = pimcore.helpers.openImageCropper(this.datax.id, this.datax, function (data) {
             this.datax.cropWidth = data.cropWidth;
             this.datax.cropHeight = data.cropHeight;
             this.datax.cropTop = data.cropTop;
@@ -417,11 +432,11 @@ pimcore.document.tags.image = Class.create(pimcore.document.tag, {
     },
 
     openHotspotWindow: function() {
-        var editor = new pimcore.element.tag.imagehotspotmarkereditor(this.datax.id, this.datax, function (data) {
+        var editor = pimcore.helpers.openImageHotspotMarkerEditor(this.datax.id, this.datax, function (data) {
             this.datax["hotspots"] = data["hotspots"];
             this.datax["marker"] = data["marker"];
         }.bind(this));
-        editor.open(true);
+        editor.open(false);
     },
 
     getValue: function () {

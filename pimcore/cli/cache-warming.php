@@ -9,20 +9,23 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
+chdir(__DIR__);
+
 include_once("startup.php");
 
+use Pimcore\Cache\Tool\Warming as Warmer;
 
 try {
-    $opts = new Zend_Console_Getopt(array(
+    $opts = new \Zend_Console_Getopt(array(
         'types|t=s' => 'perform warming only for this types of elements (comma separated), valid arguments: document,asset,object (default: all types)',
-        "documentTypes|dt=s" => "only for these types of documents (comma seperated), valid arguments: page,snippet,folder,link (default: all types)",
-        "assetTypes|at=s" => "only for these types of assets (comma seperated), valid arguments: folder,image,text,audio,video,document,archive,unknown (default: all types)",
-        "objectTypes|ot=s" => "only for these types of objects (comma seperated), valid arguments: object,folder,variant (default: all types)",
-        "classes|c=s" => "this is only for objects! filter by class (comma seperated), valid arguments: class-names of your classes defined in pimcore",
+        "documentTypes|dt=s" => "only for these types of documents (comma separated), valid arguments: page,snippet,folder,link (default: all types)",
+        "assetTypes|at=s" => "only for these types of assets (comma separated), valid arguments: folder,image,text,audio,video,document,archive,unknown (default: all types)",
+        "objectTypes|ot=s" => "only for these types of objects (comma separated), valid arguments: object,folder,variant (default: all types)",
+        "classes|c=s" => "this is only for objects! filter by class (comma separated), valid arguments: class-names of your classes defined in pimcore",
         "maintenanceMode|m" => "enable maintenance mode during cache warming",
         'verbose|v' => 'show detailed information during the maintenance (for debug, ...)',
         'help|h' => 'display this help'
@@ -40,28 +43,19 @@ if($opts->getOption("help")) {
 
 // enable maintenance mode if requested
 if($opts->getOption("maintenanceMode")) {
-    Pimcore_Tool_Admin::activateMaintenanceMode("cache-warming-dummy-session-id");
+    \Pimcore\Tool\Admin::activateMaintenanceMode("cache-warming-dummy-session-id");
 
     // set the timeout between each iteration to 0 if maintenance mode is on, because we don't have to care about the load on the server
-    Pimcore_Cache_Tool_Warming::setTimoutBetweenIteration(0);
+    Warmer::setTimoutBetweenIteration(0);
 }
 
 if($opts->getOption("verbose")) {
-    $writer = new Zend_Log_Writer_Stream('php://output');
-    $logger = new Zend_Log($writer);
-    Logger::addLogger($logger);
+    $writer = new \Zend_Log_Writer_Stream('php://output');
+    $logger = new \Zend_Log($writer);
+    \Logger::addLogger($logger);
 
     // set all priorities
-    Logger::setPriorities(array(
-        Zend_Log::DEBUG,
-        Zend_Log::INFO,
-        Zend_Log::NOTICE,
-        Zend_Log::WARN,
-        Zend_Log::ERR,
-        Zend_Log::CRIT,
-        Zend_Log::ALERT,
-        Zend_Log::EMERG
-    ));
+    \Logger::setVerbosePriorities();
 }
 
 // get valid types (default all types)
@@ -76,7 +70,7 @@ if(in_array("document", $types)) {
     if($opts->getOption("documentTypes")) {
         $docTypes = explode(",", $opts->getOption("documentTypes"));
     }
-    Pimcore_Cache_Tool_Warming::documents($docTypes);
+    Warmer::documents($docTypes);
 }
 
 if(in_array("asset", $types)) {
@@ -86,7 +80,7 @@ if(in_array("asset", $types)) {
         $assetTypes = explode(",", $opts->getOption("assetTypes"));
     }
 
-    Pimcore_Cache_Tool_Warming::assets($assetTypes);
+    Warmer::assets($assetTypes);
 }
 
 if(in_array("object", $types)) {
@@ -101,7 +95,7 @@ if(in_array("object", $types)) {
         $classes = explode(",", $opts->getOption("classes"));
     }
 
-    Pimcore_Cache_Tool_Warming::objects($objectTypes, $classes);
+    Warmer::objects($objectTypes, $classes);
 }
 
 
@@ -109,5 +103,5 @@ if(in_array("object", $types)) {
 
 // disable maintenance mode if requested
 if($opts->getOption("maintenanceMode")) {
-    Pimcore_Tool_Admin::deactivateMaintenanceMode();
+    \Pimcore\Tool\Admin::deactivateMaintenanceMode();
 }

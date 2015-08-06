@@ -9,11 +9,17 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
- 
-class Pimcore_Document_Adapter_Ghostscript extends Pimcore_Document_Adapter {
+
+namespace Pimcore\Document\Adapter;
+
+use Pimcore\Document\Adapter;
+use Pimcore\Tool\Console;
+use Pimcore\Config; 
+
+class Ghostscript extends Adapter {
 
     /**
      * @var string
@@ -26,12 +32,12 @@ class Pimcore_Document_Adapter_Ghostscript extends Pimcore_Document_Adapter {
     public function isAvailable() {
         try {
             $ghostscript = self::getGhostscriptCli();
-            $phpCli = Pimcore_Tool_Console::getPhpCli();
+            $phpCli = Console::getPhpCli();
             if($ghostscript && $phpCli) {
                 return true;
             }
-        } catch (Exception $e) {
-            Logger::warning($e);
+        } catch (\Exception $e) {
+            \Logger::warning($e);
         }
 
         return false;
@@ -52,17 +58,17 @@ class Pimcore_Document_Adapter_Ghostscript extends Pimcore_Document_Adapter {
     }
 
     /**
-     * @static
-     * @return string
+     * @return mixed
+     * @throws \Exception
      */
     public static function getGhostscriptCli () {
 
-        $gsPath = Pimcore_Config::getSystemConfig()->assets->ghostscript;
+        $gsPath = Config::getSystemConfig()->assets->ghostscript;
         if($gsPath) {
             if(@is_executable($gsPath)) {
                 return $gsPath;
             } else {
-                Logger::critical("Ghostscript binary: " . $gsPath . " is not executable");
+                \Logger::critical("Ghostscript binary: " . $gsPath . " is not executable");
             }
         }
 
@@ -78,22 +84,57 @@ class Pimcore_Document_Adapter_Ghostscript extends Pimcore_Document_Adapter {
             }
         }
 
-        throw new Exception("No Ghostscript executable found, please configure the correct path in the system settings");
+        throw new \Exception("No Ghostscript executable found, please configure the correct path in the system settings");
+    }
+
+
+    /**
+     * @return mixed
+     * @throws \Exception
+     */
+    public static function getPdftotextCli () {
+
+        // check the system-config for a path
+        $configPath = Config::getSystemConfig()->assets->pdftotext;
+        if($configPath) {
+            if(@is_executable($configPath)) {
+                return $configPath;
+            } else {
+                \Logger::critical("Binary: " . $configPath . " is not executable");
+            }
+        }
+
+        $paths = array(
+            "/usr/local/bin/pdftotext",
+            "/usr/bin/pdftotext",
+            "/bin/pdftotext"
+        );
+
+        foreach ($paths as $path) {
+            if(@is_executable($path)) {
+                return $path;
+            }
+        }
+
+        throw new \Exception("No pdftotext executable found, please configure the correct path in the system settings");
     }
 
     /**
      * @param $path
      * @return $this
-     * @throws Exception
+     * @throws \Exception
      */
     public function load($path) {
 
         // avoid timeouts
-        set_time_limit(250);
+        $maxExecTime = (int) ini_get("max_execution_time");
+        if($maxExecTime > 1 && $maxExecTime < 250) {
+            set_time_limit(250);
+        }
 
         if(!$this->isFileTypeSupported($path)) {
             $message = "Couldn't load document " . $path . " only PDF documents are currently supported";
-            Logger::error($message);
+            \Logger::error($message);
             throw new \Exception($message);
         }
 
@@ -102,6 +143,10 @@ class Pimcore_Document_Adapter_Ghostscript extends Pimcore_Document_Adapter {
         return $this;
     }
 
+    /**
+     * @param null $path
+     * @throws \Exception
+     */
     public function getPdf($path = null) {
 
         if(!$path && $this->path) {
@@ -113,18 +158,17 @@ class Pimcore_Document_Adapter_Ghostscript extends Pimcore_Document_Adapter {
         }
 
         $message = "Couldn't load document " . $path . " only PDF documents are currently supported";
-        Logger::error($message);
+        \Logger::error($message);
         throw new \Exception($message);
     }
 
     /**
-     * @param bool $blob
-     * @return int
-     * @throws Exception
+     * @return string
+     * @throws \Exception
      */
     public function getPageCount() {
 
-        $pages = Pimcore_Tool_Console::exec(self::getGhostscriptCli() . " -dNODISPLAY -q -c '(" . $this->path . ") (r) file runpdfbegin pdfpagecount = quit'");
+        $pages = Console::exec(self::getGhostscriptCli() . " -dNODISPLAY -q -c '(" . $this->path . ") (r) file runpdfbegin pdfpagecount = quit'", null, 120);
         $pages = trim($pages);
 
         if(!is_numeric($pages)) {
@@ -142,38 +186,52 @@ class Pimcore_Document_Adapter_Ghostscript extends Pimcore_Document_Adapter {
     public function saveImage($path, $page = 1, $resolution = 200) {
 
         try {
-            Pimcore_Tool_Console::exec(self::getGhostscriptCli() . " -sDEVICE=png16m -dFirstPage=" . $page . " -dLastPage=" . $page . " -r" . $resolution . " -o " . $path . " " . $this->path);
+            Console::exec(self::getGhostscriptCli() . " -sDEVICE=png16m -dFirstPage=" . $page . " -dLastPage=" . $page . " -r" . $resolution . " -o " . $path . " " . $this->path, null, 240);
             return $this;
-        } catch (Exception $e) {
-            Logger::error($e);
+        } catch (\Exception $e) {
+            \Logger::error($e);
             return false;
         }
     }
 
+    /**
+     * @param null $page
+     * @param null $path
+     * @return bool|string
+     */
     public function getText($page = null, $path = null) {
         try {
 
             $path = $path ? $path : $this->path;
+            $pageRange = "";
 
-            if($page) {
-                $pageRange = "-dFirstPage=" . $page . " -dLastPage=" . $page . " ";
+            try {
+                // first try to use poppler's pdftotext, because this produces more accurate results than the txtwrite device from ghostscript
+                if($page) {
+                    $pageRange = "-f " . $page . " -l " . $page . " ";
+                }
+                $text = Console::exec(self::getPdftotextCli() . " " . $pageRange . $path . " -", null, 120);
+            } catch (\Exception $e) {
+                // pure ghostscript way
+                if($page) {
+                    $pageRange = "-dFirstPage=" . $page . " -dLastPage=" . $page . " ";
+                }
+                $textFile = PIMCORE_SYSTEM_TEMP_DIRECTORY . "/pdf-text-extract-" . uniqid() . ".txt";
+                Console::exec(self::getGhostscriptCli() . " -dBATCH -dNOPAUSE -sDEVICE=txtwrite " . $pageRange . "-dTextFormat=2 -sOutputFile=" . $textFile . " " . $path, null, 120);
+
+                if(is_file($textFile)) {
+                    $text =  file_get_contents($textFile);
+
+                    // this is a little bit strange the default option -dTextFormat=3 from ghostscript should return utf-8 but it doesn't
+                    // so we use option 2 which returns UCS-2LE and convert it here back to UTF-8 which works fine
+                    $text = mb_convert_encoding($text, 'UTF-8', 'UCS-2LE');
+                    unlink($textFile);
+                }
             }
+            return $text;
 
-            $textFile = PIMCORE_SYSTEM_TEMP_DIRECTORY . "/pdf-text-extract-" . uniqid() . ".txt";
-            Pimcore_Tool_Console::exec(self::getGhostscriptCli() . " -dBATCH -dNOPAUSE -sDEVICE=txtwrite " . $pageRange . "-dTextFormat=2 -sOutputFile=" . $textFile . " " . $path);
-
-            if(is_file($textFile)) {
-                $text =  file_get_contents($textFile);
-
-                // this is a little bit strange the default option -dTextFormat=3 from ghostscript should return utf-8 but it doesn't
-                // so we use option 2 which returns UCS-2LE and convert it here back to UTF-8 which works fine
-                $text = mb_convert_encoding($text, 'UTF-8', 'UCS-2LE');
-                unlink($textFile);
-                return $text;
-            }
-
-        } catch (Exception $e) {
-            Logger::error($e);
+        } catch (\Exception $e) {
+            \Logger::error($e);
             return false;
         }
     }

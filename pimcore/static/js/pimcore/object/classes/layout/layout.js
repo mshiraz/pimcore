@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -41,6 +41,26 @@ pimcore.object.classes.layout.layout = Class.create({
 
     getLayout: function () {
 
+        var regionData = [
+            [ "-", "" ],
+            [ "center", "center" ],
+            [ "north", "north" ],
+            [ "south", "south" ],
+            [ "east", "east" ],
+            [ "west", "west" ]
+        ];
+
+        var regionStore = new Ext.data.ArrayStore({
+            autoDestroy: true,
+            autoLoad: true,
+            data     : regionData,
+            fields   : [
+                'display',
+                'value'
+            ]
+        });
+
+
         this.layout = new Ext.Panel({
             bodyStyle: "padding: 10px;",
             items: [
@@ -62,7 +82,10 @@ pimcore.object.classes.layout.layout = Class.create({
                             fieldLabel: t("region"),
                             name: "region",
                             value: this.datax.region,
-                            store: ["","center", "north", "south", "east", "west"],
+                            store: regionStore,
+                            displayField: 'display',
+                            valueField: 'value',
+                            mode: 'local',
                             triggerAction: 'all',
                             editable: false
                         },
@@ -104,36 +127,7 @@ pimcore.object.classes.layout.layout = Class.create({
                             value: this.datax.bodyStyle
                         }
                     ]
-                }/*,
-                {
-                    xtype: "form",
-                    title: t("display_layout_to_users"),
-                    bodyStyle: "padding: 10px;",
-                    style: "margin: 10px 0 10px 0",
-                    items: [new Ext.ux.form.SuperField({
-                        allowEdit: true,
-                        name: "permissions",
-                        values:this.datax.permissions,
-                        stripeRows:false,
-                        items: [
-                            new Ext.form.ComboBox({
-                                fieldLabel: t("username"),
-                                name: "username",
-                                triggerAction: 'all',
-                                editable: false,
-                                store: new Ext.data.JsonStore({
-                                    url: '/admin/user/get-all-users',
-                                    fields: ["username"],
-                                    root: "users"
-                                }),
-                                displayField: "username",
-                                valueField: "username",
-                                summaryDisplay:true
-                            })
-                        ]
-                    })
-                    ]
-                }*/
+                }
             ]
         });
 
@@ -189,6 +183,14 @@ pimcore.object.classes.layout.layout = Class.create({
 
         this.datax.fieldtype = this.getType();
         this.datax.datatype = "layout";
+    },
+
+    setInCustomLayoutEditor: function(inCustomLayoutEditor) {
+        this.inCustomLayoutEditor = inCustomLayoutEditor;
+    },
+
+    isInCustomLayoutEditor: function() {
+        return this.inCustomLayoutEditor;
     }
 
 });

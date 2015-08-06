@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  * Pimcore
  *
@@ -9,18 +9,24 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-include_once("startup.php");    
+chdir(__DIR__);
+
+include_once("startup.php");
+
+use Pimcore\Log;
+use Pimcore\Model\Schedule;
 
 try {
     $optsConfig = array(
-        'job|j=s' => 'call just a specific job(s), use "," (comma) to execute more than one job (valid options: scheduledtasks, logmaintenance, sanitycheck, cleanuplogfiles, versioncleanup, redirectcleanup, cleanupbrokenviews, contentanalysis, usagestatistics, downloadmaxminddb and plugin classes if you want to call a plugin maintenance)',
+        'job|j=s' => 'call just a specific job(s), use "," (comma) to execute more than one job (valid options: scheduledtasks, cleanupcache, logmaintenance, sanitycheck, cleanuplogfiles, versioncleanup, versioncompress, redirectcleanup, cleanupbrokenviews, usagestatistics, downloadmaxminddb, tmpstorecleanup and plugin classes if you want to call a plugin maintenance)',
         'manager|m=s' => 'force a specific manager (valid options: procedural, daemon)',
         'ignore-maintenance-mode' => 'forces the script execution even when the maintenance mode is activated',
         'verbose|v' => 'show detailed information during the maintenance (for debug, ...)',
+        "force|f" => "run the jobs, regardless if they're locked or not",
         'help|h' => 'display this help'
     );
 
@@ -42,15 +48,15 @@ try {
         }
     }
 
-    $opts = new Zend_Console_Getopt($optsConfig);
+    $opts = new \Zend_Console_Getopt($optsConfig);
 
-} catch (Exception $e) {
+} catch (\Exception $e) {
     echo $e->getMessage();
 }
 
 try {
     $opts->parse();
-} catch (Zend_Console_Getopt_Exception $e) {
+} catch (\Zend_Console_Getopt_Exception $e) {
     echo $e->getMessage();
 }
 
@@ -62,21 +68,12 @@ if($opts->getOption("help")) {
 }
 
 if($opts->getOption("verbose")) {
-    $writer = new Zend_Log_Writer_Stream('php://output');
-    $logger = new Zend_Log($writer);
-    Logger::addLogger($logger);
+    $writer = new \Zend_Log_Writer_Stream('php://stdout');
+    $logger = new \Zend_Log($writer);
+    \Logger::addLogger($logger);
 
     // set all priorities
-    Logger::setPriorities(array(
-        Zend_Log::DEBUG,
-        Zend_Log::INFO,
-        Zend_Log::NOTICE,
-        Zend_Log::WARN,
-        Zend_Log::ERR,
-        Zend_Log::CRIT,
-        Zend_Log::ALERT,
-        Zend_Log::EMERG
-    ));
+    \Logger::setVerbosePriorities();
 }
 
 $forceType = null;
@@ -90,42 +87,31 @@ if($opts->getOption("job")) {
 }
 
 // create manager
-$manager = Schedule_Manager_Factory::getManager("maintenance.pid", $forceType);
+$manager = Schedule\Manager\Factory::getManager("maintenance.pid", $forceType);
 $manager->setValidJobs($validJobs);
+$manager->setForce((bool) $opts->getOption("force"));
 
 // register scheduled tasks
-$manager->registerJob(new Schedule_Maintenance_Job("scheduledtasks", new Schedule_Task_Executor(), "execute"));
-$manager->registerJob(new Schedule_Maintenance_Job("logmaintenance", new Pimcore_Log_Maintenance(), "mail"));
-$manager->registerJob(new Schedule_Maintenance_Job("cleanuplogfiles", new Pimcore_Log_Maintenance(), "cleanupLogFiles"));
-$manager->registerJob(new Schedule_Maintenance_Job("httperrorlog", new Pimcore_Log_Maintenance(), "httpErrorLogCleanup"));
-$manager->registerJob(new Schedule_Maintenance_Job("usagestatistics", new Pimcore_Log_Maintenance(), "usageStatistics"));
-$manager->registerJob(new Schedule_Maintenance_Job("sanitycheck", "Element_Service", "runSanityCheck"));
-$manager->registerJob(new Schedule_Maintenance_Job("versioncleanup", new Version(), "maintenanceCleanUp"));
-$manager->registerJob(new Schedule_Maintenance_Job("redirectcleanup", "Redirect", "maintenanceCleanUp"));
-$manager->registerJob(new Schedule_Maintenance_Job("cleanupbrokenviews", "Pimcore_Resource", "cleanupBrokenViews"));
-$manager->registerJob(new Schedule_Maintenance_Job("contentanalysis", "Tool_ContentAnalysis", "run"));
-$manager->registerJob(new Schedule_Maintenance_Job("downloadmaxminddb", "Pimcore_Update", "updateMaxmindDb"));
+$manager->registerJob(new Schedule\Maintenance\Job("scheduledtasks", new Schedule\Task\Executor(), "execute"));
+$manager->registerJob(new Schedule\Maintenance\Job("logmaintenance", new \Pimcore\Log\Maintenance(), "mail"));
+$manager->registerJob(new Schedule\Maintenance\Job("cleanuplogfiles", new \Pimcore\Log\Maintenance(), "cleanupLogFiles"));
+$manager->registerJob(new Schedule\Maintenance\Job("httperrorlog", new \Pimcore\Log\Maintenance(), "httpErrorLogCleanup"));
+$manager->registerJob(new Schedule\Maintenance\Job("usagestatistics", new \Pimcore\Log\Maintenance(), "usageStatistics"));
+$manager->registerJob(new Schedule\Maintenance\Job("checkErrorLogsDb", new \Pimcore\Log\Maintenance(), "checkErrorLogsDb"));
+$manager->registerJob(new Schedule\Maintenance\Job("archiveLogEntries", new \Pimcore\Log\Maintenance(), "archiveLogEntries"));
+$manager->registerJob(new Schedule\Maintenance\Job("sanitycheck", "\\Pimcore\\Model\\Element\\Service", "runSanityCheck"));
+$manager->registerJob(new Schedule\Maintenance\Job("versioncleanup", new \Pimcore\Model\Version(), "maintenanceCleanUp"));
+$manager->registerJob(new Schedule\Maintenance\Job("versioncompress", new \Pimcore\Model\Version(), "maintenanceCompress"));
+$manager->registerJob(new Schedule\Maintenance\Job("redirectcleanup", "\\Pimcore\\Model\\Redirect", "maintenanceCleanUp"));
+$manager->registerJob(new Schedule\Maintenance\Job("cleanupbrokenviews", "\\Pimcore\\Resource", "cleanupBrokenViews"));
+$manager->registerJob(new Schedule\Maintenance\Job("downloadmaxminddb", "\\Pimcore\\Update", "updateMaxmindDb"));
+$manager->registerJob(new Schedule\Maintenance\Job("cleanupcache", "\\Pimcore\\Model\\Cache", "maintenance"));
+$manager->registerJob(new Schedule\Maintenance\Job("tmpstorecleanup", "\\Pimcore\\Model\\Tool\\TmpStore", "cleanup"));
+$manager->registerJob(new Schedule\Maintenance\Job("imageoptimize", "\\Pimcore\\Model\\Asset\\Image\\Thumbnail\\Processor", "processOptimizeQueue"));
 
-// call plugins
-$plugins = Pimcore_API_Plugin_Broker::getInstance()->getPlugins();
-foreach ($plugins as $plugin) {
-    $id = str_replace('\\', '_', get_class($plugin));
 
-    $jobRegistered = null;
-
-    if(method_exists($plugin, "maintenanceForce")) {
-             $jobRegistered =  $manager->registerJob(new Schedule_Maintenance_Job($id, $plugin, "maintenanceForce"), true);
-    } else {
-            if(method_exists($plugin, "maintainance")) {
-                    //legacy hack
-                    $jobRegistered = $manager->registerJob(new Schedule_Maintenance_Job($id, $plugin, "maintainance"));
-            } else  if(method_exists($plugin, "maintenance")) {
-                    $jobRegistered = $manager->registerJob(new Schedule_Maintenance_Job($id, $plugin, "maintenance"));
-            }
-    }
-
-}
-
+\Pimcore::getEventManager()->trigger("system.maintenance", $manager);
 
 $manager->run();
 
+\Logger::info("All maintenance-jobs finished!");

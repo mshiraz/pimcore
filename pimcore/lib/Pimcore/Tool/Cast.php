@@ -9,14 +9,22 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Pimcore_Tool_Cast {
+namespace Pimcore\Tool;
 
+class Cast {
+
+    /**
+     * @param $class
+     * @param $object
+     * @return mixed
+     */
     public static function castToClass($class, $object)
     {
+        $class = ltrim($class, "\\");
         return unserialize(preg_replace('/^O:\d+:"[^"]++"/', 'O:' . strlen($class) . ':"' . $class . '"', serialize($object)));
     }
 }

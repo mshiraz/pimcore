@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -50,7 +50,7 @@ pimcore.document.edit = Class.create({
                         id: this.document.id
                     },
                     success: function () {
-                        this.document.reload();
+                        this.reload(true);
                     }.bind(this)
                 });
             };
@@ -145,6 +145,22 @@ pimcore.document.edit = Class.create({
 
             this.layout = new Ext.Panel(config);
             this.layout.on("resize", this.onLayoutResize.bind(this));
+
+            this.layout.on("afterrender", function () {
+
+                // unfortunately we have to do this in jQuery, because Ext doesn'T offer this functionality
+                $("#" + this.iframeName).load(function () {
+                    // this is to hide the mask if edit/startup.js isn't executed (eg. in case an error is shown)
+                    // otherwise edit/startup.js will disable the loading mask
+                    if(!this["frame"]) {
+                        this.loadMask.hide();
+                    }
+                }.bind(this));
+
+                this.loadMask = new Ext.LoadMask(this.layout.body, {msg: t("please_wait")});
+                this.loadMask.enable();
+                this.loadMask.show();
+            }.bind(this));
         }
 
         return this.layout;
@@ -200,17 +216,23 @@ pimcore.document.edit = Class.create({
         this.reloadInProgress = true;
 
         try {
-            this.lastScrollposition = this.frame.Ext.getBody().getScroll();
+            if(this["frame"]) {
+                this.lastScrollposition = this.frame.Ext.getBody().getScroll();
+            }
         }
         catch (e) {
             console.log(e);
         }
 
+        this.loadMask.show();
+
         if (disableSaveToSession === true) {
+            this.frame = null;
             Ext.get(this.iframeName).dom.src = this.getEditLink();
         }
         else {
             this.document.saveToSession(function () {
+                this.frame = null;
                 Ext.get(this.iframeName).dom.src = this.getEditLink();
             }.bind(this));
         }
@@ -240,17 +262,23 @@ pimcore.document.edit = Class.create({
                 height = Ext.get(iFrames[i]).getHeight();
 
                 offset = Ext.get(iFrames[i]).getOffsetsTo(this.frame.Ext.getBody());
-                
-                element = this.frame.Ext.getBody().createChild({
+
+                var parentElement = this.frame.Ext.get(iFrames[i]).parent();
+
+                parentElement.applyStyles({
+                    position: "relative"
+                });
+
+                element = parentElement.createChild({
                     tag: "div",
                     id: Ext.id()
                 });
-                
+
                 element.setStyle({
                     width: width + "px",
                     height: height + "px",
-                    left: offset[0] + "px",
-                    top: offset[1] + "px"
+                    left: 0,
+                    top: 0
                 });              
                 
                 element.addClass("pimcore_iframe_mask");
@@ -260,62 +288,13 @@ pimcore.document.edit = Class.create({
             console.log(e); 
             console.log("there is no frame to mask");
         }
-
-        // mask fields
-        this.fieldsToMask = [];
-        try {
-            if (this.frame && this.frame.editables) {
-                var editables = this.frame.editables;
-
-                for (i = 0; i < editables.length; i++) {
-                    try {
-                        if (typeof editables[i].mask == "function") {
-                            editables[i].mask();
-                            this.fieldsToMask.push(editables[i]);
-                        }
-                    } catch (e2) {
-                        console.log(e2);
-                    }
-                }
-            }
-        } catch (e3) {
-            console.log(e3);
-        }
-    },
-
-    unmaskFrames: function () {
-
-        // unmask frames
-        try {
-            if (typeof this.frame.Ext != "object") {
-                return;
-            }
-
-            // remove the masks from iframes
-            var masks = this.frame.Ext.query(".pimcore_iframe_mask");
-            for (var i = 0; i < masks.length; i++) {
-                Ext.get(masks[i]).remove();
-            }
-        } catch (e) {
-            console.log(e);
-            console.log("there is no frame to unmask");
-        }
-
-        // unmask editables
-        try {
-            for (var i = 0; i < this.fieldsToMask.length; i++) {
-                this.fieldsToMask[i].unmask();
-            }
-        } catch (e2) {
-            console.log(e2);
-        }
     },
 
     getValues: function () {
 
         var values = {};
         
-        if (!this.frame || !this.frame.editables) {
+        if (!this.frame || !this.frame.editablesReady) {
             throw "edit not available";
         }
 

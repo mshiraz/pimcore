@@ -1,12 +1,13 @@
 
 <section class="area-video">
 
-    <?php $this->template("/includes/area-headlines.php"); ?>
-
-    <?php echo $this->video("video", array(
-        "html5" => true,
+    <?= $this->video("video", [
+        "attributes" => [
+            "class" => "video-js vjs-default-skin vjs-big-play-centered",
+            "data-setup" => "{}"
+        ],
         "thumbnail" => "content",
         "height" => 380
-    )); ?>
+    ]); ?>
 
 </section>

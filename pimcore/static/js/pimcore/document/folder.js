@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -17,12 +17,11 @@ pimcore.document.folder = Class.create(pimcore.document.document, {
 
     initialize: function(id) {
 
+        this.id = intval(id);
         this.setType("folder");
+        this.addLoadingPanel();
 
         pimcore.plugin.broker.fireEvent("preOpenDocument", this, "folder");
-
-        this.addLoadingPanel();
-        this.id = intval(id);
         this.getData();
     },
 
@@ -156,15 +155,14 @@ pimcore.document.folder = Class.create(pimcore.document.document, {
                 handler: this.selectInTree.bind(this)
             });
 
-            var user = pimcore.globalmanager.get("user");
-            if (user.admin) {
-                buttons.push({
-                    text: t("show_metainfo"),
-                    scale: "medium",
-                    iconCls: "pimcore_icon_info_large",
-                    handler: this.showMetaInfo.bind(this)
-                });
-            }
+
+            buttons.push({
+                text: t("show_metainfo"),
+                scale: "medium",
+                iconCls: "pimcore_icon_info_large",
+                handler: this.showMetaInfo.bind(this)
+            });
+
 
             buttons.push("-");
             buttons.push({
@@ -214,32 +212,42 @@ pimcore.document.folder = Class.create(pimcore.document.document, {
 
     showMetaInfo: function() {
 
-        new pimcore.element.metainfo([{
-            name: "path",
-            value: this.data.path + this.data.key
-        }, {
-            name: "parentid",
-            value: this.data.parentId
-        }, {
-            name: "type",
-            value: this.data.type
-        }, {
-            name: "modificationdate",
-            type: "date",
-            value: this.data.modificationDate
-        }, {
-            name: "creationdate",
-            type: "date",
-            value: this.data.creationDate
-        }, {
-            name: "usermodification",
-            type: "user",
-            value: this.data.userModification
-        }, {
-            name: "userowner",
-            type: "user",
-            value: this.data.userOwner
-        }], "folder");
+        new pimcore.element.metainfo([
+            {
+                name: "id",
+                value: this.data.id
+            },
+            {
+                name: "path",
+                value: this.data.path + this.data.key
+            }, {
+                name: "parentid",
+                value: this.data.parentId
+            }, {
+                name: "type",
+                value: this.data.type
+            }, {
+                name: "modificationdate",
+                type: "date",
+                value: this.data.modificationDate
+            }, {
+                name: "creationdate",
+                type: "date",
+                value: this.data.creationDate
+            }, {
+                name: "usermodification",
+                type: "user",
+                value: this.data.userModification
+            }, {
+                name: "userowner",
+                type: "user",
+                value: this.data.userOwner
+            },
+            {
+                name: "deeplink",
+                value: window.location.protocol + "//" + window.location.hostname + "/admin/login/deeplink?document_" + this.data.id + "_" + this.data.type
+            }
+        ], "folder");
     }
 });
 

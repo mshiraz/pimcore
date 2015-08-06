@@ -11,24 +11,28 @@
  *
  * @category   Pimcore
  * @package    Object
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Object_Data_Geobounds {
+namespace Pimcore\Model\Object\Data;
 
+class Geobounds {
 
     /**
-     * @var Object_Data_Geopoint
+     * @var Geopoint
      */
     public $nortEast;
 
     /**
-     * @var Object_Data_Geopoint
+     * @var Geopoint
      */
     public $southWest;
 
-
+    /**
+     * @param null $nortEast
+     * @param null $southWest
+     */
     public function __construct($nortEast = null, $southWest = null) {
         if ($nortEast) {
             $this->setNorthEast($nortEast);
@@ -38,24 +42,41 @@ class Object_Data_Geobounds {
         }
     }
 
+    /**
+     * @return Geopoint
+     */
     public function getNorthEast() {
         return $this->nortEast;
     }
 
+    /**
+     * @param $nortEast
+     * @return $this
+     */
     public function setNorthEast($nortEast) {
         $this->nortEast = $nortEast;
         return $this;
     }
 
+    /**
+     * @return Geopoint
+     */
     public function getSouthWest() {
         return $this->southWest;
     }
 
+    /**
+     * @param $southWest
+     * @return $this
+     */
     public function setSouthWest($southWest) {
         $this->southWest = $southWest;
         return $this;
     }
 
+    /**
+     * @return string
+     */
     public function __toString() {
         $string = "";
         if($this->nortEast) {

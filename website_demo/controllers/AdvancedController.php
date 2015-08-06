@@ -1,6 +1,13 @@
 <?php
 
-class AdvancedController extends Website_Controller_Action
+use Website\Controller\Action;
+use Pimcore\Model\Document;
+use Pimcore\Model\Asset;
+use Pimcore\Model\Object;
+use Pimcore\Mail;
+use Pimcore\Tool;
+
+class AdvancedController extends Action
 {
     public function init() {
         parent::init();
@@ -25,8 +32,8 @@ class AdvancedController extends Website_Controller_Action
 
     public function indexAction() {
 
-        $list = new Document_List();
-        $list->setCondition("parentId = ?", array($this->document->getId()));
+        $list = new Document\Listing();
+        $list->setCondition("parentId = ? AND type IN ('link','page')", [$this->document->getId()]);
         $list->load();
 
         $this->view->documents = $list;
@@ -35,11 +42,24 @@ class AdvancedController extends Website_Controller_Action
     public function contactFormAction() {
         $success = false;
 
+        if($this->getParam("provider")) {
+            $adapter = Tool\HybridAuth::authenticate($this->getParam("provider"));
+            if($adapter) {
+                $user_data = $adapter->getUserProfile();
+                if($user_data) {
+                    $this->setParam("firstname", $user_data->firstName);
+                    $this->setParam("lastname", $user_data->lastName);
+                    $this->setParam("email", $user_data->email);
+                    $this->setParam("gender", $user_data->gender);
+                }
+            }
+        }
+
         // getting parameters is very easy ... just call $this->getParam("yorParamKey"); regardless if's POST or GET
-        if($this->getParam("firstname") && $this->getParam("lastname") && $this->getParam("email")) {
+        if($this->getParam("firstname") && $this->getParam("lastname") && $this->getParam("email") && $this->getParam("message")) {
             $success = true;
 
-            $mail = new Pimcore_Mail();
+            $mail = new Mail();
             $mail->setIgnoreDebugMode(true);
 
             // To is used from the email document, but can also be set manually here (same for subject, CC, BCC, ...)
@@ -56,7 +76,7 @@ class AdvancedController extends Website_Controller_Action
         }
 
         // do some validation & assign the parameters to the view
-        foreach (array("firstname", "lastname", "email") as $key) {
+        foreach (["firstname", "lastname", "email", "message", "gender"] as $key) {
             if($this->getParam($key)) {
                 $this->view->$key = htmlentities(strip_tags($this->getParam($key)));
             }
@@ -75,18 +95,18 @@ class AdvancedController extends Website_Controller_Action
                 }
                 $perPage = 10;
 
-                $result = Pimcore_Google_Cse::search($this->getParam("q"), (($page - 1) * $perPage), null, array(
+                $result = \Pimcore\Google\Cse::search($this->getParam("q"), (($page - 1) * $perPage), null, [
                     "cx" => "002859715628130885299:baocppu9mii"
-                ), $this->getParam("facet"));
+                ], $this->getParam("facet"));
 
-                $paginator = Zend_Paginator::factory($result);
+                $paginator = \Zend_Paginator::factory($result);
                 $paginator->setCurrentPageNumber($page);
                 $paginator->setItemCountPerPage($perPage);
                 $this->view->paginator = $paginator;
                 $this->view->result = $result;
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 // something went wrong: eg. limit exceeded, wrong configuration, ...
-                Logger::err($e);
+                \Logger::err($e);
                 echo $e->getMessage();exit;
             }
         }
@@ -104,15 +124,15 @@ class AdvancedController extends Website_Controller_Action
             // first we create a person, then we create an inquiry object and link them together
 
             // check for an existing person with this name
-            $person = Object_Person::getByEmail($this->getParam("email"),1);
+            $person = Object\Person::getByEmail($this->getParam("email"),1);
 
             if(!$person) {
                 // if there isn't an existing, ... create one
-                $filename = Pimcore_File::getValidFilename($this->getParam("email"));
+                $filename = \Pimcore\File::getValidFilename($this->getParam("email"));
 
                 // first we need to create a new object, and fill some system-related information
-                $person = new Object_Person();
-                $person->setParent(Object_Abstract::getByPath("/crm")); // we store all objects in /crm
+                $person = new Object\Person();
+                $person->setParent(Object::getByPath("/crm/inquiries")); // we store all objects in /crm
                 $person->setKey($filename); // the filename of the object
                 $person->setPublished(true); // yep, it should be published :)
 
@@ -121,21 +141,21 @@ class AdvancedController extends Website_Controller_Action
                 $person->setFirstname($this->getParam("firstname"));
                 $person->setLastname($this->getParam("lastname"));
                 $person->setEmail($this->getParam("email"));
-                $person->setDateRegister(Zend_Date::now());
+                $person->setDateRegister(\Zend_Date::now());
                 $person->save();
             }
 
             // now we create the inquiry object and link the person in it
-            $inquiryFilename = Pimcore_File::getValidFilename(Zend_Date::now()->get(Zend_Date::DATETIME_MEDIUM) . "~" . $person->getEmail());
-            $inquiry = new Object_Inquiry();
-            $inquiry->setParent(Object_Abstract::getByPath("/inquiries")); // we store all objects in /inquiries
+            $inquiryFilename = \Pimcore\File::getValidFilename(Zend_Date::now()->get(Zend_Date::DATETIME_MEDIUM) . "~" . $person->getEmail());
+            $inquiry = new Object\Inquiry();
+            $inquiry->setParent(Object::getByPath("/inquiries")); // we store all objects in /inquiries
             $inquiry->setKey($inquiryFilename); // the filename of the object
             $inquiry->setPublished(true); // yep, it should be published :)
 
             // now we fill in the data
             $inquiry->setMessage($this->getParam("message"));
             $inquiry->setPerson($person);
-            $inquiry->setDate(Zend_Date::now());
+            $inquiry->setDate(\Zend_Date::now());
             $inquiry->setTerms((bool) $this->getParam("terms"));
             $inquiry->save();
         } else if ($this->getRequest()->isPost()) {
@@ -143,7 +163,7 @@ class AdvancedController extends Website_Controller_Action
         }
 
         // do some validation & assign the parameters to the view
-        foreach (array("firstname", "lastname", "email", "message", "terms") as $key) {
+        foreach (["firstname", "lastname", "email", "message", "terms"] as $key) {
             if($this->getParam($key)) {
                 $this->view->$key = htmlentities(strip_tags($this->getParam($key)));
             }
@@ -151,5 +171,43 @@ class AdvancedController extends Website_Controller_Action
 
         // assign the status to the view
         $this->view->success = $success;
+    }
+
+    public function sitemapAction () {
+
+        set_time_limit(900);
+
+        $this->view->initial = false;
+
+        if($this->getParam("doc")) {
+            $doc = $this->getParam("doc");
+        } else {
+            $doc = $this->document->getProperty("mainNavStartNode");
+            $this->view->initial = true;
+        }
+
+        Pimcore::collectGarbage();
+
+        $this->view->doc = $doc;
+    }
+
+    public function assetThumbnailListAction() {
+
+        // try to get the tag where the parent folder is specified
+        $parentFolder = $this->document->getElement("parentFolder");
+        if($parentFolder) {
+            $parentFolder = $parentFolder->getElement();
+        }
+
+        if(!$parentFolder) {
+            // default is the home folder
+            $parentFolder = Asset::getById(1);
+        }
+
+        // get all children of the parent
+        $list = new Asset\Listing();
+        $list->setCondition("path like ?", $parentFolder->getFullpath() . "%");
+
+        $this->view->list = $list;
     }
 }

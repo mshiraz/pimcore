@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    Property
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Property_Predefined extends Pimcore_Model_Abstract {
+namespace Pimcore\Model\Property;
+
+use Pimcore\Model;
+
+class Predefined extends Model\AbstractModel {
 
     /**
      * @var integer
@@ -62,10 +66,21 @@ class Property_Predefined extends Pimcore_Model_Abstract {
      */
     public $inheritable = false;
 
+    /**
+     * @var integer
+     */
+    public $creationDate;
+
+    /**
+     * @var integer
+     */
+    public $modificationDate;
+
+
 
     /**
      * @param integer $id
-     * @return Property_Predefined
+     * @return self
      */
     public static function getById($id) {
         $property = new self();
@@ -77,30 +92,30 @@ class Property_Predefined extends Pimcore_Model_Abstract {
 
     /**
      * @param string $key
-     * @return Property_Predefined
+     * @return self
      */
     public static function getByKey($key) {
 
         $cacheKey = "property_predefined_" . $key;
 
         try {
-            $property = Zend_Registry::get($cacheKey);
+            $property = \Zend_Registry::get($cacheKey);
             if(!$property) {
-                throw new Exception("Predefined property in registry is null");
+                throw new \Exception("Predefined property in registry is null");
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $property = new self();
             $property->setKey($key);
             $property->getResource()->getByKey();
 
-            Zend_Registry::set($cacheKey, $property);
+            \Zend_Registry::set($cacheKey, $property);
         }
 
         return $property;
     }
 
     /**
-     * @return Property_Predefined
+     * @return self
      */
     public static function create() {
         $type = new self();
@@ -254,4 +269,40 @@ class Property_Predefined extends Pimcore_Model_Abstract {
     {
         return $this->description;
     }
+
+    /**
+     * @param int $creationDate
+     */
+    public function setCreationDate($creationDate)
+    {
+        $this->creationDate = (int) $creationDate;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getCreationDate()
+    {
+        return $this->creationDate;
+    }
+
+    /**
+     * @param int $modificationDate
+     */
+    public function setModificationDate($modificationDate)
+    {
+        $this->modificationDate = (int) $modificationDate;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getModificationDate()
+    {
+        return $this->modificationDate;
+    }
+
+
 }

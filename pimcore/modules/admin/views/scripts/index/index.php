@@ -8,6 +8,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
 
+    <link rel="icon" type="image/png" href="/pimcore/static/img/favicon/favicon-32x32.png" />
+
     <style type="text/css">
         body {
             /* this stops the loading indicator from hopping around */
@@ -19,7 +21,7 @@
     <title><?php echo htmlentities($this->getRequest()->getHttpHost(), ENT_QUOTES, 'UTF-8') ?> :: pimcore</title>
 
     <!-- load in head because of the progress bar at loading -->
-    <link rel="stylesheet" type="text/css" href="/pimcore/static/css/admin.css?_dc=<?php echo Pimcore_Version::$revision ?>" />
+    <link rel="stylesheet" type="text/css" href="/pimcore/static/css/admin.css?_dc=<?php echo \Pimcore\Version::$revision ?>" />
 </head>
 
 <body>
@@ -29,7 +31,7 @@
 </div>
 
 <div id="pimcore_loading">
-    <img class="loading" src="/pimcore/static/img/loading-white-bg.gif?_dc=<?php echo Pimcore_Version::$revision ?>" />
+    <img class="loading" src="/pimcore/static/img/loading-white-bg.gif?_dc=<?php echo \Pimcore\Version::$revision ?>" />
 </div>
 
 <div id="pimcore_navigation" style="display:none;">
@@ -60,7 +62,6 @@ $styles = array(
     "/pimcore/static/css/icons.css",
     "/pimcore/static/js/lib/ext/resources/css/ext-all.css",
     "/pimcore/static/js/lib/ext/resources/css/xtheme-gray.css",
-    "/pimcore/static/js/lib/ext-plugins/SwfUploadPanel/SwfUploadPanel.css",
     "/pimcore/static/js/lib/ext-plugins/Notification/notification.css",
     "/pimcore/static/js/lib/ext-plugins/SuperBoxSelect/superboxselect.css",
     "/pimcore/static/js/lib/ext-plugins/ux/css/RowEditor.css",
@@ -85,7 +86,7 @@ $styles = array(
     // see also: http://blogs.telerik.com/blogs/posts/10-05-03/internet-explorer-css-limits.aspx
     // @import bypasses this problem in an elegant way
     foreach ($styles as $style) { ?>
-        @import url(<?php echo $style ?>?_dc=<?php echo Pimcore_Version::$revision ?>);
+    @import url(<?php echo $style ?>?_dc=<?php echo \Pimcore\Version::$revision ?>);
     <?php } ?>
 </style>
 
@@ -156,7 +157,6 @@ $scriptLibs = array(
 
     // locale
     "lib/ext/locale/ext-lang-" . $this->language . ".js",
-    "lib/html2canvas.min.js",
 );
 
 // PIMCORE SCRIPTS
@@ -196,6 +196,9 @@ $scripts = array(
     "pimcore/settings/user/workspace/asset.js",
     "pimcore/settings/user/workspace/document.js",
     "pimcore/settings/user/workspace/object.js",
+    "pimcore/settings/user/workspace/customlayouts.js",
+    "pimcore/settings/user/workspace/language.js",
+    "pimcore/settings/user/workspace/special.js",
     "pimcore/settings/user/role/settings.js",
     "pimcore/settings/profile/panel.js",
     "pimcore/settings/thumbnail/item.js",
@@ -205,8 +208,10 @@ $scripts = array(
     "pimcore/settings/translations.js",
     "pimcore/settings/translation/website.js",
     "pimcore/settings/translation/admin.js",
+    "pimcore/settings/translation/translationmerger.js",
     "pimcore/settings/translation/xliff.js",
     "pimcore/settings/translation/word.js",
+    "pimcore/settings/metadata/predefined.js",
     "pimcore/settings/properties/predefined.js",
     "pimcore/settings/docTypes.js",
     "pimcore/settings/system.js",
@@ -216,16 +221,16 @@ $scripts = array(
     "pimcore/settings/languages.js",
     "pimcore/settings/redirects.js",
     "pimcore/settings/glossary.js",
-    "pimcore/settings/systemlog.js",
     "pimcore/settings/backup.js",
     "pimcore/settings/recyclebin.js",
     "pimcore/settings/fileexplorer/file.js",
     "pimcore/settings/fileexplorer/explorer.js",
     "pimcore/settings/maintenance.js",
-    "pimcore/settings/liveconnect.js",
     "pimcore/settings/robotstxt.js",
     "pimcore/settings/httpErrorLog.js",
     "pimcore/settings/bouncemailinbox.js",
+    "pimcore/settings/email/log.js",
+    "pimcore/settings/email/blacklist.js",
     "pimcore/settings/targeting/conditions.js",
     "pimcore/settings/targeting/rules/panel.js",
     "pimcore/settings/targeting/rules/item.js",
@@ -252,6 +257,8 @@ $scripts = array(
     "pimcore/object/helpers/gridConfigDialog.js",
     "pimcore/object/helpers/classTree.js",
     "pimcore/object/helpers/gridTabAbstract.js",
+    "pimcore/object/helpers/customLayoutEditor.js",
+    "pimcore/object/helpers/optionEditor.js",
     "pimcore/element/selector/object.js",
 
     // documents
@@ -264,7 +271,6 @@ $scripts = array(
     "pimcore/document/pages/preview.js",
     "pimcore/document/snippets/settings.js",
     "pimcore/document/emails/settings.js",
-    "pimcore/document/emails/logs.js",
     "pimcore/document/link.js",
     "pimcore/document/hardlink.js",
     "pimcore/document/folder.js",
@@ -282,14 +288,19 @@ $scripts = array(
     "pimcore/asset/video.js",
     "pimcore/asset/text.js",
     "pimcore/asset/folder.js",
+    "pimcore/asset/listfolder.js",
     "pimcore/asset/versions.js",
+    "pimcore/asset/metadata.js",
     "pimcore/asset/tree.js",
 
     // object
     "pimcore/object/helpers/edit.js",
     "pimcore/object/classes/class.js",
     "pimcore/object/class.js",
+    "pimcore/object/bulk-export.js",
+    "pimcore/object/bulk-import.js",
     "pimcore/object/classes/data/data.js",
+    "pimcore/object/classes/data/classificationstore.js",
     "pimcore/object/classes/data/date.js",
     "pimcore/object/classes/data/datetime.js",
     "pimcore/object/classes/data/time.js",
@@ -355,6 +366,7 @@ $scripts = array(
     "pimcore/object/tags/hotspotimage.js",
     "pimcore/object/tags/video.js",
     "pimcore/object/tags/input.js",
+    "pimcore/object/tags/classificationstore.js",
     "pimcore/object/tags/numeric.js",
     "pimcore/object/tags/objects.js",
     "pimcore/object/tags/objectsMetadata.js",
@@ -419,9 +431,6 @@ $scripts = array(
     "pimcore/report/analytics/elementexplorer.js",
     "pimcore/report/analytics/elementnavigation.js",
     "pimcore/report/webmastertools/settings.js",
-    "pimcore/report/contentanalysis/settings.js",
-    "pimcore/report/seo/detail.js",
-    "pimcore/report/seo/socialoverview.js",
     "pimcore/report/custom/item.js",
     "pimcore/report/custom/panel.js",
     "pimcore/report/custom/settings.js",
@@ -442,8 +451,10 @@ $scripts = array(
     "pimcore/extensionmanager/settings.js",
     "pimcore/extensionmanager/xmlEditor.js",
     "pimcore/extensionmanager/admin.js",
-    "pimcore/extensionmanager/download.js",
-    "pimcore/extensionmanager/share.js",
+
+    // application logging
+    "pimcore/log/admin.js",
+    "pimcore/log/detailwindow.js",
 
     // layout
     "pimcore/layout/portal.js",
@@ -467,21 +478,19 @@ $scripts = array(
     "pimcore/object/keyvalue/selectionWindow.js",
     "pimcore/object/keyvalue/specialConfigWindow.js",
     "pimcore/object/keyvalue/columnConfigDialog.js",
-    "pimcore/object/keyvalue/translatorConfigWindow.js"
+    "pimcore/object/keyvalue/translatorConfigWindow.js",
 
-);
+    // classification store
+    "pimcore/object/classificationstore/configPanel.js",
+    "pimcore/object/classificationstore/groupsPanel.js",
+    "pimcore/object/classificationstore/propertiesPanel.js",
+    "pimcore/object/classificationstore/keyDefinitionWindow.js",
+    "pimcore/object/classificationstore/keySelectionWindow.js"
 
-// they're here because they are using some pimcore core functionality like t() for i18n , ...
-$modifiedPlugins = array(
-    "lib/ext-plugins/SwfUploadPanel/swfupload.js",
-    "lib/ext-plugins/SwfUploadPanel/SwfUploadPanel.js"
 );
 
 // google maps API key
-$googleMapsApiKey = $this->config->services->google->simpleapikey;
-if($this->config->services->google->browserapikey) {
-    $googleMapsApiKey = $this->config->services->google->browserapikey;
-}
+$googleMapsApiKey = $this->config->services->google->browserapikey;
 
 ?>
 
@@ -491,27 +500,27 @@ if($this->config->services->google->browserapikey) {
     pimcore.settings = {
         upload_max_filesize: <?php echo $this->upload_max_filesize; ?>,
         sessionId: "<?php echo htmlentities($_COOKIE["pimcore_admin_sid"], ENT_QUOTES, 'UTF-8') ?>",
-        version: "<?php echo Pimcore_Version::getVersion() ?>",
-        build: "<?php echo Pimcore_Version::$revision ?>",
+        csrfToken: "<?= $this->csrfToken ?>",
+        version: "<?php echo \Pimcore\Version::getVersion() ?>",
+        build: "<?php echo \Pimcore\Version::$revision ?>",
         maintenance_active: <?php echo $this->maintenance_enabled; ?>,
-        maintenance_mode: <?php echo Pimcore_Tool_Admin::isInMaintenanceMode() ? "true" : "false"; ?>,
-        mail: <?php echo $this->mail_settings_incomplete ?>,
-        debug: <?php echo Pimcore::inDebugMode() ? "true" : "false"; ?>,
+        maintenance_mode: <?php echo \Pimcore\Tool\Admin::isInMaintenanceMode() ? "true" : "false"; ?>,
+        mail: <?php echo $this->mail_settings_complete ?>,
+        debug: <?php echo \Pimcore::inDebugMode() ? "true" : "false"; ?>,
         devmode: <?php echo PIMCORE_DEVMODE ? "true" : "false"; ?>,
-        google_analytics_enabled: <?php echo Zend_Json::encode((bool) Pimcore_Google_Analytics::isConfigured()) ?>,
-        google_analytics_advanced: <?php echo Zend_Json::encode((bool) Pimcore_Google_Analytics::getSiteConfig()->advanced); ?>,
-        google_webmastertools_enabled: <?php echo Zend_Json::encode((bool) Pimcore_Google_Webmastertools::isConfigured()) ?>,
-        customviews: <?php echo Zend_Json::encode($this->customview_config) ?>,
+        google_analytics_enabled: <?php echo \Zend_Json::encode((bool) \Pimcore\Google\Analytics::isConfigured()) ?>,
+        google_webmastertools_enabled: <?php echo \Zend_Json::encode((bool) \Pimcore\Google\Webmastertools::isConfigured()) ?>,
+        customviews: <?php echo \Zend_Json::encode($this->customview_config) ?>,
         language: '<?php echo $this->language; ?>',
-        websiteLanguages: <?php echo Zend_Json::encode(explode(",",$this->config->general->validLanguages)); ?>,
+        websiteLanguages: <?php echo \Zend_Json::encode(explode(",",$this->config->general->validLanguages)); ?>,
         google_translate_api_key: "<?php echo $this->config->services->translate->apikey; ?>",
         google_maps_api_key: "<?php echo $googleMapsApiKey ?>",
-        liveconnectToken: "<?php echo $this->liveconnectToken; ?>",
         showCloseConfirmation: true,
-        debug_admin_translations: <?php echo Zend_Json::encode((bool) $this->config->general->debug_admin_translations) ?>,
-        document_generatepreviews: <?php echo Zend_Json::encode((bool) $this->config->documents->generatepreview) ?>,
-        htmltoimage: <?php echo Zend_Json::encode(Pimcore_Image_HtmlToImage::isSupported()) ?>,
-        videoconverter: <?php echo Zend_Json::encode(Pimcore_Video::isAvailable()) ?>
+        debug_admin_translations: <?php echo \Zend_Json::encode((bool) $this->config->general->debug_admin_translations) ?>,
+        document_generatepreviews: <?php echo \Zend_Json::encode((bool) $this->config->documents->generatepreview) ?>,
+        htmltoimage: <?php echo \Zend_Json::encode(\Pimcore\Image\HtmlToImage::isSupported()) ?>,
+        videoconverter: <?php echo \Zend_Json::encode(\Pimcore\Video::isAvailable()) ?>,
+        asset_hide_edit: <?php echo $this->config->assets->hide_edit_image ? "true" : "false" ?>
     };
 </script>
 
@@ -527,15 +536,15 @@ if($this->config->services->google->browserapikey) {
     })();
 </script>
 
-<script type="text/javascript" src="/admin/misc/json-translations-system/language/<?php echo $this->language ?>/?_dc=<?php echo Pimcore_Version::$revision ?>"></script>
-<script type="text/javascript" src="/admin/misc/json-translations-admin/language/<?php echo $this->language ?>/?_dc=<?php echo Pimcore_Version::$revision ?>"></script>
-<script type="text/javascript" src="/admin/user/get-current-user/?_dc=<?php echo Pimcore_Version::$revision ?>"></script>
-<script type="text/javascript" src="/admin/misc/available-languages?_dc=<?php echo Pimcore_Version::$revision ?>"></script>
+<script type="text/javascript" src="/admin/misc/json-translations-system/language/<?php echo $this->language ?>/?_dc=<?php echo \Pimcore\Version::$revision ?>"></script>
+<script type="text/javascript" src="/admin/misc/json-translations-admin/language/<?php echo $this->language ?>/?_dc=<?php echo \Pimcore\Version::$revision ?>"></script>
+<script type="text/javascript" src="/admin/user/get-current-user/?_dc=<?php echo \Pimcore\Version::$revision ?>"></script>
+<script type="text/javascript" src="/admin/misc/available-languages?_dc=<?php echo \Pimcore\Version::$revision ?>"></script>
 
 
 <!-- library scripts -->
 <?php foreach ($scriptLibs as $scriptUrl) { ?>
-    <script type="text/javascript" src="/pimcore/static/js/<?php echo $scriptUrl ?>?_dc=<?php echo Pimcore_Version::$revision ?>"></script>
+    <script type="text/javascript" src="/pimcore/static/js/<?php echo $scriptUrl ?>?_dc=<?php echo \Pimcore\Version::$revision ?>"></script>
 <?php } ?>
 
 
@@ -543,24 +552,20 @@ if($this->config->services->google->browserapikey) {
 <!-- internal scripts -->
 <?php if (PIMCORE_DEVMODE) { ?>
     <?php foreach ($scripts as $scriptUrl) { ?>
-    <script type="text/javascript" src="/pimcore/static/js/<?php echo $scriptUrl ?>?_dc=<?php echo Pimcore_Version::$revision ?>"></script>
+    <script type="text/javascript" src="/pimcore/static/js/<?php echo $scriptUrl ?>?_dc=<?php echo \Pimcore\Version::$revision ?>"></script>
 <?php } ?>
 <?php } else { ?>
-    <?php
-    $scriptContents = "";
-    foreach ($scripts as $scriptUrl) {
-        if(is_file(PIMCORE_PATH."/static/js/".$scriptUrl)) {
-            $scriptContents .= file_get_contents(PIMCORE_PATH."/static/js/".$scriptUrl) . "\n\n\n";
-        }
+<?php
+$scriptContents = "";
+foreach ($scripts as $scriptUrl) {
+    if(is_file(PIMCORE_PATH."/static/js/".$scriptUrl)) {
+        $scriptContents .= file_get_contents(PIMCORE_PATH."/static/js/".$scriptUrl) . "\n\n\n";
     }
-    ?>
-    <script type="text/javascript" src="<?php echo Pimcore_Tool_Admin::getMinimizedScriptPath($scriptContents) ?>?_dc=<?php echo Pimcore_Version::$revision ?>"></script>
+}
+?>
+    <script type="text/javascript" src="<?php echo \Pimcore\Tool\Admin::getMinimizedScriptPath($scriptContents) ?>?_dc=<?php echo \Pimcore\Version::$revision ?>"></script>
 <?php } ?>
 
-<!-- modified plugins -->
-<?php foreach ($modifiedPlugins as $scriptUrl) { ?>
-    <script type="text/javascript" src="/pimcore/static/js/<?php echo $scriptUrl ?>?_dc=<?php echo Pimcore_Version::$revision ?>"></script>
-<?php } ?>
 
 <?php // load plugin scripts ?>
 <?php
@@ -573,8 +578,8 @@ if(PIMCORE_DEVMODE) {
 }
 
 try {
-    $pluginBroker = Zend_Registry::get("Pimcore_API_Plugin_Broker");
-    if ($pluginBroker instanceof Pimcore_API_Plugin_Broker) {
+    $pluginBroker = \Zend_Registry::get("Pimcore_API_Plugin_Broker");
+    if ($pluginBroker instanceof \Pimcore\API\Plugin\Broker) {
         foreach ($pluginBroker->getSystemComponents() as $plugin) {
             if ($plugin->isInstalled()) {
                 $jsPaths = $plugin->getJsPaths();
@@ -605,10 +610,10 @@ try {
         }
     }
 }
-catch (Exception $e) {}
+catch (\Exception $e) {}
 ?>
 
 <?php // MUST BE THE LAST LINE ?>
-<script type="text/javascript" src="/pimcore/static/js/pimcore/startup.js?_dc=<?php echo Pimcore_Version::$revision ?>"></script>
+<script type="text/javascript" src="/pimcore/static/js/pimcore/startup.js?_dc=<?php echo \Pimcore\Version::$revision ?>"></script>
 </body>
 </html>

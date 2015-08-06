@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    Asset
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Asset_Image extends Asset {
+namespace Pimcore\Model\Asset;
+
+use Pimcore\Model;
+
+class Image extends Model\Asset {
 
     /**
      * @var string
@@ -27,21 +31,21 @@ class Asset_Image extends Asset {
      */
     public function update() {
 
-        // only do this if the file exists and conains data
-        if($this->getDataChanged()) {
+        // only do this if the file exists and contains data
+        if($this->getDataChanged() || !$this->getCustomSetting("imageDimensionsCalculated")) {
             try {
                 // save the current data into a tmp file to calculate the dimensions, otherwise updates wouldn't be updated
                 // because the file is written in parent::update();
                 $tmpFile = $this->getTemporaryFile(true);
-                $dimensions = $this->getDimensions($tmpFile);
+                $dimensions = $this->getDimensions($tmpFile, true);
                 unlink($tmpFile);
 
                 if($dimensions && $dimensions["width"]) {
                     $this->setCustomSetting("imageWidth", $dimensions["width"]);
                     $this->setCustomSetting("imageHeight", $dimensions["height"]);
                 }
-            } catch (Exception $e) {
-                Logger::error("Problem getting the dimensions of the image with ID " . $this->getId());
+            } catch (\Exception $e) {
+                \Logger::error("Problem getting the dimensions of the image with ID " . $this->getId());
             }
 
             // this is to be downward compatible so that the controller can check if the dimensions are already calculated
@@ -52,20 +56,19 @@ class Asset_Image extends Asset {
 
         parent::update();
 
-       $this->clearThumbnails();
+        $this->clearThumbnails();
 
         // now directly create "system" thumbnails (eg. for the tree, ...)
         if($this->getDataChanged()) {
             try {
-                $path = $this->getThumbnail(Asset_Image_Thumbnail_Config::getPreviewConfig());
-                $path = PIMCORE_DOCUMENT_ROOT . $path;
+                $path = $this->getThumbnail(Image\Thumbnail\Config::getPreviewConfig())->getFileSystemPath();
 
                 // set the modification time of the thumbnail to the same time from the asset
-                // so that the thumbnail check doesn't fail in Asset_Image_Thumbnail_Processor::process();
+                // so that the thumbnail check doesn't fail in Asset\Image\Thumbnail\Processor::process();
                 touch($path, $this->getModificationDate());
-            } catch (Exception $e) {
-                Logger::error("Problem while creating system-thumbnails for image " . $this->getFullPath());
-                Logger::error($e);
+            } catch (\Exception $e) {
+                \Logger::error("Problem while creating system-thumbnails for image " . $this->getFullPath());
+                \Logger::error($e);
             }
         }
     }
@@ -80,10 +83,20 @@ class Asset_Image extends Asset {
         }
     }
 
+    /**
+     * @param $name
+     */
+    public function clearThumbnail($name) {
+        $dir = $this->getImageThumbnailSavePath() . "/thumb__" . $name;
+        if(is_dir($dir)) {
+            recursiveDelete($dir);
+        }
+    }
+
      /**
      * Legacy method for backwards compatibility. Use getThumbnail($config)->getConfig() instead.
      * @param mixed $config
-     * @return Asset_Image_Thumbnail|bool|Thumbnail
+     * @return Image\Thumbnail|bool
      */
     public function getThumbnailConfig($config) {
 
@@ -94,28 +107,28 @@ class Asset_Image extends Asset {
     /**
      * Returns a path to a given thumbnail or an thumbnail configuration.
      * @param mixed$config
-     * @return Asset_Image_Thumbnail
+     * @return Image\Thumbnail
      */
-    public function getThumbnail($config) {
+    public function getThumbnail($config = null, $deferred = false) {
 
-       return new Asset_Image_Thumbnail($this, $config);
+       return new Image\Thumbnail($this, $config, $deferred);
     }
 
     /**
      * @static
-     * @throws Exception
-     * @return null|Pimcore_Image_Adapter
+     * @throws \Exception
+     * @return null|\Pimcore\Image\Adapter
      */
     public static function getImageTransformInstance () {
 
         try {
-            $image = Pimcore_Image::getInstance();
-        } catch (Exception $e) {
+            $image = \Pimcore\Image::getInstance();
+        } catch (\Exception $e) {
             $image = null;
         }
 
-        if(!$image instanceof Pimcore_Image_Adapter){
-            throw new Exception("Couldn't get instance of image tranform processor.");
+        if(!$image instanceof \Pimcore\Image\Adapter){
+            throw new \Exception("Couldn't get instance of image tranform processor.");
         }
 
         return $image;
@@ -147,7 +160,19 @@ class Asset_Image extends Asset {
     /**
      * @return array
      */
-    public function getDimensions($path = null) {
+    public function getDimensions($path = null, $force = false) {
+
+        if(!$force) {
+            $width = $this->getCustomSetting("imageWidth");
+            $height = $this->getCustomSetting("imageHeight");
+
+            if($width && $height) {
+                return [
+                    "width" => $width,
+                    "height" => $height
+                ];
+            }
+        }
 
         if(!$path) {
             $path = $this->getFileSystemPath();

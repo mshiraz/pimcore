@@ -21,9 +21,9 @@ pimcore.object.classes.data.objectsMetadata = Class.create(pimcore.object.classe
      */
     allowIn: {
         object: true,
-        objectbrick: false,
-        fieldcollection: false,
-        localizedfield: false
+        objectbrick: true,
+        fieldcollection: true,
+        localizedfield: true
     },
 
     initialize: function (treeNode, initData) {
@@ -33,7 +33,7 @@ pimcore.object.classes.data.objectsMetadata = Class.create(pimcore.object.classe
 
         // overwrite default settings
         this.availableSettingsFields = ["name","title","tooltip","mandatory","noteditable","invisible",
-                                                                "visibleGridView","visibleSearch","style"];
+            "visibleGridView","visibleSearch","style"];
 
         this.treeNode = treeNode;
     },
@@ -73,13 +73,15 @@ pimcore.object.classes.data.objectsMetadata = Class.create(pimcore.object.classe
                 xtype: "spinnerfield",
                 fieldLabel: t("maximum_items"),
                 name: "maxItems",
-                value: this.datax.maxItems
+                value: this.datax.maxItems,
+                disabled: this.isInCustomLayoutEditor()
             },
             {
                 xtype: "checkbox",
                 fieldLabel: t("lazy_loading"),
                 name: "lazyLoading",
-                checked: this.datax.lazyLoading
+                checked: this.datax.lazyLoading,
+                disabled: this.isInCustomLayoutEditor()
             },
             {
                 xtype: "displayfield",
@@ -123,7 +125,6 @@ pimcore.object.classes.data.objectsMetadata = Class.create(pimcore.object.classe
         this.fieldStore = new Ext.data.JsonStore({
             url: '/admin/object-helper/grid-get-column-config',
             baseParams: {
-                no_system_columns: "true",
                 no_brick_columns: "true",
                 gridtype: 'all',
                 id: this.datax.allowedClassId
@@ -164,13 +165,13 @@ pimcore.object.classes.data.objectsMetadata = Class.create(pimcore.object.classe
         return this.layout;
     },
 
-    
+
     getGrid: function (title, data, hasType) {
 
         var fields = [
-           'position',
-           'key',
-           'label'
+            'position',
+            'key',
+            'label'
         ];
 
         if(hasType) {
@@ -201,12 +202,12 @@ pimcore.object.classes.data.objectsMetadata = Class.create(pimcore.object.classe
                 var regresult = value.match(/[a-zA-Z0-9_]+/);
 
                 if (value.length > 1 && regresult == value
-                        && in_array(value.toLowerCase(), ["id","key","path","type","index","classname",
-                            "creationdate","userowner","value","class","list","fullpath","childs","values","cachetag",
-                            "cachetags","parent","published","valuefromparent","userpermissions","dependencies",
-                            "modificationdate","usermodification","byid","bypath","data","versions","properties",
-                            "permissions","permissionsforuser","childamount","apipluginbroker","resource",
-                            "parentClass","definition","locked","language"]) == false) {
+                    && in_array(value.toLowerCase(), ["id","key","path","type","index","classname",
+                    "creationdate","userowner","value","class","list","fullpath","childs","values","cachetag",
+                    "cachetags","parent","published","valuefromparent","userpermissions","dependencies",
+                    "modificationdate","usermodification","byid","bypath","data","versions","properties",
+                    "permissions","permissionsforuser","childamount","apipluginbroker","resource",
+                    "parentClass","definition","locked","language"]) == false) {
                     return true;
                 } else {
                     return t("objectsMetadata_invalid_key");
@@ -217,7 +218,7 @@ pimcore.object.classes.data.objectsMetadata = Class.create(pimcore.object.classe
 
         var typesColumns = [
             {header: t("position"), width: 10, sortable: true, dataIndex: 'position',
-                                                                            editor: new Ext.form.NumberField({})},
+                editor: new Ext.form.NumberField({})},
             {header: t("key"), width: 40, sortable: true, dataIndex: 'key', editor: keyTextField},
             {header: t("label"), width: 60, sortable: true, dataIndex: 'label', editor: new Ext.form.TextField({})}
         ];
@@ -242,20 +243,20 @@ pimcore.object.classes.data.objectsMetadata = Class.create(pimcore.object.classe
                         'label'
                     ],
                     data: [['number', types.number], ['text', types.text], ['select', types.select],
-                                                                                        ['bool', types.bool]]
+                        ['bool', types.bool]]
                 }),
                 valueField: 'value',
                 displayField: 'label'
             });
 
             typesColumns.push({header: t("type"), width: 30, sortable: true, dataIndex: 'type', editor: typeComboBox,
-                                                            renderer: function(value) {
-                return types[value];
-            }});
+                renderer: function(value) {
+                    return types[value];
+                }});
             typesColumns.push({header: t("value"), width: 100, sortable: true, dataIndex: 'value',
-                                                            editor: new Ext.form.TextField({})});
+                editor: new Ext.form.TextField({})});
             typesColumns.push({header: t("width"), width: 10, sortable: true, dataIndex: 'width',
-                                                            editor: new Ext.form.NumberField({})});
+                editor: new Ext.form.NumberField({})});
 
 
         }
@@ -305,7 +306,7 @@ pimcore.object.classes.data.objectsMetadata = Class.create(pimcore.object.classe
     },
 
     onDelete: function (store, title) {
-        if(store.getCount() > 1) {
+        if(store.getCount() > 0) {
             var rec = this.grids[title].getSelectionModel().getSelected();
             if (!rec) {
                 return false;
@@ -325,6 +326,27 @@ pimcore.object.classes.data.objectsMetadata = Class.create(pimcore.object.classe
         }
 
         return this.datax;
+    },
+
+    applySpecialData: function(source) {
+        if (source.datax) {
+            if (!this.datax) {
+                this.datax =  {};
+            }
+            Ext.apply(this.datax,
+                {
+                    width: source.datax.width,
+                    height: source.datax.height,
+                    maxItems: source.datax.maxItems,
+                    relationType: source.datax.relationType,
+                    allowedClassId: source.datax.allowedClassId,
+                    visibleFields: source.datax.visibleFields,
+                    columns: source.datax.columns,
+                    remoteOwner: source.datax.remoteOwner,
+                    lazyLoading: source.datax.lazyLoading,
+                    classes: source.datax.classes
+                });
+        }
     }
 
 });

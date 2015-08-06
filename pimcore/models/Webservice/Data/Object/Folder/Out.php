@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    Webservice
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Webservice_Data_Object_Folder_Out extends Webservice_Data_Object_Folder {
+namespace Pimcore\Model\Webservice\Data\Object\Folder;
+
+use Pimcore\Model;
+
+class Out extends Model\Webservice\Data\Object\Folder {
 
       /**
      * @var string
@@ -37,11 +41,4 @@ class Webservice_Data_Object_Folder_Out extends Webservice_Data_Object_Folder {
      * @var integer
      */
     public $userModification;
-
-
-    /**
-     * @var Webservice_Data_Object_List_Item[]
-     */
- //   public $childs;
-
 }

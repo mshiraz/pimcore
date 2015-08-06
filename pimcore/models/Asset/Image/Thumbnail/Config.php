@@ -11,11 +11,15 @@
  *
  * @category   Pimcore
  * @package    Asset
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
- 
-class Asset_Image_Thumbnail_Config {
+
+namespace Pimcore\Model\Asset\Image\Thumbnail;
+
+use Pimcore\Tool\Serialize;
+
+class Config {
 
     /**
      * format of array:
@@ -33,6 +37,11 @@ class Asset_Image_Thumbnail_Config {
      * @var array
      */
     public $items = array();
+
+    /**
+     * @var array
+     */
+    public $medias = array();
 
     /**
      * @var string
@@ -60,8 +69,13 @@ class Asset_Image_Thumbnail_Config {
     public $highResolution;
 
     /**
+     * @var string
+     */
+    public $filenameSuffix;
+
+    /**
      * @param $config
-     * @return Asset_Image_Thumbnail_Config|bool
+     * @return self|bool
      */
     public static function getByAutoDetect ($config) {
 
@@ -69,22 +83,22 @@ class Asset_Image_Thumbnail_Config {
 
         if (is_string($config)) {
             try {
-                $thumbnail = Asset_Image_Thumbnail_Config::getByName($config);
+                $thumbnail = self::getByName($config);
             }
-            catch (Exception $e) {
-                Logger::error("requested thumbnail " . $config . " is not defined");
+            catch (\Exception $e) {
+                \Logger::error("requested thumbnail " . $config . " is not defined");
                 return false;
             }
         }
         else if (is_array($config)) {
             // check if it is a legacy config or a new one
             if(array_key_exists("items", $config)) {
-                $thumbnail = Asset_Image_Thumbnail_Config::getByArrayConfig($config);
+                $thumbnail = self::getByArrayConfig($config);
             } else {
-                $thumbnail = Asset_Image_Thumbnail_Config::getByLegacyConfig($config);
+                $thumbnail = self::getByLegacyConfig($config);
             }
         }
-        else if ($config instanceof Asset_Image_Thumbnail_Config) {
+        else if ($config instanceof self) {
             $thumbnail = $config;
         }
 
@@ -94,16 +108,32 @@ class Asset_Image_Thumbnail_Config {
     /**
      * @static
      * @param  $name
-     * @return Asset_Image_Thumbnail_Config
+     * @return self
      */
     public static function getByName ($name) {
-        $pipe = new self();
-        $pipe->setName($name);
-        if(!is_readable($pipe->getConfigFile()) || !$pipe->load()) {
-            throw new Exception("thumbnail definition : " . $name . " does not exist");
+
+        $cacheKey = "imagethumb_" . crc32($name);
+
+        if(\Zend_Registry::isRegistered($cacheKey)) {
+            $pipe = \Zend_Registry::get($cacheKey);
+            $pipe->setName($name); // set the name again because in documents there's an automated prefixing logic
+        } else {
+            $pipe = new self();
+            $pipe->setName($name);
+            if(!is_readable($pipe->getConfigFile()) || !$pipe->load()) {
+                throw new \Exception("thumbnail definition : " . $name . " does not exist");
+            }
+
+            \Zend_Registry::set($cacheKey, $pipe);
         }
 
-        return $pipe;
+        // only return clones of configs, this is necessary since we cache the configs in the registry (see above)
+        // sometimes, e.g. when using the cropping tools, the thumbnail configuration is modified on-the-fly, since
+        // pass-by-reference this modifications would then go to the cache/registry (singleton), by cloning the config
+        // we can bypass this problem in an elegant way without parsing the XML config again and again
+        $clone = clone $pipe;
+
+        return $clone;
     }
 
     /**
@@ -113,7 +143,7 @@ class Asset_Image_Thumbnail_Config {
     public static function getWorkingDir () {
         $dir = PIMCORE_CONFIGURATION_DIRECTORY . "/imagepipelines";
         if(!is_dir($dir)) {
-            Pimcore_File::mkdir($dir);
+            \Pimcore\File::mkdir($dir);
         }
 
         return $dir;
@@ -151,11 +181,26 @@ class Asset_Image_Thumbnail_Config {
     public function save () {
 
         $arrayConfig = object2array($this);
+
         $items = $arrayConfig["items"];
         $arrayConfig["items"] = array("item" => $items);
-        
-        $config = new Zend_Config($arrayConfig);
-        $writer = new Zend_Config_Writer_Xml(array(
+
+        if(!empty($this->medias)) {
+            $medias = [];
+            foreach ($arrayConfig["medias"] as $name => $items) {
+                $medias[] = array(
+                    "name" => $name,
+                    "items" => array("item" => $items)
+                );
+            }
+            $arrayConfig["medias"] = array("media" => $medias);
+        } else {
+            // do not include the medias node if empty
+            unset($arrayConfig["medias"]);
+        }
+
+        $config = new \Zend_Config($arrayConfig);
+        $writer = new \Zend_Config_Writer_Xml(array(
             "config" => $config,
             "filename" => $this->getConfigFile()
         ));
@@ -169,7 +214,7 @@ class Asset_Image_Thumbnail_Config {
      */
     public function load () {
 
-        $configXml = new Zend_Config_Xml($this->getConfigFile());
+        $configXml = new \Zend_Config_Xml($this->getConfigFile());
         $configArray = $configXml->toArray();
 
         if(array_key_exists("items",$configArray) && is_array($configArray["items"]["item"])) {
@@ -181,6 +226,28 @@ class Asset_Image_Thumbnail_Config {
         } else {
             $configArray["items"] = array("item" => array());
         }
+
+        $medias = [];
+        if(array_key_exists("medias", $configArray) && !empty($configArray["medias"]) && is_array($configArray["medias"]["media"])) {
+
+            if(array_key_exists("name", $configArray["medias"]["media"])) {
+                $configArray["medias"]["media"] = array($configArray["medias"]["media"]);
+            }
+
+            foreach ($configArray["medias"]["media"] as $media) {
+                if(array_key_exists("items",$media) && is_array($media["items"]["item"])) {
+                    if(array_key_exists("method",$media["items"]["item"])) {
+                        $medias[$media["name"]] = array($media["items"]["item"]);
+                    } else {
+                        $medias[$media["name"]] = $media["items"]["item"];
+                    }
+                } else {
+                    $medias[$media["name"]] = array("item" => array());
+                }
+            }
+        }
+
+        $configArray["medias"] = $medias;
 
         foreach ($configArray as $key => $value) {
             $setter = "set" . ucfirst($key);
@@ -209,15 +276,33 @@ class Asset_Image_Thumbnail_Config {
     }
 
     /**
+     * @param string $name
+     */
+    protected function createMediaIfNotExists($name) {
+        if(!array_key_exists($name, $this->medias)) {
+            $this->medias[$name] = [];
+        }
+    }
+
+    /**
      * @param  $name
      * @param  $parameters
      * @return bool
      */
-    public function addItem ($name, $parameters) {
-        $this->items[] = array(
+    public function addItem ($name, $parameters, $media = null) {
+
+        $item = array(
             "method" => $name,
             "arguments" => $parameters
         );
+
+        // default is added to $this->items for compatibility reasons
+        if(!$media || $media == "default") {
+            $this->items[] = $item;
+        } else {
+            $this->createMediaIfNotExists($media);
+            $this->medias[$media][] = $item;
+        }
 
         return true;
     }
@@ -227,9 +312,16 @@ class Asset_Image_Thumbnail_Config {
      * @param  $parameters
      * @return bool
      */
-    public function addItemAt ($position, $name, $parameters) {
+    public function addItemAt ($position, $name, $parameters, $media = null) {
 
-        array_splice($this->items, $position, 0, array(array(
+        if(!$media || $media == "default") {
+            $itemContainer = &$this->items;
+        } else {
+            $this->createMediaIfNotExists($media);
+            $itemContainer = &$this->medias[$media];
+        }
+
+        array_splice($itemContainer, $position, 0, array(array(
             "method" => $name,
             "arguments" => $parameters
         )));
@@ -242,7 +334,27 @@ class Asset_Image_Thumbnail_Config {
      * @return void
      */
     public function resetItems () {
-        $this->items = array();
+        $this->items = [];
+        $this->medias = [];
+    }
+
+    /**
+     * @param $name
+     * @return bool
+     */
+    public function selectMedia($name) {
+        if(array_key_exists($name, $this->medias)) {
+            $this->setItems($this->medias[$name]);
+
+            $suffix = strtolower($name);
+            $suffix = preg_replace("/[^a-z\-0-9]/", "-", $suffix);
+            $suffix = trim($suffix, "-");
+            $suffix = preg_replace("/[\-]+/", "-", $suffix);
+
+            $this->setFilenameSuffix($suffix);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -349,29 +461,68 @@ class Asset_Image_Thumbnail_Config {
     }
 
     /**
+     * @param array $medias
+     */
+    public function setMedias($medias)
+    {
+        $this->medias = $medias;
+    }
+
+    /**
+     * @return array
+     */
+    public function getMedias()
+    {
+        return $this->medias;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasMedias() {
+        return !empty($this->medias);
+    }
+
+    /**
+     * @param string $filenameSuffix
+     */
+    public function setFilenameSuffix($filenameSuffix)
+    {
+        $this->filenameSuffix = $filenameSuffix;
+    }
+
+    /**
+     * @return string
+     */
+    public function getFilenameSuffix()
+    {
+        return $this->filenameSuffix;
+    }
+
+    /**
      * @static
      * @param $config
-     * @return Asset_Image_Thumbnail_Config
+     * @return self
      */
     public static function getByArrayConfig ($config) {
-        $pipe = new Asset_Image_Thumbnail_Config();
+        $pipe = new self();
 
-        if($config["format"]) {
+        if(isset($config["format"]) && $config["format"]) {
             $pipe->setFormat($config["format"]);
         }
-        if($config["quality"]) {
+        if(isset($config["quality"]) && $config["quality"]) {
             $pipe->setQuality($config["quality"]);
         }
-        if($config["items"]) {
+        if(isset($config["items"]) && $config["items"]) {
             $pipe->setItems($config["items"]);
         }
 
-        if($config["highResolution"]) {
+        if(isset($config["highResolution"]) && $config["highResolution"]) {
             $pipe->setHighResolution($config["highResolution"]);
         }
 
         // set name
-        $hash = md5(Pimcore_Tool_Serialize::serialize($config));
+        $hash = md5(Serialize::serialize($pipe));
         $pipe->setName("auto_" . $hash);
 
         return $pipe;
@@ -382,59 +533,48 @@ class Asset_Image_Thumbnail_Config {
      * @depricated
      * @static
      * @param $config
-     * @return Asset_Image_Thumbnail_Config
+     * @return self
      */
     public static function getByLegacyConfig ($config) {
 
-        $pipe = new Asset_Image_Thumbnail_Config();
-        $hash = md5(Pimcore_Tool_Serialize::serialize($config));
-        $pipe->setName("auto_" . $hash);
+        $pipe = new self();
 
-        if($config["format"]) {
+        if(isset($config["format"])) {
             $pipe->setFormat($config["format"]);
         }
-        if($config["quality"]) {
+
+        if(isset($config["quality"])) {
             $pipe->setQuality($config["quality"]);
         }
-        /*if ($config["cropPercent"]) {
-            $pipe->addItem("cropPercent", array(
-                "width" => $config["cropWidth"],
-                "height" => $config["cropHeight"],
-                "y" => $config["cropTop"],
-                "x" => $config["cropLeft"]
-            ));
-        }*/
 
-
-
-        if ($config["cover"]) {
+        if (isset($config["cover"])) {
             $pipe->addItem("cover", array(
                 "width" => $config["width"],
                 "height" => $config["height"],
                 "positioning" => "center"
             ));
         }
-        else if ($config["contain"]) {
+        else if (isset($config["contain"])) {
             $pipe->addItem("contain", array(
                 "width" => $config["width"],
                 "height" => $config["height"]
             ));
         }
-        else if ($config["frame"]) {
+        else if (isset($config["frame"])) {
             $pipe->addItem("frame", array(
                 "width" => $config["width"],
                 "height" => $config["height"]
             ));
         }
-        else if ($config["aspectratio"]) {
+        else if (isset($config["aspectratio"]) && $config["aspectratio"]) {
 
-            if ($config["height"] > 0 && $config["width"] > 0) {
+            if (isset($config["height"]) && isset($config["width"]) && $config["height"] > 0 && $config["width"] > 0) {
                 $pipe->addItem("contain", array(
                     "width" => $config["width"],
                     "height" => $config["height"]
                 ));
             }
-            else if ($config["height"] > 0) {
+            else if (isset($config["height"]) && $config["height"] > 0) {
                 $pipe->addItem("scaleByHeight", array(
                     "height" => $config["height"]
                 ));
@@ -446,15 +586,15 @@ class Asset_Image_Thumbnail_Config {
             }
         }
         else {
-            if(empty($config["width"]) && !empty($config["height"])) {
+            if(!isset($config["width"]) && isset($config["height"])) {
                 $pipe->addItem("scaleByHeight", array(
                     "height" => $config["height"]
                 ));
-            } else if (!empty($config["width"]) && empty($config["height"])) {
+            } else if (isset($config["width"]) && !isset($config["height"])) {
                 $pipe->addItem("scaleByWidth", array(
                     "width" => $config["width"]
                 ));
-            } else {
+            } else if (isset($config["width"]) && isset($config["height"])) {
                 $pipe->addItem("resize", array(
                     "width" => $config["width"],
                     "height" => $config["height"]
@@ -462,25 +602,70 @@ class Asset_Image_Thumbnail_Config {
             }
         }
 
-        if($config["highResolution"]) {
+        if(isset($config["highResolution"])) {
             $pipe->setHighResolution($config["highResolution"]);
         }
+
+        $hash = md5(Serialize::serialize($pipe));
+        $pipe->setName("auto_" . $hash);
 
         return $pipe;
     }
 
 
-    public function getEstimatedDimensions() {
+    public function getEstimatedDimensions($originalWidth = null, $originalHeight = null) {
+
 
         $dimensions = array();
         $transformations = $this->getItems();
         if(is_array($transformations) && count($transformations) > 0) {
-            foreach ($transformations as $transformation) {
-                if(!empty($transformation)) {
-                    if(is_array($transformation["arguments"])) {
-                        foreach ($transformation["arguments"] as $key => $value) {
-                            if($key == "width" || $key == "height") {
-                                $dimensions[$key] = $value;
+            if($originalWidth && $originalHeight) {
+                // this is the more accurate method than the other below
+                $dimensions["width"] = $originalWidth;
+                $dimensions["height"] = $originalHeight;
+
+                foreach ($transformations as $transformation) {
+                    if(!empty($transformation)) {
+                        $arg = $transformation["arguments"];
+                        if(in_array($transformation["method"], ["resize","cover","frame", "crop"])) {
+                            $dimensions["width"] = $arg["width"];
+                            $dimensions["height"] = $arg["height"];
+                        } else if ($transformation["method"] == "scaleByWidth") {
+                            if($arg["width"] <= $dimensions["width"]) {
+                                $dimensions["height"] = round(($arg["width"] / $dimensions["width"]) * $dimensions["height"], 0);
+                                $dimensions["width"] = $arg["width"];
+                            }
+                        } else if ($transformation["method"] == "scaleByHeight") {
+                            if($arg["height"] < $dimensions["height"]) {
+                                $dimensions["width"] = round(($arg["height"] / $dimensions["height"]) * $dimensions["width"], 0);
+                                $dimensions["height"] = $arg["height"];
+                            }
+                        } else if ($transformation["method"] == "contain") {
+                            $x = $dimensions["width"] / $arg["width"];
+                            $y = $dimensions["height"] / $arg["height"];
+                            if ($x <= 1 && $y <= 1) {
+                                continue;
+                            } else if ($x > $y) {
+                                $dimensions["height"] = round(($arg["width"] / $dimensions["width"]) * $dimensions["height"], 0);
+                                $dimensions["width"] = $arg["width"];
+                            } else {
+                                $dimensions["width"] = round(($arg["height"] / $dimensions["height"]) * $dimensions["width"], 0);
+                                $dimensions["height"] = $arg["height"];
+                            }
+                        } else if ($transformation["method"] == "cropPercent") {
+                            $dimensions["width"] = ceil($dimensions["width"] * ($arg["width"] / 100));
+                            $dimensions["height"] = ceil($dimensions["height"] * ($arg["height"] / 100));
+                        }
+                    }
+                }
+            } else {
+                foreach ($transformations as $transformation) {
+                    if(!empty($transformation)) {
+                        if(is_array($transformation["arguments"]) && in_array($transformation["method"], ["resize","scaleByWidth","scaleByHeight","cover","frame"]) ) {
+                            foreach ($transformation["arguments"] as $key => $value) {
+                                if($key == "width" || $key == "height") {
+                                    $dimensions[$key] = $value;
+                                }
                             }
                         }
                     }
@@ -489,5 +674,22 @@ class Asset_Image_Thumbnail_Config {
         }
 
         return $dimensions;
+    }
+
+
+    /**
+     * @param string $colorspace
+     */
+    public function setColorspace($colorspace)
+    {
+        // no functionality, just for compatibility reasons
+    }
+
+    /**
+     * @return string
+     */
+    public function getColorspace()
+    {
+        // no functionality, just for compatibility reasons
     }
 }

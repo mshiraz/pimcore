@@ -36,7 +36,7 @@ body {
 ------------------------- */
 
 .featurette-divider {
-    margin: 80px 0; /* Space out the Bootstrap <hr> more */
+    margin: 40px 0; /* Space out the Bootstrap <hr> more */
 }
 
 /* Thin out the marketing headings */
@@ -74,11 +74,59 @@ footer .links a {
 }
 
 
+
+/* CUSTOMIZE THE CAROUSEL for the header
+-------------------------------------------------- */
+
+/* Carousel base class */
+#portalHeader {
+    margin-bottom: 20px;
+
+    /* Negative margin to pull up carousel. 90px is roughly margins and height of navbar. */
+    margin-top: -91px;
+    min-height: 300px;
+}
+
+#portalHeader .carousel-inner {
+    position: absolute !important;
+    top:0;
+    left: 0;
+}
+
+/* Since positioning the image, we need to help out the caption */
+#portalHeader .carousel-caption {
+    z-index: 10;
+    text-shadow: 0 0 30px #000;
+}
+
+/* Declare heights because of positioning of img element */
+#portalHeader .item {
+    background-color: #777;
+    width: 100%;
+    overflow: hidden;
+}
+
+#portalHeader .carousel-inner > .item > img {
+    width: auto;
+    min-width: 100%;
+    max-width: none;
+
+    -webkit-filter: blur(2px);
+    -moz-filter: blur(2px);
+    -o-filter: blur(2px);
+    -ms-filter: blur(2px);
+    filter: blur(2px);
+}
+
 /* CONTENTS */
 
 
 #content section {
     margin-bottom: 50px;
+}
+
+.portal-page .container section {
+    margin-top: 30px;
 }
 
 section img {
@@ -91,6 +139,12 @@ section img {
 
 .teaser {
     text-align: center;
+    margin-bottom: 30px;
+}
+
+.teaser img {
+    width: 100%;
+    height: auto;
 }
 
 .thumbnail-examples .row {
@@ -100,7 +154,7 @@ section img {
 }
 
 .thumbnail-examples .img-container {
-    height: 150px;
+    height: 139px;
     background: url(/website/static/img/transparent-background-placeholder.png);
 }
 
@@ -118,6 +172,27 @@ section img {
     background: #2aabeb;
 }
 
+.blog .list img {
+    max-width: 100%;
+    height: auto;
+}
+
+.blog .filters .box {
+    padding: 10px;
+    margin-bottom: 30px;
+    background-color: #f7f5fa;
+    border-radius: 5px;
+}
+
+.blog .filters .box h4 {
+    margin: 0 0 10px 0;
+    padding: 0 0 5px 0;
+    border-bottom: 1px solid #5a5a5a;
+}
+
+.disqus {
+    margin-top: 30px;
+}
 
 /*
  * Side navigation
@@ -183,6 +258,7 @@ section img {
     position: absolute;
     right: 15px;
     top: 15px;
+    display: none;
 }
 
 .languages a {
@@ -193,6 +269,7 @@ section img {
     display: inline-block;
     border: 2px solid #999;
     box-sizing: content-box;
+    -moz-box-sizing: content-box;
     font-size: 0;
 }
 
@@ -223,44 +300,161 @@ section img {
     padding: 0 10px;
 }
 
-/* Show and affix the side nav when space allows it */
-@media screen and (min-width: 992px) {
-    .bs-sidebar .nav > .active > ul {
-        display: block;
-    }
-    /* Widen the fixed sidebar */
-    .bs-sidebar.affix,
-    .bs-sidebar.affix-bottom {
-        width: 213px;
-    }
-    .bs-sidebar.affix {
-        position: fixed; /* Undo the static from mobile first approach */
-        top: 80px;
-    }
-    .bs-sidebar.affix-bottom {
-        position: absolute; /* Undo the static from mobile first approach */
-    }
-    .bs-sidebar.affix-bottom .bs-sidenav,
-    .bs-sidebar.affix .bs-sidenav {
-        margin-top: 0;
-        margin-bottom: 0;
-    }
-}
-@media screen and (min-width: 1200px) {
-    /* Widen the fixed sidebar again */
-    .bs-sidebar.affix-bottom,
-    .bs-sidebar.affix {
-        width: 263px;
-    }
+.dropdown-menu {
+    top: -2000px;
 }
 
+.carousel-caption {
+    text-shadow: 0 0 5px #000;
+}
+
+.carousel-indicators.preview {
+    bottom: -10px;
+    width: 100%;
+    margin-left: -50%;
+}
+
+/* Indicators list style */
+.carousel-indicators.preview li {
+    border: medium none;
+    border-radius: 0;
+    height: 54px;
+    margin-bottom: 5px;
+    margin-left: 0;
+    margin-right: 5px !important;
+    margin-top: 0;
+    width: 100px;
+}
+/* Indicators images style */
+.carousel-indicators.preview img {
+    border: 2px solid #FFFFFF;
+    float: left;
+    height: 54px;
+    left: 0;
+    width: 100px;
+    opacity: 0.7;
+}
+/* Indicators active image style */
+.carousel-indicators.preview .active img {
+    border: 2px solid #428BCA;
+    opacity: 1;
+}
+
+.portal-page .gallery .carousel-inner > .item > img {
+    min-width: 100%;
+    height: auto;
+}
 
 
+.teaser-icon > .icon {
+    text-align: center;
+    position: relative;
+}
 
-/* RESPONSIVE CSS
--------------------------------------------------- */
+.teaser-icon > .icon > .image {
+    position: relative;
+    z-index: 2;
+    margin: auto;
+    width: 88px;
+    height: 88px;
+    border: 8px solid white;
+    line-height: 88px;
+    border-radius: 50%;
+    background: #428bca;
+    vertical-align: middle;
+}
+
+.teaser-icon > .icon:hover > .image {
+    background: #333;
+}
+
+.teaser-icon > .icon > .image > i {
+    font-size: 36px !important;
+    color: #fff !important;
+    top: 5px !important;
+    left:0;
+}
+
+.teaser-icon > .icon:hover > .image > i {
+    color: white !important;
+}
+
+.teaser-icon > .icon > .info {
+    margin-top: -24px;
+    background: rgba(0, 0, 0, 0.04);
+    border: 1px solid #e0e0e0;
+    padding: 15px 0 10px 0;
+}
+
+.teaser-icon > .icon:hover > .info {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: #e0e0e0;
+    color: white;
+}
+
+.teaser-icon > .icon > .info > p, .teaser-icon > .icon > .info > div {
+    color: #666;
+    line-height: 1.5em;
+    margin: 20px;
+}
+
+.teaser-icon > .icon:hover > .info > h3.title, .teaser-icon > .icon:hover > .info > p, .teaser-icon > .icon:hover > .info > .more > a {
+    color: #222;
+}
+
+.teaser-icon > .icon > .info > .more a {
+    font-size: 12px;
+    color: #222;
+    line-height: 12px;
+    text-transform: uppercase;
+    text-decoration: none;
+}
+
+.teaser-icon > .icon:hover > .info > .more > a {
+    color: #fff;
+    padding: 6px 8px;
+    background-color: #428bca;
+}
+
+.teaser-icon .space {
+    height: 30px;
+}
+
+
+.tabbed-slider {
+    padding-bottom: 30px;
+}
+
+.tabbed-slider .nav a small {
+    display: block;
+}
+
+.tabbed-slider .nav {
+    background: #eee;
+}
+
+.tabbed-slider .nav-justified > li > a {
+    border-radius: 0px;
+}
+
+.tabbed-slider .carousel-inner .item {
+    height: 300px;
+    overflow: hidden;
+}
+
+.tabbed-slider .carousel-inner .item-0, .tabbed-slider .nav-pills .item-0.active a { background-color: #16a085; }
+.tabbed-slider .carousel-inner .item-1, .tabbed-slider .nav-pills .item-1.active a { background-color: #2980b9; }
+.tabbed-slider .carousel-inner .item-2, .tabbed-slider .nav-pills .item-2.active a { background-color: #e67e22; }
+.tabbed-slider .carousel-inner .item-3, .tabbed-slider .nav-pills .item-3.active a { background-color: #8e44ad; }
+.tabbed-slider .carousel-inner .item-4, .tabbed-slider .nav-pills .item-4.active a { background-color: #2980b9; }
+.tabbed-slider .carousel-inner .item-5, .tabbed-slider .nav-pills .item-5.active a { background-color: #e67e22; }
+
 
 @media (min-width: 768px) {
+
+    .teaser {
+        margin-bottom: 0;
+    }
 
     /* Remove the edge padding needed for mobile */
     .marketing {
@@ -289,19 +483,61 @@ section img {
     }
 
     /* Bump up size of carousel content */
+    #portalHeader {
+        min-height: 600px;
+    }
+
+    #portalHeader .carousel-caption h1 {
+        font-size: 75px;
+    }
+
     .carousel-caption .caption {
         margin-bottom: 20px;
-        font-size: 21px;
+        font-size: 45px;
         line-height: 1.4;
     }
-}
 
-@media (min-width: 992px) {
-
-}
-
-@media (max-width: 767px) {
-    .languages {
-        display: none;
+    .dropdown-menu {
+        top: 100%;
     }
 }
+
+
+/* Show and affix the side nav when space allows it */
+@media screen and (min-width: 992px) {
+    .bs-sidebar .nav > .active > ul {
+        display: block;
+    }
+    /* Widen the fixed sidebar */
+    .bs-sidebar.affix,
+    .bs-sidebar.affix-bottom {
+        width: 213px;
+    }
+    .bs-sidebar.affix {
+        position: fixed; /* Undo the static from mobile first approach */
+        top: 80px;
+    }
+    .bs-sidebar.affix-bottom {
+        position: absolute; /* Undo the static from mobile first approach */
+    }
+    .bs-sidebar.affix-bottom .bs-sidenav,
+    .bs-sidebar.affix .bs-sidenav {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    .languages {
+        display: block;
+    }
+}
+
+
+@media screen and (min-width: 1200px) {
+    /* Widen the fixed sidebar again */
+    .bs-sidebar.affix-bottom,
+    .bs-sidebar.affix {
+        width: 263px;
+    }
+}
+
+

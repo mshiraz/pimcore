@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -115,7 +115,7 @@ pimcore.object.objectbrick = Class.create(pimcore.object.fieldcollection, {
             delete this.fieldPanel;
         }*/
 
-        var fieldPanel = new pimcore.object.objectbricks.field(data, this);
+        var fieldPanel = new pimcore.object.objectbricks.field(data, this, this.openBrick.bind(this, data.key));
         pimcore.layout.refresh();
         
     },
@@ -128,7 +128,7 @@ pimcore.object.objectbrick = Class.create(pimcore.object.fieldcollection, {
 
     addFieldComplete: function (button, value, object) {
 
-        var regresult = value.match(/[a-zA-Z]+[a-zA-Z1-9]*/);
+        var regresult = value.match(/[a-zA-Z]+[a-zA-Z0-9]*/);
         var forbiddennames = ["abstract","class","data","folder","list","permissions","resource","concrete",
                                                                                                         "interface"];
 
@@ -136,7 +136,8 @@ pimcore.object.objectbrick = Class.create(pimcore.object.fieldcollection, {
             Ext.Ajax.request({
                 url: "/admin/class/objectbrick-update",
                 params: {
-                    key: value
+                    key: value,
+                    task: "add"
                 },
                 success: function (response) {
                     this.tree.getRootNode().reload();
@@ -144,6 +145,8 @@ pimcore.object.objectbrick = Class.create(pimcore.object.fieldcollection, {
                     var data = Ext.decode(response.responseText);
                     if(data && data.success) {
                         this.openBrick(data.id);
+                    } else {
+                        pimcore.helpers.showNotification(t("error"), data["message"], "error");
                     }
                 }.bind(this)
             });
@@ -156,20 +159,26 @@ pimcore.object.objectbrick = Class.create(pimcore.object.fieldcollection, {
         }
     },
 
-    deleteField: function () {
-        Ext.Ajax.request({
-            url: "/admin/class/objectbrick-delete",
-            params: {
-                id: this.id
-            }
-        });
-
-        this.attributes.reference.getEditPanel().removeAll();
-        this.remove();
-    },
-
     activate: function () {
         Ext.getCmp("pimcore_panel_tabs").activate("pimcore_objectbricks");
+    },
+
+    deleteField: function () {
+
+        Ext.Msg.confirm(t('delete'), t('delete_message'), function(btn){
+            if (btn == 'yes'){
+                Ext.Ajax.request({
+                    url: "/admin/class/objectbrick-delete",
+                    params: {
+                        id: this.id
+                    }
+                });
+
+                this.attributes.reference.getEditPanel().removeAll();
+                this.remove();
+            }
+        }.bind(this));
     }
+
 
 });

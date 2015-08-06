@@ -11,11 +11,13 @@
  *
  * @category   Pimcore
  * @package    Redirect
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Redirect extends Pimcore_Model_Abstract {
+namespace Pimcore\Model;
+
+class Redirect extends AbstractModel {
 
     /**
      * @var integer
@@ -66,6 +68,16 @@ class Redirect extends Pimcore_Model_Abstract {
      * @var int
      */
     public $expiry;
+
+    /**
+     * @var integer
+     */
+    public $creationDate;
+
+    /**
+     * @var integer
+     */
+    public $modificationDate;
 
 
     /**
@@ -203,21 +215,22 @@ class Redirect extends Pimcore_Model_Abstract {
      */
     public function clearDependentCache() {
         
-        // this is mostly called in Redirect_Resource not here
+        // this is mostly called in Redirect\Resource not here
         try {
-            Pimcore_Model_Cache::clearTag("redirect");
+            \Pimcore\Model\Cache::clearTag("redirect");
         }
-        catch (Exception $e) {
-            Logger::crit($e);
+        catch (\Exception $e) {
+            \Logger::crit($e);
         }
     }
 
     /**
-     * @param int $expiry
+     * @param $expiry
+     * @return $this
      */
     public function setExpiry($expiry)
     {
-        if(is_string($expiry)) {
+        if(is_string($expiry) && !is_numeric($expiry)) {
             $expiry = strtotime($expiry);
         }
         $this->expiry = $expiry;
@@ -236,18 +249,18 @@ class Redirect extends Pimcore_Model_Abstract {
      *
      */
     public static function maintenanceCleanUp() {
-        $list = new Redirect_List();
+        $list = new Redirect\Listing();
         $list->setCondition("expiry < " . time() . " AND expiry IS NOT NULL AND expiry != ''");
         $list->load();
 
         foreach ($list->getRedirects() as $redirect) {
-            echo $redirect->getSource() . "\n";
             $redirect->delete();
         }
     }
 
     /**
-     * @param boolean $sourceEntireUrl
+     * @param $sourceEntireUrl
+     * @return $this
      */
     public function setSourceEntireUrl($sourceEntireUrl)
     {
@@ -268,7 +281,8 @@ class Redirect extends Pimcore_Model_Abstract {
     }
 
     /**
-     * @param int $sourceSite
+     * @param $sourceSite
+     * @return $this
      */
     public function setSourceSite($sourceSite)
     {
@@ -289,7 +303,8 @@ class Redirect extends Pimcore_Model_Abstract {
     }
 
     /**
-     * @param int $targetSite
+     * @param $targetSite
+     * @return $this
      */
     public function setTargetSite($targetSite)
     {
@@ -330,5 +345,41 @@ class Redirect extends Pimcore_Model_Abstract {
     public function getPassThroughParameters()
     {
         return $this->passThroughParameters;
+    }
+
+    /**
+     * @param $modificationDate
+     * @return $this
+     */
+    public function setModificationDate($modificationDate)
+    {
+        $this->modificationDate = (int) $modificationDate;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getModificationDate()
+    {
+        return $this->modificationDate;
+    }
+
+    /**
+     * @param $creationDate
+     * @return $this
+     */
+    public function setCreationDate($creationDate)
+    {
+        $this->creationDate = (int) $creationDate;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getCreationDate()
+    {
+        return $this->creationDate;
     }
 }

@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -32,7 +32,7 @@ pimcore.object.classes.data.localizedfields = Class.create(pimcore.object.classe
 
         initData.name = "localizedfields";
         treeNode.setText("localizedfields");
-        
+
         this.initData(initData);
         this.treeNode = treeNode;
     },
@@ -65,6 +65,7 @@ pimcore.object.classes.data.localizedfields = Class.create(pimcore.object.classe
                     title: t("general_settings"),
                     bodyStyle: "padding: 10px;",
                     style: "margin: 10px 0 10px 0",
+                    labelWidth: 140,
                     items: [
                         {
                             xtype: "textfield",
@@ -73,6 +74,12 @@ pimcore.object.classes.data.localizedfields = Class.create(pimcore.object.classe
                             enableKeyEvents: true,
                             value: this.datax.name,
                             disabled: true
+                        },
+                        {
+                            xtype: "textfield",
+                            fieldLabel: t("title"),
+                            name: "title",
+                            value: this.datax.title
                         },
                         {
                             xtype: "combo",
@@ -93,12 +100,6 @@ pimcore.object.classes.data.localizedfields = Class.create(pimcore.object.classe
                             editable: false
                         },
                         {
-                            xtype: "textfield",
-                            fieldLabel: t("title"),
-                            name: "title",
-                            value: this.datax.title
-                        },
-                        {
                             xtype: "spinnerfield",
                             fieldLabel: t("width"),
                             name: "width",
@@ -109,8 +110,29 @@ pimcore.object.classes.data.localizedfields = Class.create(pimcore.object.classe
                             fieldLabel: t("height"),
                             name: "height",
                             value: this.datax.height
+                        },
+                        {
+                            xtype: "spinnerfield",
+                            fieldLabel: t("maximum_tabs"),
+                            name: "maxTabs",
+                            value: this.datax.maxTabs
                         }
                     ]
+                }
+            ]
+        });
+
+        this.layout.add({
+            xtype: "form",
+            labelWidth: 140,
+            bodyStyle: "padding: 10px;",
+            style: "margin: 10px 0 10px 0",
+            items: [
+                {
+                    xtype: "spinnerfield",
+                    name: "labelWidth",
+                    fieldLabel: t("label_width"),
+                    value: this.datax.labelWidth
                 }
             ]
         });
@@ -127,5 +149,22 @@ pimcore.object.classes.data.localizedfields = Class.create(pimcore.object.classe
         data.name = "localizedfields";
 
         return data;
+    },
+
+    applySpecialData: function(source) {
+        if (source.datax) {
+            if (!this.datax) {
+                this.datax =  {};
+            }
+            Ext.apply(this.datax,
+                {
+                    region: source.datax.region,
+                    layout: source.datax.layout,
+                    width: source.datax.width,
+                    height: source.datax.height,
+                    maxTabs: source.datax.maxTabs,
+                    labelWidth: source.datax.labelWidth
+                });
+        }
     }
 });

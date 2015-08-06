@@ -9,12 +9,17 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Pimcore_File {
+namespace Pimcore;
 
+class File {
+
+    /**
+     * @var int
+     */
     public static $defaultMode = 0775;
 
     /**
@@ -41,11 +46,12 @@ class Pimcore_File {
     /**
      * @static
      * @param  $tmpFilename
+     * @param null $language
      * @return string
      */
-    public static function getValidFilename($tmpFilename) {
+    public static function getValidFilename($tmpFilename,$language = null) {
         
-        $tmpFilename = Pimcore_Tool_Transliteration::toASCII($tmpFilename);
+        $tmpFilename = \Pimcore\Tool\Transliteration::toASCII($tmpFilename,$language);
         $tmpFilename = strtolower($tmpFilename);
         $tmpFilename = preg_replace('/[^a-z0-9\-\.~_]+/', '-', $tmpFilename);
 
@@ -111,6 +117,11 @@ class Pimcore_File {
      * @return int
      */
     public static function put ($path, $data) {
+
+        if(!is_dir(dirname($path))) {
+            self::mkdir(dirname($path));
+        }
+
         $return = file_put_contents($path, $data);
         @chmod($path, self::$defaultMode);
         return $return;

@@ -11,11 +11,17 @@
  *
  * @category   Pimcore
  * @package    Document
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Document_Service_Resource extends Pimcore_Model_Resource_Abstract {
+namespace Pimcore\Model\Document\Service;
+
+use Pimcore\Model;
+use Pimcore\Model\Document;
+use Pimcore\Model\Site;
+
+class Resource extends Model\Resource\AbstractResource {
 
     /**
      * @param Site $site

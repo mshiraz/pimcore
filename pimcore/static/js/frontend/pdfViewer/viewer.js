@@ -1,32 +1,107 @@
 
 // polyfills, ...
 
+
+(function () {
+
+    if (typeof window.Element === "undefined" || "classList" in document.documentElement) return;
+
+    var prototype = Array.prototype,
+        push = prototype.push,
+        splice = prototype.splice,
+        join = prototype.join;
+
+    function DOMTokenList(el) {
+        this.el = el;
+        // The className needs to be trimmed and split on whitespace
+        // to retrieve a list of classes.
+        var classes = el.className.replace(/^\s+|\s+$/g,'').split(/\s+/);
+        for (var i = 0; i < classes.length; i++) {
+            push.call(this, classes[i]);
+        }
+    };
+
+    DOMTokenList.prototype = {
+        add: function(token) {
+            if(this.contains(token)) return;
+            push.call(this, token);
+            this.el.className = this.toString();
+        },
+        contains: function(token) {
+            return this.el.className.indexOf(token) != -1;
+        },
+        item: function(index) {
+            return this[index] || null;
+        },
+        remove: function(token) {
+            if (!this.contains(token)) return;
+            for (var i = 0; i < this.length; i++) {
+                if (this[i] == token) break;
+            }
+            splice.call(this, i, 1);
+            this.el.className = this.toString();
+        },
+        toString: function() {
+            return join.call(this, ' ');
+        },
+        toggle: function(token) {
+            if (!this.contains(token)) {
+                this.add(token);
+            } else {
+                this.remove(token);
+            }
+
+            return this.contains(token);
+        }
+    };
+
+    window.DOMTokenList = DOMTokenList;
+
+    function defineElementGetter (obj, prop, getter) {
+        if (Object.defineProperty) {
+            Object.defineProperty(obj, prop,{
+                get : getter
+            });
+        } else {
+            obj.__defineGetter__(prop, getter);
+        }
+    }
+
+    defineElementGetter(Element.prototype, 'classList', function () {
+        return new DOMTokenList(this);
+    });
+
+})();
+
 Function.prototype.bind = function (context) {
     var update = function (array, args) {
         var arrayLength = array.length, length = args.length;
         while (length--)
             array[arrayLength + length] = args[length];
         return array;
-    }
+    };
 
     var merge = function (array, args) {
         array = slice.call(array, 0);
         return update(array, args);
-    }
+    };
 
     var slice = Array.prototype.slice;
 
-    if (arguments.length < 2 && typeof arguments[0] == "undefined")
+    if (arguments.length < 2 && typeof arguments[0] == "undefined") {
         return this;
+    }
     var __method = this, args = slice.call(arguments, 1);
     return function() {
         var a = merge(args, arguments);
         return __method.apply(context, a);
-    }
+    };
 };
 
 (function(win, doc){
-	if(win.addEventListener)return;		//No need to polyfill
+	if(win.addEventListener) {
+        return;
+    }		//No need to polyfill
 
 	function docHijack(p){var old = doc[p];doc[p] = function(v){return addListen(old(v))}}
 	function addEvent(on, fn, self){
@@ -86,7 +161,7 @@ pimcore.pdf.prototype.init = function () {
     });
 
     // add pages
-    var page, position;
+    var page, position, hotspot, hd, o, l, imgContainer;
     for(i=0; i<this.data.pages.length; i++) {
 
         position = "right";
@@ -99,6 +174,52 @@ pimcore.pdf.prototype.init = function () {
         //page.setAttribute("data-page", i);
 
         this.data.pages[i]["node"] = page;
+
+
+        imgContainer = document.createElement("div");
+        imgContainer.className = "pimcore-pdfPageContainer";
+        this.data.pages[i]["node"].appendChild(imgContainer);
+
+        this.data.pages[i]["imgContainer"] = imgContainer;
+
+        if(this.data.pages[i]["hotspots"] && this.data.pages[i]["hotspots"].length > 0) {
+            for(o=0; o<this.data.pages[i]["hotspots"].length; o++) {
+                hd = this.data.pages[i]["hotspots"][o];
+                hotspot = document.createElement("div");
+                hotspot.className = "pimcore-pdfHotspot";
+                hotspot.style.width = hd["width"] + "%";
+                hotspot.style.height = hd["height"] + "%";
+                hotspot.style.top = hd["top"] + "%";
+                hotspot.style.left = hd["left"] + "%";
+
+                hotspot.addEventListener("mouseover", function () {
+                    this.style.opacity = "0.5";
+                }, true);
+                hotspot.addEventListener("mouseout", function () {
+                    this.style.opacity = "0.2";
+                }, true);
+
+                if(hd["data"] && hd["data"].length > 0) {
+                    for(l=0; l<hd["data"].length; l++) {
+                        if(hd["data"][l]["type"] == "link" && hd["data"][l]["value"]) {
+                            hotspot.addEventListener("click", function (data) {
+                                window.open(data["value"]);
+                            }.bind(hotspot, hd["data"][l]), true);
+                            break;
+                        }
+                    }
+                }
+
+                if(hd["attributes"] && hd["attributes"].length > 0) {
+                    for(l=0; l<hd["attributes"].length; l++) {
+                        hotspot.setAttribute(hd["attributes"][l]["name"], hd["attributes"][l]["value"]);
+                    }
+                }
+
+                imgContainer.appendChild(hotspot);
+            }
+        }
+
         this.pdfPages.appendChild(page);
     }
 
@@ -191,50 +312,15 @@ pimcore.pdf.prototype.buttonHoverOut = function () {
     this.style.opacity = "0.6";
 };
 
+
 pimcore.pdf.prototype.addImageToPage = function (page) {
-    var imgContainer, img, hotspot, hd, o, l;
+    var img;
 
     if(this.data.pages[page] && !this.data.pages[page]["detailLoaded"]) {
         if(this.data.pages[page]["detail"]) {
-            imgContainer = document.createElement("div");
-            imgContainer.className = "pimcore-pdfPageContainer";
-            this.data.pages[page]["node"].appendChild(imgContainer);
-
             img = document.createElement("img");
             img.setAttribute("src", this.data.pages[page]["detail"]);
-            imgContainer.appendChild(img);
-
-            if(this.data.pages[page]["hotspots"] && this.data.pages[page]["hotspots"].length > 0) {
-                for(o=0; o<this.data.pages[page]["hotspots"].length; o++) {
-                    hd = this.data.pages[page]["hotspots"][o];
-                    hotspot = document.createElement("div");
-                    hotspot.className = "pimcore-pdfHotspot";
-                    hotspot.style.width = hd["width"] + "%";
-                    hotspot.style.height = hd["height"] + "%";
-                    hotspot.style.top = hd["top"] + "%";
-                    hotspot.style.left = hd["left"] + "%";
-
-                    hotspot.addEventListener("mouseover", function () {
-                        this.style.opacity = "0.5";
-                    }, true);
-                    hotspot.addEventListener("mouseout", function () {
-                        this.style.opacity = "0.2";
-                    }, true);
-
-                    if(hd["data"] && hd["data"].length > 0) {
-                        for(l=0; l<hd["data"].length; l++) {
-                            if(hd["data"][l]["type"] == "link" && hd["data"][l]["value"]) {
-                                hotspot.addEventListener("click", function (data) {
-                                    window.open(data["value"]);
-                                }.bind(hotspot, hd["data"][l]), true);
-                                break;
-                            }
-                        }
-                    }
-
-                    imgContainer.appendChild(hotspot);
-                }
-            }
+            this.data.pages[page]["imgContainer"].appendChild(img);
         } else {
             this.data.pages[page]["node"].innerHTML = "&nbsp;";
         }
@@ -285,7 +371,7 @@ pimcore.pdf.prototype.closeFullScreen = function (page) {
 
 pimcore.pdf.prototype.download = function () {
     window.open(this.data.pdf);
-}
+};
 
 pimcore.pdf.prototype.toPage = function (page) {
 

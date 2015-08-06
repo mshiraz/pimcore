@@ -11,14 +11,15 @@
  *
  * @category   Pimcore
  * @package    Webservice
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Webservice_Data_Object_Concrete_Out extends Webservice_Data_Object_Concrete {
+namespace Pimcore\Model\Webservice\Data\Object\Concrete;
 
+use Pimcore\Model;
 
-
+class Out extends Model\Webservice\Data\Object\Concrete {
 
       /**
      * @var string
@@ -45,7 +46,7 @@ class Webservice_Data_Object_Concrete_Out extends Webservice_Data_Object_Concret
 
 
     /**
-     * @var Webservice_Data_Object_List_Item[]
+     * @var Model\Webservice\Data\Object\Listing\Item[]
      */
     public $childs;
 

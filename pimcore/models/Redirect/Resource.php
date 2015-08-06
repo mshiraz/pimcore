@@ -11,27 +11,15 @@
  *
  * @category   Pimcore
  * @package    Redirect
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-class Redirect_Resource extends Pimcore_Model_Resource_Abstract {
+namespace Pimcore\Model\Redirect;
 
-    /**
-     * Contains all valid columns in the database table
-     *
-     * @var array
-     */
-    protected $validColumns = array();
+use Pimcore\Model;
 
-    /**
-     * Get the valid columns from the database
-     *
-     * @return void
-     */
-    public function init() {
-        $this->validColumns = $this->getValidTableColumns("redirects");
-    }
+class Resource extends Model\Resource\AbstractResource {
 
     /**
      * Get the data for the object from database for the given id, or from the ID which is set in the object
@@ -73,16 +61,17 @@ class Redirect_Resource extends Pimcore_Model_Resource_Abstract {
     }
 
     /**
-     * Save changes to database, it's an good idea to use save() instead
-     *
-     * @return void
+     * @throws \Exception
      */
     public function update() {
         try {
+            $ts = time();
+            $this->model->setModificationDate($ts);
+
             $type = get_object_vars($this->model);
 
             foreach ($type as $key => $value) {
-                if (in_array($key, $this->validColumns)) {
+                if (in_array($key, $this->getValidTableColumns("redirects"))) {
                     if(is_bool($value)) {
                         $value = (int) $value;
                     }
@@ -92,7 +81,7 @@ class Redirect_Resource extends Pimcore_Model_Resource_Abstract {
 
             $this->db->update("redirects", $data, $this->db->quoteInto("id = ?", $this->model->getId()));
         }
-        catch (Exception $e) {
+        catch (\Exception $e) {
             throw $e;
         }
         
@@ -106,6 +95,10 @@ class Redirect_Resource extends Pimcore_Model_Resource_Abstract {
      */
     public function create() {
         $this->db->insert("redirects", array());
+
+        $ts = time();
+        $this->model->setModificationDate($ts);
+        $this->model->setCreationDate($ts);
 
         $this->model->setId($this->db->lastInsertId());
 

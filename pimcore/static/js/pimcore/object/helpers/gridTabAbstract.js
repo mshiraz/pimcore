@@ -8,7 +8,7 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
@@ -45,7 +45,7 @@ pimcore.object.helpers.gridTabAbstract = Class.create({
 
                 if(filterData[i].data.value && typeof filterData[i].data.value == "object") {
                     filterStringConfig.push(filterData[i].field + " " + operator + " ("
-                                    + filterData[i].data.value.join(" OR ") + ")");
+                        + filterData[i].data.value.join(" OR ") + ")");
                 } else {
                     filterStringConfig.push(filterData[i].field + " " + operator + " " + filterData[i].data.value);
                 }
@@ -235,7 +235,8 @@ pimcore.object.helpers.gridTabAbstract = Class.create({
             this.batchParameters = {
                 name: fieldInfo.dataIndex,
                 value: newValue,
-                valueType: valueType
+                valueType: valueType,
+                language: this.gridLanguage
             };
 
 
@@ -330,9 +331,17 @@ pimcore.object.helpers.gridTabAbstract = Class.create({
             }
         }
 
+        var objectId;
+        if(this["object"] && this.object["id"]) {
+            objectId = this.object.id;
+        } else if (this["element"] && this.element["id"]) {
+            objectId = this.element.id;
+        }
+
         var columnConfig = {
             language: this.gridLanguage,
             classid: this.classId,
+            objectId: objectId,
             selectedGridColumns: visibleColumns
         };
         var dialog = new pimcore.object.helpers.gridConfigDialog(columnConfig, function(data) {

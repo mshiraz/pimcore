@@ -9,18 +9,18 @@
  * It is also available through the world-wide-web at this URL:
  * http://www.pimcore.org/license
  *
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 include_once("pimcore/config/startup.php");
 
 try {
-	Pimcore::run();
+    Pimcore::run();
 
 } catch (Exception $e) {
     // handle exceptions, log to file
     if(class_exists("Logger")) {
-    	Logger::emerg($e);
+        Logger::emerg($e);
     }
-   	throw $e;
+        throw $e;
 }

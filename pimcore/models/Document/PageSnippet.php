@@ -11,11 +11,17 @@
  *
  * @category   Pimcore
  * @package    Document
- * @copyright  Copyright (c) 2009-2013 pimcore GmbH (http://www.pimcore.org)
+ * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
  * @license    http://www.pimcore.org/license     New BSD License
  */
 
-abstract class Document_PageSnippet extends Document {
+namespace Pimcore\Model\Document;
+
+use Pimcore\Model;
+use Pimcore\Config;
+use Pimcore\Model\Document;
+
+abstract class PageSnippet extends Model\Document {
 
     /**
      * @var string
@@ -63,6 +69,10 @@ abstract class Document_PageSnippet extends Document {
      */
     public $contentMasterDocumentId;
 
+    /**
+     * @var array
+     */
+    protected $inheritedElements = array();
 
     /**
      * @see Document::update
@@ -84,8 +94,7 @@ abstract class Document_PageSnippet extends Document {
             }
         }
 
-        // update scheduled tasks
-        $this->saveScheduledTasks();
+        // scheduled tasks are saved in $this->saveVersion();
 
         // load data which must be requested
         $this->getProperties();
@@ -99,32 +108,36 @@ abstract class Document_PageSnippet extends Document {
     }
 
     /**
-     * Save the current object as version
-     *
-     * @return void
+     * @param bool $setModificationDate
+     * @param bool $callPluginHook
+     * @param bool $force
+     * @return null|Model\Version
+     * @throws \Exception
      */
-    public function saveVersion($setModificationDate = true, $callPluginHook = true) {
+    public function saveVersion($setModificationDate = true, $callPluginHook = true, $force = false) {
 
         // hook should be also called if "save only new version" is selected
         if($callPluginHook) {
-            Pimcore_API_Plugin_Broker::getInstance()->preUpdateDocument($this);
+            \Pimcore::getEventManager()->trigger("document.preUpdate", $this, [
+                "saveVersionOnly" => true
+            ]);
         }
 
         // set date
         if ($setModificationDate) {
             $this->setModificationDate(time());
         }
-        
+
         // scheduled tasks are saved always, they are not versioned!
         $this->saveScheduledTasks();
-        
+
         // create version
         $version = null;
 
         // only create a new version if there is at least 1 allowed
-        if(Pimcore_Config::getSystemConfig()->documents->versions->steps
-            || Pimcore_Config::getSystemConfig()->documents->versions->days) {
-            $version = new Version();
+        if(Config::getSystemConfig()->documents->versions->steps
+            || Config::getSystemConfig()->documents->versions->days || $force) {
+            $version = new Model\Version();
             $version->setCid($this->getId());
             $version->setCtype("document");
             $version->setDate($this->getModificationDate());
@@ -135,7 +148,9 @@ abstract class Document_PageSnippet extends Document {
 
         // hook should be also called if "save only new version" is selected
         if($callPluginHook) {
-            Pimcore_API_Plugin_Broker::getInstance()->postUpdateDocument($this);
+            \Pimcore::getEventManager()->trigger("document.postUpdate", $this, [
+                "saveVersionOnly" => true
+            ]);
         }
 
         return $version;
@@ -165,7 +180,7 @@ abstract class Document_PageSnippet extends Document {
     public function getCacheTags($tags = array()) {
 
         $tags = is_array($tags) ? $tags : array();
-        
+
         $tags = parent::getCacheTags($tags);
 
         foreach ($this->getElements() as $element) {
@@ -253,7 +268,8 @@ abstract class Document_PageSnippet extends Document {
     }
 
     /**
-     * @param string $module
+     * @param $module
+     * @return $this
      */
     public function setModule($module)
     {
@@ -280,15 +296,25 @@ abstract class Document_PageSnippet extends Document {
     public function setRawElement($name, $type, $data) {
         try {
             if ($type) {
-                $class = "Document_Tag_" . ucfirst($type);
+                $class = "\\Pimcore\\Model\\Document\\Tag\\" . ucfirst($type);
+
+                // this is the fallback for custom document tags using prefixes
+                // so we need to check if the class exists first
+                if(!\Pimcore\Tool::classExists($class)) {
+                    $oldStyleClass = "\\Document_Tag_" . ucfirst($type);
+                    if(\Pimcore\Tool::classExists($oldStyleClass)) {
+                        $class = $oldStyleClass;
+                    }
+                }
+
                 $this->elements[$name] = new $class();
                 $this->elements[$name]->setDataFromEditmode($data);
                 $this->elements[$name]->setName($name);
                 $this->elements[$name]->setDocumentId($this->getId());
             }
         }
-        catch (Exception $e) {
-            Logger::warning("can't set element " . $name . " with the type " . $type . " to the document: " . $this->getRealFullPath());
+        catch (\Exception $e) {
+            \Logger::warning("can't set element " . $name . " with the type " . $type . " to the document: " . $this->getRealFullPath());
         }
         return $this;
     }
@@ -323,19 +349,26 @@ abstract class Document_PageSnippet extends Document {
      * Get an element with the given key/name
      *
      * @param string $name
-     * @return Document_Tag
+     * @return Document\Tag
      */
     public function getElement($name) {
         $elements = $this->getElements();
         if($this->hasElement($name)) {
             return $elements[$name];
         } else {
+
+            if(array_key_exists($name, $this->inheritedElements)) {
+               return $this->inheritedElements[$name];
+            }
+
             // check for content master document (inherit data)
             if($contentMasterDocument = $this->getContentMasterDocument()) {
-                if($contentMasterDocument instanceof Document_PageSnippet) {
+                if($contentMasterDocument instanceof Document\PageSnippet) {
                     $inheritedElement = $contentMasterDocument->getElement($name);
                     if($inheritedElement) {
+                        $inheritedElement = clone $inheritedElement;
                         $inheritedElement->setInherited(true);
+                        $this->inheritedElements[$name] = $inheritedElement;
                         return $inheritedElement;
                     }
                 }
@@ -352,13 +385,17 @@ abstract class Document_PageSnippet extends Document {
         // this is that the path is automatically converted to ID => when setting directly from admin UI
         if (!is_numeric($contentMasterDocumentId) && !empty($contentMasterDocumentId)) {
             $contentMasterDocument = Document::getByPath($contentMasterDocumentId);
-            if($contentMasterDocument instanceof Document_PageSnippet) {
+            if($contentMasterDocument instanceof Document\PageSnippet) {
                 $contentMasterDocumentId = $contentMasterDocument->getId();
             }
         }
 
         if(empty($contentMasterDocumentId)) {
             $contentMasterDocument = null;
+        }
+
+        if($contentMasterDocumentId == $this->getId()) {
+            throw new \Exception("You cannot use the current document as a master document, please choose a different one.");
         }
 
         $this->contentMasterDocumentId = $contentMasterDocumentId;
@@ -381,10 +418,11 @@ abstract class Document_PageSnippet extends Document {
     }
 
     /**
-     * @param Document_PageSnippet $document
+     * @param $document
+     * @return $this
      */
     public function setContentMasterDocument($document) {
-        if($document instanceof Document_PageSnippet) {
+        if($document instanceof Document\PageSnippet) {
             $this->setContentMasterDocumentId($document->getId());
         } else {
             $this->setContentMasterDocumentId(null);
@@ -451,8 +489,8 @@ abstract class Document_PageSnippet extends Document {
      * @return the $scheduledTasks
      */
     public function getScheduledTasks() {
-        if ($this->scheduledTasks == null) {
-            $taskList = new Schedule_Task_List();
+        if ($this->scheduledTasks === null) {
+            $taskList = new Model\Schedule\Task\Listing();
             $taskList->setCondition("cid = ? AND ctype='document'", $this->getId());
             $this->setScheduledTasks($taskList->load());
         }
@@ -460,20 +498,23 @@ abstract class Document_PageSnippet extends Document {
     }
 
     /**
-     * @param $scheduledTasks the $scheduledTasks to set
+     * @param $scheduledTasks
+     * @return $this
      */
     public function setScheduledTasks($scheduledTasks) {
         $this->scheduledTasks = $scheduledTasks;
         return $this;
     }
-    
-    
-    public function saveScheduledTasks () {
-        $this->getScheduledTasks();
+
+    /**
+     *
+     */
+    public function saveScheduledTasks() {
+        $scheduled_tasks = $this->getScheduledTasks();
         $this->getResource()->deleteAllTasks();
 
-        if (is_array($this->getScheduledTasks()) && count($this->getScheduledTasks()) > 0) {
-            foreach ($this->getScheduledTasks() as $task) {
+        if (is_array($scheduled_tasks) && count($scheduled_tasks) > 0) {
+            foreach ($scheduled_tasks as $task) {
                 $task->setId(null);
                 $task->setResource(null);
                 $task->setCid($this->getId());
@@ -481,5 +522,24 @@ abstract class Document_PageSnippet extends Document {
                 $task->save();
             }
         }
+    }
+
+    /**
+     *
+     */
+    public function __sleep() {
+
+        $finalVars = array();
+        $parentVars = parent::__sleep();
+
+        $blockedVars = array("inheritedElements");
+
+        foreach ($parentVars as $key) {
+            if (!in_array($key, $blockedVars)) {
+                $finalVars[] = $key;
+            }
+        }
+
+        return $finalVars;
     }
 }

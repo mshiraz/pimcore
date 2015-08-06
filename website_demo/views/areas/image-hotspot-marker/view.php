@@ -1,9 +1,9 @@
 <section class="area-image">
 
     <div style="position: relative;">
-        <?= $this->image("image", array(
+        <?= $this->image("image", [
             "thumbnail" => "content"
-        )) ?>
+        ]) ?>
 
         <?php if(!$this->editmode) { ?>
             <?php // markers ?>
@@ -19,7 +19,7 @@
                 <div class="image-marker"
                      style="top:<?=$marker["top"] ?>%; left:<?=$marker["left"] ?>%;"
                      data-toggle="tooltip"
-                     title="<?php echo $title; ?>"
+                     title="<?= $title; ?>"
                     ></div>
             <?php } ?>
         <?php } ?>
@@ -38,7 +38,7 @@
                 <div  class="image-hotspot"
                       style="width: <?=$hotspot["width"] ?>%; height: <?=$hotspot["height"] ?>%; top:<?=$hotspot["top"] ?>%; left:<?=$hotspot["left"] ?>%;"
                       data-toggle="tooltip"
-                      title="<?php echo $title; ?>"
+                      title="<?= $title; ?>"
                     ></div>
             <?php } ?>
         <?php } ?>
