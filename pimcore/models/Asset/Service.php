@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Asset
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Asset;
@@ -21,7 +18,8 @@ use Pimcore\Model;
 use Pimcore\Model\Asset;
 use Pimcore\Model\Element;
 
-class Service extends Model\Element\Service {
+class Service extends Model\Element\Service
+{
 
     /**
      * @var Model\User
@@ -35,7 +33,8 @@ class Service extends Model\Element\Service {
     /**
      * @param  Model\User $user
      */
-    public function __construct($user = null) {
+    public function __construct($user = null)
+    {
         $this->_user = $user;
     }
 
@@ -44,7 +43,8 @@ class Service extends Model\Element\Service {
      * @param  Model\Asset $source
      * @return Model\Asset copied asset
      */
-    public function copyRecursive($target, $source) {
+    public function copyRecursive($target, $source)
+    {
 
         // avoid recursion
         if (!$this->_copyRecursiveIds) {
@@ -58,7 +58,7 @@ class Service extends Model\Element\Service {
 
         $new = clone $source;
         $new->id = null;
-        if($new instanceof Asset\Folder){
+        if ($new instanceof Asset\Folder) {
             $new->setChilds(null);
         }
 
@@ -66,7 +66,7 @@ class Service extends Model\Element\Service {
         $new->setParentId($target->getId());
         $new->setUserOwner($this->_user->getId());
         $new->setUserModification($this->_user->getId());
-        $new->setResource(null);
+        $new->setDao(null);
         $new->setLocked(false);
         $new->setCreationDate(time());
         $new->setStream($source->getStream());
@@ -79,8 +79,8 @@ class Service extends Model\Element\Service {
             $this->copyRecursive($new, $child);
         }
 
-        if($target instanceof Asset\Folder){
-            $this->updateChilds($target,$new);
+        if ($target instanceof Asset\Folder) {
+            $this->updateChilds($target, $new);
         }
 
 
@@ -92,28 +92,28 @@ class Service extends Model\Element\Service {
      * @param  Asset $source
      * @return Asset copied asset
      */
-    public function copyAsChild($target, $source) {
-
+    public function copyAsChild($target, $source)
+    {
         $source->getProperties();
 
         $new = clone $source;
         $new->id = null;
 
-        if($new instanceof Asset\Folder){
+        if ($new instanceof Asset\Folder) {
             $new->setChilds(null);
         }
         $new->setFilename(Element\Service::getSaveCopyName("asset", $new->getFilename(), $target));
         $new->setParentId($target->getId());
         $new->setUserOwner($this->_user->getId());
         $new->setUserModification($this->_user->getId());
-        $new->setResource(null);
+        $new->setDao(null);
         $new->setLocked(false);
         $new->setCreationDate(time());
         $new->setStream($source->getStream());
         $new->save();
 
-        if($target instanceof Asset\Folder){
-            $this->updateChilds($target,$new);
+        if ($target instanceof Asset\Folder) {
+            $this->updateChilds($target, $new);
         }
 
         return $new;
@@ -125,7 +125,8 @@ class Service extends Model\Element\Service {
      * @return mixed
      * @throws \Exception
      */
-    public function copyContents($target, $source) {
+    public function copyContents($target, $source)
+    {
 
         // check if the type is the same
         if (get_class($source) != get_class($target)) {
@@ -149,8 +150,8 @@ class Service extends Model\Element\Service {
      * @param  Asset $asset
      * @return void
      */
-    public static function gridAssetData($asset) {
-
+    public static function gridAssetData($asset)
+    {
         $data = Element\Service::gridElementData($asset);
         return $data;
     }
@@ -160,20 +161,18 @@ class Service extends Model\Element\Service {
      * @param $path
      * @return bool
      */
-    public static function pathExists ($path, $type = null) {
-
+    public static function pathExists($path, $type = null)
+    {
         $path = Element\Service::correctPath($path);
 
         try {
             $asset = new Asset();
 
             if (\Pimcore\Tool::isValidPath($path)) {
-                $asset->getResource()->getByPath($path);
+                $asset->getDao()->getByPath($path);
                 return true;
             }
-        }
-        catch (\Exception $e) {
-
+        } catch (\Exception $e) {
         }
 
         return false;
@@ -184,8 +183,8 @@ class Service extends Model\Element\Service {
      * @param Element\ElementInterface $element
      * @return Element\ElementInterface
      */
-    public static function loadAllFields (Element\ElementInterface $element) {
-
+    public static function loadAllFields(Element\ElementInterface $element)
+    {
         $element->getProperties();
         return $element;
     }
@@ -204,7 +203,8 @@ class Service extends Model\Element\Service {
      * @param $rewriteConfig
      * @return Asset
      */
-    public static function rewriteIds($asset, $rewriteConfig) {
+    public static function rewriteIds($asset, $rewriteConfig)
+    {
 
         // rewriting properties
         $properties = $asset->getProperties();
@@ -220,7 +220,8 @@ class Service extends Model\Element\Service {
      * @param $metadata
      * @return array
      */
-    public static function minimizeMetadata($metadata) {
+    public static function minimizeMetadata($metadata)
+    {
         if (!is_array($metadata)) {
             return $metadata;
         }
@@ -254,7 +255,8 @@ class Service extends Model\Element\Service {
      * @param $metadata
      * @return array
      */
-    public static function expandMetadataForEditmode($metadata) {
+    public static function expandMetadataForEditmode($metadata)
+    {
         if (!is_array($metadata)) {
             return $metadata;
         }

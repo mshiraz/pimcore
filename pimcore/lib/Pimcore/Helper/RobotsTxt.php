@@ -7,7 +7,7 @@
 
 namespace Pimcore\Helper;
 
-use Pimcore\Model\Cache;
+use Pimcore\Cache;
 
 class RobotsTxt
 {
@@ -38,7 +38,6 @@ class RobotsTxt
 
             $this->_rules = $this->_makeRules($robotsTxt);
         } catch (\Exception $e) {
-
         }
     }
 
@@ -62,7 +61,6 @@ class RobotsTxt
 
         $urlArray = parse_url($url);
         if (isset($urlArray['path'])) {
-
             $url = $urlArray['path'];
 
             if (isset($urlArray['query'])) {

@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Element
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Element;
 
 use Pimcore\Model;
 
-class Note extends Model\AbstractModel {
+class Note extends Model\AbstractModel
+{
 
     /**
      * @var int
@@ -71,11 +69,11 @@ class Note extends Model\AbstractModel {
      * @param $id
      * @return Element\Note
      */
-    public static function getById ($id) {
-
+    public static function getById($id)
+    {
         try {
             $note = new self();
-            $note->getResource()->getById($id);
+            $note->getDao()->getById($id);
 
             return $note;
         } catch (\Exception $e) {
@@ -89,7 +87,8 @@ class Note extends Model\AbstractModel {
      * @param string $type
      * @param mixed $data
      */
-    public function addData($name, $type, $data) {
+    public function addData($name, $type, $data)
+    {
         $this->data[$name] = array(
             "type" => $type,
             "data" => $data
@@ -100,25 +99,27 @@ class Note extends Model\AbstractModel {
      * @param ElementInterface $element
      * @return $this
      */
-    public function setElement(ElementInterface $element) {
+    public function setElement(ElementInterface $element)
+    {
         $this->setCid($element->getId());
         $this->setCtype(Service::getType($element));
         return $this;
     }
 
-    public function save() {
+    public function save()
+    {
 
         // check if there's a valid user
-        if(!$this->getUser()) {
+        if (!$this->getUser()) {
             // try to use the logged in user
-            if(\Pimcore::inAdmin()) {
-                if($user = \Pimcore\Tool\Admin::getCurrentUser()) {
+            if (\Pimcore::inAdmin()) {
+                if ($user = \Pimcore\Tool\Admin::getCurrentUser()) {
                     $this->setUser($user->getId());
                 }
             }
         }
 
-        $this->getResource()->save();
+        $this->getDao()->save();
     }
 
     /**

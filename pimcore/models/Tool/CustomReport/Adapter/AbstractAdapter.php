@@ -2,30 +2,29 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Pimcore
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Tool\CustomReport\Adapter;
 
 use Pimcore\Model;
 
-abstract class AbstractAdapter {
+abstract class AbstractAdapter
+{
 
     /**
      * @param $config
      * @param null $fullConfig
      */
-    public function __construct($config, $fullConfig = null) {
+    public function __construct($config, $fullConfig = null)
+    {
         $this->config = $config;
         $this->fullConfig = $fullConfig;
     }
@@ -42,7 +41,7 @@ abstract class AbstractAdapter {
      * @param null $drillDownFilters - if set, additional filters are set
      * @return array
      */
-    public abstract function getData($filters, $sort, $dir, $offset, $limit, $fields = null, $drillDownFilters = null);
+    abstract public function getData($filters, $sort, $dir, $offset, $limit, $fields = null, $drillDownFilters = null);
 
     /**
      * returns available columns for given configuration
@@ -50,7 +49,7 @@ abstract class AbstractAdapter {
      * @param $configuration
      * @return mixed
      */
-    public abstract function getColumns($configuration);
+    abstract public function getColumns($configuration);
 
     /**
      * returns all available values for given field with given filters and drillDownFilters
@@ -60,6 +59,5 @@ abstract class AbstractAdapter {
      * @param $drillDownFilters
      * @return mixed
      */
-    public abstract function getAvailableOptions($filters, $field, $drillDownFilters);
-
+    abstract public function getAvailableOptions($filters, $field, $drillDownFilters);
 }

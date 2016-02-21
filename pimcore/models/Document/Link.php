@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Document
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Document;
@@ -81,7 +78,6 @@ class Link extends Model\Document
      */
     public function resolveDependencies()
     {
-
         $dependencies = parent::resolveDependencies();
 
         if ($this->getLinktype() == "internal") {
@@ -132,8 +128,7 @@ class Link extends Model\Document
             if ($this->getObject() instanceof Document || $this->getObject() instanceof Asset) {
                 $path = $this->getObject()->getFullPath();
             }
-        }
-        else {
+        } else {
             $path = $this->getDirect();
         }
 
@@ -147,7 +142,8 @@ class Link extends Model\Document
      *
      * @return string
      */
-    public function getLink () {
+    public function getLink()
+    {
         $path = $this->getHref();
 
         if (strlen($this->getParameters()) > 0) {
@@ -224,8 +220,7 @@ class Link extends Model\Document
         if (!empty($internal)) {
             $this->internal = (int) $internal;
             $this->setObjectFromId();
-        }
-        else {
+        } else {
             $this->internal = null;
         }
         return $this;
@@ -323,10 +318,10 @@ class Link extends Model\Document
      */
     public function setObjectFromId()
     {
-        if($this->internal) {
+        if ($this->internal) {
             if ($this->internalType == "document") {
                 $this->object = Document::getById($this->internal);
-            } else if ($this->internalType == "asset") {
+            } elseif ($this->internalType == "asset") {
                 $this->object = Asset::getById($this->internal);
             }
         }
@@ -465,7 +460,6 @@ class Link extends Model\Document
      */
     public function getHtml()
     {
-
         $attributes = array("rel", "tabindex", "accesskey", "title", "name", "target");
         $attribs = array();
         foreach ($attributes as $a) {
@@ -478,8 +472,8 @@ class Link extends Model\Document
     /**
      *
      */
-    public function __sleep() {
-
+    public function __sleep()
+    {
         $finalVars = array();
         $parentVars = parent::__sleep();
 

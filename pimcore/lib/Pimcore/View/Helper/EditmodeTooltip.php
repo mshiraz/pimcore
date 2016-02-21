@@ -2,20 +2,18 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\View\Helper;
 
-class EditmodeTooltip extends \Zend_View_Helper_Abstract {
+class EditmodeTooltip extends \Zend_View_Helper_Abstract
+{
 
     /**
      * @var int
@@ -25,7 +23,8 @@ class EditmodeTooltip extends \Zend_View_Helper_Abstract {
     /**
      * @return array
      */
-    protected function getDefaultEditmodeTooltipOptions(){
+    protected function getDefaultEditmodeTooltipOptions()
+    {
         return array("autoHide" => true,
                      "title" => null,
                      "icon" => "/pimcore/static/img/icon/information.png"
@@ -36,7 +35,8 @@ class EditmodeTooltip extends \Zend_View_Helper_Abstract {
      * @param $id
      * @return string
      */
-    protected function getTooltipIdentifier($id){
+    protected function getTooltipIdentifier($id)
+    {
         return "editmode_tooltip_" . $id;
     }
 
@@ -48,14 +48,15 @@ class EditmodeTooltip extends \Zend_View_Helper_Abstract {
      * @param array $options
      * @return string
      */
-    public function editmodeTooltip($html,$title = null,$options = array()){
-        if($html){
-            $options = array_merge($this->getDefaultEditmodeTooltipOptions(),$options);
+    public function editmodeTooltip($html, $title = null, $options = array())
+    {
+        if ($html) {
+            $options = array_merge($this->getDefaultEditmodeTooltipOptions(), $options);
             self::$editmodeTooltipsIncrementer++;
             $options["target"] = $this->getTooltipIdentifier(self::$editmodeTooltipsIncrementer);
             $options["html"] = $html;
 
-            if(!is_null($title)){
+            if (!is_null($title)) {
                 $options["title"] = $title;
             }
 

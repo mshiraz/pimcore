@@ -2,15 +2,12 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 use Pimcore\Mail;
@@ -33,7 +30,9 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
         Element\Editlock::lock($this->getParam("id"), "document");
 
         $email = Document\Email::getById($this->getParam("id"));
+        $email = clone $email;
         $email = $this->getLatestVersion($email);
+
         $email->setVersions(array_splice($email->getVersions(), 0, 1));
         $email->idPath = Element\Service::getIdPath($email);
         $email->userPermissions = $email->getUserPermissions();
@@ -44,7 +43,7 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
         $email->setElements(null);
         $email->childs = null;
 
-        // cleanup properties
+        $this->addTranslationsData($email);
         $this->minimizeProperties($email);
 
         if ($email->isAllowed("view")) {
@@ -56,7 +55,6 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
 
     public function saveAction()
     {
-
         if ($this->getParam("id")) {
             $page = Document\Email::getById($this->getParam("id"));
 
@@ -82,9 +80,7 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
                     \Logger::err($e);
                     $this->_helper->json(array("success" => false, "message" => $e->getMessage()));
                 }
-
-            }
-            else {
+            } else {
                 if ($page->isAllowed("save")) {
                     $this->setValuesToDocument($page);
 
@@ -97,7 +93,6 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
                         \Logger::err($e);
                         $this->_helper->json(array("success" => false, "message" => $e->getMessage()));
                     }
-
                 }
             }
         }
@@ -106,7 +101,6 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
 
     protected function setValuesToDocument(Document $page)
     {
-
         $this->addSettingsToDocument($page);
         $this->addDataToDocument($page);
         $this->addPropertiesToDocument($page);
@@ -118,7 +112,7 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
      */
     public function emailLogsAction()
     {
-        if(!$this->getUser()->isAllowed("emails")) {
+        if (!$this->getUser()->isAllowed("emails")) {
             throw new \Exception("Permission denied, user needs 'emails' permission.");
         }
 
@@ -130,7 +124,7 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
         $list->setOffset($this->getParam("start"));
         $list->setOrderKey("sentDate");
 
-        if($this->getParam('filter')){
+        if ($this->getParam('filter')) {
             if ($this->getParam("filter")) {
                 $filterTerm = $list->quote("%".mb_strtolower($this->getParam("filter"))."%");
 
@@ -175,7 +169,7 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
      */
     public function showEmailLogAction()
     {
-        if(!$this->getUser()->isAllowed("emails")) {
+        if (!$this->getUser()->isAllowed("emails")) {
             throw new \Exception("Permission denied, user needs 'emails' permission.");
         }
 
@@ -200,8 +194,7 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
                 $this->enhanceLoggingData($entry);
             }
             $this->_helper->json($params);
-        }
-        else {
+        } else {
             die('No Type specified');
         }
     }
@@ -214,9 +207,8 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
      */
     protected function enhanceLoggingData(&$data, &$fullEntry = null)
     {
-
         if ($data['objectId']) {
-            $class = "\\" . ltrim($data['objectClass'],"\\");
+            $class = "\\" . ltrim($data['objectClass'], "\\");
             $obj = $class::getById($data['objectId']);
             if (is_null($obj)) {
                 $data['objectPath'] = '';
@@ -285,7 +277,7 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
      */
     public function deleteEmailLogAction()
     {
-        if(!$this->getUser()->isAllowed("emails")) {
+        if (!$this->getUser()->isAllowed("emails")) {
             throw new \Exception("Permission denied, user needs 'emails' permission.");
         }
 
@@ -303,38 +295,38 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
     /**
      * Resends the email to the recipients
      */
-    public function resendEmailAction(){
-
-        if(!$this->getUser()->isAllowed("emails")) {
+    public function resendEmailAction()
+    {
+        if (!$this->getUser()->isAllowed("emails")) {
             throw new \Exception("Permission denied, user needs 'emails' permission.");
         }
 
         $success = false;
         $emailLog = Tool\Email\Log::getById($this->getParam('id'));
 
-        if($emailLog instanceof Tool\Email\Log){
+        if ($emailLog instanceof Tool\Email\Log) {
             $mail = new Mail();
             $mail->preventDebugInformationAppending();
 
-            if($html = $emailLog->getHtmlLog()){
+            if ($html = $emailLog->getHtmlLog()) {
                 $mail->setBodyHtml($html);
             }
 
-            if($text = $emailLog->getTextLog()){
+            if ($text = $emailLog->getTextLog()) {
                 $mail->setBodyText($text);
             }
 
             $mail->setFrom($emailLog->getFrom());
 
-            foreach($emailLog->getToAsArray() as $entry){
-                $mail->addTo($entry['email'],$entry['name']);
+            foreach ($emailLog->getToAsArray() as $entry) {
+                $mail->addTo($entry['email'], $entry['name']);
             }
 
-            foreach($emailLog->getCcAsArray() as $entry){
-                $mail->addCc($entry['email'],$entry['name']);
+            foreach ($emailLog->getCcAsArray() as $entry) {
+                $mail->addCc($entry['email'], $entry['name']);
             }
 
-            foreach($emailLog->getBccAsArray() as $entry){
+            foreach ($emailLog->getBccAsArray() as $entry) {
                 $mail->addBcc($entry['email']);
             }
             $mail->setSubject($emailLog->getSubject());
@@ -350,17 +342,18 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
 
     /* global functionalities */
 
-    public function sendTestEmailAction() {
-
-        if(!$this->getUser()->isAllowed("emails")) {
+    public function sendTestEmailAction()
+    {
+        if (!$this->getUser()->isAllowed("emails")) {
             throw new \Exception("Permission denied, user needs 'emails' permission.");
         }
 
         $mail = new Mail();
         $mail->addTo($this->getParam("to"));
         $mail->setSubject($this->getParam("subject"));
+        $mail->setIgnoreDebugMode(true);
 
-        if($this->getParam("type") == "text") {
+        if ($this->getParam("type") == "text") {
             $mail->setBodyText($this->getParam("content"));
         } else {
             $mail->setBodyHtml($this->getParam("content"));
@@ -374,17 +367,16 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
     }
 
 
-    public function blacklistAction() {
-
-        if(!$this->getUser()->isAllowed("emails")) {
+    public function blacklistAction()
+    {
+        if (!$this->getUser()->isAllowed("emails")) {
             throw new \Exception("Permission denied, user needs 'emails' permission.");
         }
 
         if ($this->getParam("data")) {
-
             $data = \Zend_Json::decode($this->getParam("data"));
 
-            if(is_array($data)) {
+            if (is_array($data)) {
                 foreach ($data as &$value) {
                     $value = trim($value);
                 }
@@ -395,16 +387,13 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
                 $address->delete();
 
                 $this->_helper->json(array("success" => true, "data" => array()));
-            }
-            else if ($this->getParam("xaction") == "update") {
+            } elseif ($this->getParam("xaction") == "update") {
                 $address = Tool\Email\Blacklist::getByAddress($data["address"]);
                 $address->setValues($data);
                 $address->save();
 
                 $this->_helper->json(array("data" => $address, "success" => true));
-            }
-            else if ($this->getParam("xaction") == "create") {
-
+            } elseif ($this->getParam("xaction") == "create") {
                 unset($data["id"]);
 
                 $address = new Tool\Email\Blacklist();
@@ -413,8 +402,7 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
 
                 $this->_helper->json(array("data" => $address, "success" => true));
             }
-        }
-        else {
+        } else {
             // get list of routes
 
             $list = new Tool\Email\Blacklist\Listing();
@@ -422,12 +410,16 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
             $list->setLimit($this->getParam("limit"));
             $list->setOffset($this->getParam("start"));
 
-            if($this->getParam("sort")) {
-                $list->setOrderKey($this->getParam("sort"));
-                $list->setOrder($this->getParam("dir"));
+            $sortingSettings = \Pimcore\Admin\Helper\QueryParams::extractSortingSettings($this->getAllParams());
+            if ($sortingSettings['orderKey']) {
+                $orderKey = $sortingSettings['orderKey'];
+            }
+            if ($sortingSettings['order']) {
+                $order  = $sortingSettings['order'];
             }
 
-            if($this->getParam("filter")) {
+
+            if ($this->getParam("filter")) {
                 $list->setCondition("`address` LIKE " . $list->quote("%".$this->getParam("filter")."%"));
             }
 
@@ -444,20 +436,20 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
     }
 
 
-    protected function getBounceMailbox () {
-
+    protected function getBounceMailbox()
+    {
         $mail = null;
         $config = \Pimcore\Config::getSystemConfig();
 
-        if($config->email->bounce->type == "Mbox") {
+        if ($config->email->bounce->type == "Mbox") {
             $mail = new \Zend_Mail_Storage_Mbox(array(
                 'filename' => $config->email->bounce->mbox
             ));
-        } else if ($config->email->bounce->type == "Maildir") {
+        } elseif ($config->email->bounce->type == "Maildir") {
             $mail = new \Zend_Mail_Storage_Maildir(array(
                 'dirname' => $config->email->bounce->maildir
             ));
-        } else if ($config->email->bounce->type == "IMAP") {
+        } elseif ($config->email->bounce->type == "IMAP") {
             $mail = new \Zend_Mail_Storage_Imap(array(
                 'host' => $config->email->bounce->imap->host,
                 "port" => $config->email->bounce->imap->port,
@@ -473,11 +465,11 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
             );
 
             foreach ($pathes as $path) {
-                if(is_dir($path)) {
+                if (is_dir($path)) {
                     $mail = new \Zend_Mail_Storage_Maildir(array(
                         'dirname' => $path . "/"
                     ));
-                } else if(is_file($path)) {
+                } elseif (is_file($path)) {
                     $mail = new \Zend_Mail_Storage_Mbox(array(
                         'filename' => $path
                     ));
@@ -488,8 +480,8 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
         return $mail;
     }
 
-    public function bounceMailInboxListAction() {
-
+    public function bounceMailInboxListAction()
+    {
         $this->checkPermission("emails");
 
         $offset = ($this->getParam("start")) ? $this->getParam("start")+1 : 1;
@@ -512,12 +504,13 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
                 "id" => (int) $mail->key()
             );
 
-            $date = new \Zend_Date($message->date);
-            $mailData["date"] = $date->get(\Zend_Date::DATETIME_MEDIUM);
+            $date = new \DateTime();
+            $date->setTimestamp($message->date);
+            $mailData["date"] = $date->format("Y-m-d");
 
             $mails[] = $mailData;
 
-            if($count >= $limit) {
+            if ($count >= $limit) {
                 break;
             }
 
@@ -531,8 +524,8 @@ class Admin_EmailController extends \Pimcore\Controller\Action\Admin\Document
         ));
     }
 
-    public function bounceMailInboxDetailAction() {
-
+    public function bounceMailInboxDetailAction()
+    {
         $this->checkPermission("emails");
 
         $mail = $this->getBounceMailbox();

@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Tool
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Tool\Targeting;
@@ -20,7 +17,8 @@ namespace Pimcore\Model\Tool\Targeting;
 use Pimcore\Model;
 use Pimcore\Model\Tool;
 
-class Rule extends Model\AbstractModel {
+class Rule extends Model\AbstractModel
+{
 
     /**
      * @var int
@@ -61,12 +59,13 @@ class Rule extends Model\AbstractModel {
      * @param $target
      * @return bool
      */
-    public static function inTarget($target) {
-        if($target instanceof Model\Tool\Targeting\Rule) {
+    public static function inTarget($target)
+    {
+        if ($target instanceof Model\Tool\Targeting\Rule) {
             $targetId = $target->getId();
-        } else if (is_string($target)) {
+        } elseif (is_string($target)) {
             $target = self::getByName($target);
-            if(!$target) {
+            if (!$target) {
                 return false;
             } else {
                 $targetId = $target->getId();
@@ -75,7 +74,7 @@ class Rule extends Model\AbstractModel {
             $targetId = (int) $target;
         }
 
-        if(array_key_exists("_ptc", $_GET) && intval($targetId) == intval($_GET["_ptc"])) {
+        if (array_key_exists("_ptc", $_GET) && intval($targetId) == intval($_GET["_ptc"])) {
             return true;
         }
         return false;
@@ -85,14 +84,15 @@ class Rule extends Model\AbstractModel {
      * @param $key
      * @param $value
      */
-    public static function fireEvent ($key, $value = null) {
-        if($value === null) {
+    public static function fireEvent($key, $value = null)
+    {
+        if ($value === null) {
             $value = true;
         }
 
         $front = \Zend_Controller_Front::getInstance();
         $plugin = $front->getPlugin("Pimcore\\Controller\\Plugin\\Targeting");
-        if($plugin instanceof \Pimcore\Controller\Plugin\Targeting) {
+        if ($plugin instanceof \Pimcore\Controller\Plugin\Targeting) {
             $plugin->addEvent($key, $value);
         }
     }
@@ -103,11 +103,12 @@ class Rule extends Model\AbstractModel {
      * @param integer $id
      * @return Tool\Targeting\Rule
      */
-    public static function getById($id) {
+    public static function getById($id)
+    {
         try {
             $target = new self();
             $target->setId(intval($id));
-            $target->getResource()->getById();
+            $target->getDao()->getById();
             return $target;
         } catch (\Exception $e) {
             return null;
@@ -118,11 +119,12 @@ class Rule extends Model\AbstractModel {
      * @param $name
      * @return null|Rule
      */
-    public static function getByName($name) {
+    public static function getByName($name)
+    {
         try {
             $target = new self();
             $target->setName($name);
-            $target->getResource()->getByName();
+            $target->getDao()->getByName();
             return $target;
         } catch (\Exception $e) {
             return null;
@@ -189,7 +191,7 @@ class Rule extends Model\AbstractModel {
      */
     public function setActions($actions)
     {
-        if(!$actions) {
+        if (!$actions) {
             $actions = new Tool\Targeting\Rule\Actions();
         }
         $this->actions = $actions;
@@ -202,7 +204,7 @@ class Rule extends Model\AbstractModel {
     public function getActions()
     {
         // this is to be backward compatible (was Tool\Targeting\Actions)
-        if($this->actions instanceof Tool\Targeting\Rule\Actions) {
+        if ($this->actions instanceof Tool\Targeting\Rule\Actions) {
             return $this->actions;
         }
 
@@ -215,7 +217,7 @@ class Rule extends Model\AbstractModel {
      */
     public function setConditions($conditions)
     {
-        if(!$conditions) {
+        if (!$conditions) {
             $conditions = array();
         }
         $this->conditions = $conditions;
@@ -235,7 +237,7 @@ class Rule extends Model\AbstractModel {
      */
     public function setScope($scope)
     {
-        if(!empty($scope)) {
+        if (!empty($scope)) {
             $this->scope = $scope;
         }
     }

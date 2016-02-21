@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object\Data;
@@ -21,7 +18,8 @@ use Pimcore\Model;
 use Pimcore\Model\Asset;
 use Pimcore\Model\Document;
 
-class Link {
+class Link
+{
 
     /**
      * @var string
@@ -96,7 +94,8 @@ class Link {
     /**
      * @return string
      */
-    public function getText() {
+    public function getText()
+    {
         return $this->text;
     }
 
@@ -104,7 +103,8 @@ class Link {
      * @param $text
      * @return $this
      */
-    public function setText ($text) {
+    public function setText($text)
+    {
         $this->text = $text;
         return $this;
     }
@@ -112,7 +112,8 @@ class Link {
     /**
      * @return string
      */
-    public function getInternalType() {
+    public function getInternalType()
+    {
         return $this->internalType;
     }
 
@@ -120,7 +121,8 @@ class Link {
      * @param $internalType
      * @return $this
      */
-    public function setInternalType ($internalType) {
+    public function setInternalType($internalType)
+    {
         $this->internalType = $internalType;
         return $this;
     }
@@ -128,7 +130,8 @@ class Link {
     /**
      * @return string
      */
-    public function getInternal() {
+    public function getInternal()
+    {
         return $this->internal;
     }
 
@@ -136,7 +139,8 @@ class Link {
      * @param $internal
      * @return $this
      */
-    public function setInternal ($internal) {
+    public function setInternal($internal)
+    {
         $this->internal = $internal;
         if (!empty($internal)) {
             $this->setObjectFromId();
@@ -147,7 +151,8 @@ class Link {
     /**
      * @return string
      */
-    public function getDirect() {
+    public function getDirect()
+    {
         return $this->direct;
     }
 
@@ -155,7 +160,8 @@ class Link {
      * @param $direct
      * @return $this
      */
-    public function setDirect ($direct) {
+    public function setDirect($direct)
+    {
         $this->direct = $direct;
         return $this;
     }
@@ -163,7 +169,8 @@ class Link {
     /**
      * @return string
      */
-    public function getLinktype() {
+    public function getLinktype()
+    {
         return $this->linktype;
     }
 
@@ -171,7 +178,8 @@ class Link {
      * @param $linktype
      * @return $this
      */
-    public function setLinktype ($linktype) {
+    public function setLinktype($linktype)
+    {
         $this->linktype = $linktype;
         return $this;
     }
@@ -179,7 +187,8 @@ class Link {
     /**
      * @return string
      */
-    public function getTarget() {
+    public function getTarget()
+    {
         return $this->target;
     }
 
@@ -187,7 +196,8 @@ class Link {
      * @param $target
      * @return $this
      */
-    public function setTarget ($target) {
+    public function setTarget($target)
+    {
         $this->target = $target;
         return $this;
     }
@@ -195,7 +205,8 @@ class Link {
     /**
      * @return string
      */
-    public function getParameters() {
+    public function getParameters()
+    {
         return $this->parameters;
     }
 
@@ -203,7 +214,8 @@ class Link {
      * @param $parameters
      * @return $this
      */
-    public function setParameters ($parameters) {
+    public function setParameters($parameters)
+    {
         $this->parameters = $parameters;
         return $this;
     }
@@ -211,7 +223,8 @@ class Link {
     /**
      * @return string
      */
-    public function getAnchor() {
+    public function getAnchor()
+    {
         return $this->anchor;
     }
 
@@ -219,7 +232,8 @@ class Link {
      * @param $anchor
      * @return $this
      */
-    public function setAnchor ($anchor) {
+    public function setAnchor($anchor)
+    {
         $this->anchor = $anchor;
         return $this;
     }
@@ -227,7 +241,8 @@ class Link {
     /**
      * @return string
      */
-    public function getTitle() {
+    public function getTitle()
+    {
         return $this->title;
     }
 
@@ -235,7 +250,8 @@ class Link {
      * @param $title
      * @return $this
      */
-    public function setTitle ($title) {
+    public function setTitle($title)
+    {
         $this->title = $title;
         return $this;
     }
@@ -243,7 +259,8 @@ class Link {
     /**
      * @return string
      */
-    public function getAccesskey() {
+    public function getAccesskey()
+    {
         return $this->accesskey;
     }
 
@@ -251,7 +268,8 @@ class Link {
      * @param $accesskey
      * @return $this
      */
-    public function setAccesskey ($accesskey) {
+    public function setAccesskey($accesskey)
+    {
         $this->accesskey = $accesskey;
         return $this;
     }
@@ -259,7 +277,8 @@ class Link {
     /**
      * @return string
      */
-    public function getRel() {
+    public function getRel()
+    {
         return $this->rel;
     }
 
@@ -267,7 +286,8 @@ class Link {
      * @param $rel
      * @return $this
      */
-    public function setRel ($rel) {
+    public function setRel($rel)
+    {
         $this->rel = $rel;
         return $this;
     }
@@ -275,7 +295,8 @@ class Link {
     /**
      * @return string
      */
-    public function getTabindex() {
+    public function getTabindex()
+    {
         return $this->tabindex;
     }
 
@@ -283,7 +304,8 @@ class Link {
      * @param $tabindex
      * @return $this
      */
-    public function setTabindex ($tabindex) {
+    public function setTabindex($tabindex)
+    {
         $this->tabindex = $tabindex;
         return $this;
     }
@@ -324,19 +346,18 @@ class Link {
      * @param $path
      * @return $this
      */
-    public function setPath ($path) {
+    public function setPath($path)
+    {
         if (!empty($path)) {
             if ($document = Document::getByPath($path)) {
                 $this->linktype = "internal";
                 $this->internalType = "document";
                 $this->internal = $document->getId();
-            }
-            else if ($asset = Asset::getByPath($path)) {
+            } elseif ($asset = Asset::getByPath($path)) {
                 $this->linktype = "internal";
                 $this->internalType = "asset";
                 $this->internal = $asset->getId();
-            }
-            else {
+            } else {
                 $this->linktype = "direct";
                 $this->direct = $path;
             }
@@ -347,14 +368,14 @@ class Link {
     /**
      * @return string
      */
-    public function getPath () {
+    public function getPath()
+    {
         $path = "";
         if ($this->getLinktype() == "internal") {
             if ($this->getObject() instanceof Document || $this->getObject() instanceof Asset) {
                 $path = $this->getObject()->getFullPath();
             }
-        }
-        else {
+        } else {
             $path = $this->getDirect();
         }
         
@@ -366,14 +387,14 @@ class Link {
      *
      * @return string
      */
-    public function getHref() {
+    public function getHref()
+    {
         $path = "";
         if ($this->getLinktype() == "internal") {
             if ($this->getObject() instanceof Document || $this->getObject() instanceof Asset) {
                 $path = $this->getObject()->getFullPath();
             }
-        }
-        else {
+        } else {
             $path = $this->getDirect();
         }
 
@@ -391,11 +412,11 @@ class Link {
     /**
      * @return Document|Asset
      */
-    public function getObject() {
+    public function getObject()
+    {
         if ($this->object instanceof Document || $this->object instanceof Asset) {
             return $this->object;
-        }
-        else {
+        } else {
             if ($this->setObjectFromId()) {
                 return $this->object;
             }
@@ -406,7 +427,8 @@ class Link {
     /**
      * @return void
      */
-    public function setObject($object) {
+    public function setObject($object)
+    {
         $this->object = $object;
         return $this;
     }
@@ -414,31 +436,31 @@ class Link {
     /**
      * @return void
      */
-    public function setObjectFromId() {
+    public function setObjectFromId()
+    {
         if ($this->internalType == "document") {
             $this->object = Document::getById($this->internal);
-        }
-        else if ($this->internalType == "asset") {
+        } elseif ($this->internalType == "asset") {
             $this->object = Asset::getById($this->internal);
         }
         return $this->object;
     }
     
-    public function getHtml() {
-
+    public function getHtml()
+    {
         $attributes = array("rel", "tabindex", "accesskey", "title","target","class");
         $attribs = array();
         foreach ($attributes as $a) {
-            if($this->$a) {
+            if ($this->$a) {
                 $attribs[] = $a . '="' . $this->$a . '"';
             }
         }
 
-        if($this->getAttributes()) {
+        if ($this->getAttributes()) {
             $attribs[] = $this->getAttributes();
         }
 
-        if(empty($this->text)) {
+        if (empty($this->text)) {
             return "";
         }
         
@@ -448,10 +470,11 @@ class Link {
     /**
      * @return bool
      */
-    public function isEmpty() {
+    public function isEmpty()
+    {
         $vars = get_object_vars($this);
         foreach ($vars as $key => $value) {
-            if(!empty($value)) {
+            if (!empty($value)) {
                 return false;
             }
         }
@@ -463,7 +486,8 @@ class Link {
      * @param array $data
      * @return $this
      */
-    public function setValues($data = array()) {
+    public function setValues($data = array())
+    {
         if (is_array($data) && count($data) > 0) {
             foreach ($data as $key => $value) {
                 $method = "set" . $key;
@@ -478,7 +502,8 @@ class Link {
     /**
      * @return string
      */
-    public function __toString() {
+    public function __toString()
+    {
         return $this->getHtml();
     }
 }

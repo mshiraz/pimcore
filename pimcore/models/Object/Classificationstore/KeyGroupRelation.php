@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object\Classificationstore;
 
 use Pimcore\Model;
 
-class KeyGroupRelation extends Model\AbstractModel {
+class KeyGroupRelation extends Model\AbstractModel
+{
 
     /**
      * @var integer
@@ -52,10 +50,14 @@ class KeyGroupRelation extends Model\AbstractModel {
      */
     public $type;
 
+    /** @var  int */
+    public $sorter;
+
     /**
      * @return Model\Object\Classificationstore\KeyGroupRelation
      */
-    public static function create() {
+    public static function create()
+    {
         $config = new self();
         $config->save();
 
@@ -158,8 +160,19 @@ class KeyGroupRelation extends Model\AbstractModel {
         $this->type = $type;
     }
 
+    /**
+     * @return int
+     */
+    public function getSorter()
+    {
+        return $this->sorter;
+    }
 
-
-
-
+    /**
+     * @param int $sorter
+     */
+    public function setSorter($sorter)
+    {
+        $this->sorter = $sorter;
+    }
 }

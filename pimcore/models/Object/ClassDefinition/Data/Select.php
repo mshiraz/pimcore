@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object|Class
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object\ClassDefinition\Data;
@@ -20,7 +17,8 @@ namespace Pimcore\Model\Object\ClassDefinition\Data;
 use Pimcore\Model;
 use Pimcore\Model\Object;
 
-class Select extends Model\Object\ClassDefinition\Data {
+class Select extends Model\Object\ClassDefinition\Data
+{
 
     /**
      * Static type of this element
@@ -70,7 +68,8 @@ class Select extends Model\Object\ClassDefinition\Data {
     /**
      * @return array
      */
-    public function getOptions() {
+    public function getOptions()
+    {
         return $this->options;
     }
 
@@ -78,7 +77,8 @@ class Select extends Model\Object\ClassDefinition\Data {
      * @param array $options
      * @return void
      */
-    public function setOptions($options) {
+    public function setOptions($options)
+    {
         $this->options = $options;
         return $this;
     }
@@ -86,7 +86,8 @@ class Select extends Model\Object\ClassDefinition\Data {
     /**
      * @return integer
      */
-    public function getWidth() {
+    public function getWidth()
+    {
         return $this->width;
     }
 
@@ -94,7 +95,8 @@ class Select extends Model\Object\ClassDefinition\Data {
      * @param $width
      * @return $this
      */
-    public function setWidth($width) {
+    public function setWidth($width)
+    {
         $this->width = $this->getAsIntegerCast($width);
         return $this;
     }
@@ -105,7 +107,8 @@ class Select extends Model\Object\ClassDefinition\Data {
      * @param null|Model\Object\AbstractObject $object
      * @return string
      */
-    public function getDataForResource($data, $object = null) {
+    public function getDataForResource($data, $object = null)
+    {
         return $data;
     }
 
@@ -114,7 +117,8 @@ class Select extends Model\Object\ClassDefinition\Data {
      * @param string $data
      * @return string
      */
-    public function getDataFromResource($data) {
+    public function getDataFromResource($data)
+    {
         return $data;
     }
 
@@ -124,7 +128,8 @@ class Select extends Model\Object\ClassDefinition\Data {
      * @param null|Model\Object\AbstractObject $object
      * @return string
      */
-    public function getDataForQueryResource($data, $object = null) {
+    public function getDataForQueryResource($data, $object = null)
+    {
         return $data;
     }
 
@@ -135,7 +140,8 @@ class Select extends Model\Object\ClassDefinition\Data {
      * @param null|Model\Object\AbstractObject $object
      * @return string
      */
-    public function getDataForEditmode($data, $object = null) {
+    public function getDataForEditmode($data, $object = null)
+    {
         return $this->getDataForResource($data, $object);
     }
 
@@ -145,7 +151,8 @@ class Select extends Model\Object\ClassDefinition\Data {
      * @param null|Model\Object\AbstractObject $object
      * @return string
      */
-    public function getDataFromEditmode($data, $object = null) {
+    public function getDataFromEditmode($data, $object = null)
+    {
         return $this->getDataFromResource($data);
     }
 
@@ -154,14 +161,16 @@ class Select extends Model\Object\ClassDefinition\Data {
      * @param string $data
      * @return string
      */
-    public function getVersionPreview($data) {
+    public function getVersionPreview($data)
+    {
         return $data;
     }
 
     /** True if change is allowed in edit mode.
      * @return bool
      */
-    public function isDiffChangeAllowed() {
+    public function isDiffChangeAllowed()
+    {
         return true;
     }
 
@@ -170,7 +179,8 @@ class Select extends Model\Object\ClassDefinition\Data {
      * @param null $object
      * @return array|null
      */
-    public function getDiffDataForEditMode($data, $object = null) {
+    public function getDiffDataForEditMode($data, $object = null)
+    {
         $result = array();
 
         $diffdata = array();
@@ -203,7 +213,8 @@ class Select extends Model\Object\ClassDefinition\Data {
      * @param boolean $omitMandatoryCheck
      * @throws \Exception
      */
-    public function checkValidity($data, $omitMandatoryCheck = false) {
+    public function checkValidity($data, $omitMandatoryCheck = false)
+    {
         if (!$omitMandatoryCheck && $this->getMandatory() && $this->isEmpty($data)) {
             throw new \Exception("Empty mandatory field [ " . $this->getName() . " ]");
         }
@@ -213,14 +224,16 @@ class Select extends Model\Object\ClassDefinition\Data {
      * @param $data
      * @return bool
      */
-    public function isEmpty($data) {
+    public function isEmpty($data)
+    {
         return (strlen($data) < 1);
     }
 
     /**
      * @param Object\ClassDefinition\Data $masterDefinition
      */
-    public function synchronizeWithMasterDefinition(Object\ClassDefinition\Data $masterDefinition) {
+    public function synchronizeWithMasterDefinition(Object\ClassDefinition\Data $masterDefinition)
+    {
         $this->options = $masterDefinition->options;
     }
 
@@ -239,6 +252,4 @@ class Select extends Model\Object\ClassDefinition\Data {
     {
         $this->defaultValue = $defaultValue;
     }
-
-
 }

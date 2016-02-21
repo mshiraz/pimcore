@@ -2,37 +2,36 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore;
 
-class Video {
+class Video
+{
 
     /**
      * @param null $adapter
      * @return bool|null|Video\Adapter
      * @throws \Exception
      */
-    public static function getInstance ($adapter = null) {
+    public static function getInstance($adapter = null)
+    {
         try {
-            if($adapter) {
+            if ($adapter) {
                 $adapterClass = "\\Pimcore\\Video\\Adapter\\" . $adapter;
-                if(Tool::classExists($adapterClass)) {
+                if (Tool::classExists($adapterClass)) {
                     return new $adapterClass();
                 } else {
                     throw new \Exception("Video-transcode adapter `" . $adapter . "´ does not exist.");
                 }
             } else {
-                if($adapter = self::getDefaultAdapter()) {
+                if ($adapter = self::getDefaultAdapter()) {
                     return $adapter;
                 }
             }
@@ -47,8 +46,9 @@ class Video {
     /**
      * @return bool
      */
-    public static function isAvailable () {
-        if(self::getDefaultAdapter()) {
+    public static function isAvailable()
+    {
+        if (self::getDefaultAdapter()) {
             return true;
         }
         return false;
@@ -57,16 +57,16 @@ class Video {
     /**
      * @return bool
      */
-    public static function getDefaultAdapter () {
-
+    public static function getDefaultAdapter()
+    {
         $adapters = array("Ffmpeg");
 
         foreach ($adapters as $adapter) {
             $adapterClass = "\\Pimcore\\Video\\Adapter\\" . $adapter;
-            if(Tool::classExists($adapterClass)) {
+            if (Tool::classExists($adapterClass)) {
                 try {
                     $adapter = new $adapterClass();
-                    if($adapter->isAvailable()) {
+                    if ($adapter->isAvailable()) {
                         return $adapter;
                     }
                 } catch (\Exception $e) {

@@ -1,15 +1,12 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 pimcore.registerNS("pimcore.report.qrcode.item");
@@ -226,17 +223,10 @@ pimcore.report.qrcode.item = Class.create({
             items: [this.codePanel, {
                 border: false,
                 buttons: [{
-                    text: "PNG",
+                    width: "100%",
+                    text: t("download"),
                     iconCls: "pimcore_icon_png",
                     handler: this.download.bind(this, "image")
-                },{
-                    text: "EPS",
-                    iconCls: "pimcore_icon_eps",
-                    handler: this.download.bind(this, "eps")
-                }, {
-                    text: "SVG",
-                    iconCls: "pimcore_icon_svg",
-                    handler: this.download.bind(this, "svg")
                 }]
             }]
         });
@@ -299,10 +289,8 @@ pimcore.report.qrcode.item = Class.create({
         delete params["description"];
         delete params["undefined"];
 
-        params["renderer"] = format;
         params["download"] = "true";
         params["name"] = this.data.name;
-        params["moduleSize"] = 20;
 
         var codeUrl = "/admin/reports/qrcode/code/?" + Ext.urlEncode(params);
         pimcore.helpers.download(codeUrl);

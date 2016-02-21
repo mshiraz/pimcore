@@ -2,28 +2,26 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 use Pimcore\Config;
-use Pimcore\Model\Cache;
+use Pimcore\Cache;
 use Pimcore\Controller;
 use Pimcore\Tool;
 use Pimcore\File;
-use Pimcore\Resource;
+use Pimcore\Db;
 use Pimcore\ExtensionManager;
 use Pimcore\Model\User;
 use Pimcore\Model;
 
-class Pimcore {
+class Pimcore
+{
 
     /**
      * @var bool
@@ -50,8 +48,8 @@ class Pimcore {
      * @static
      * @throws Exception|\Zend_Controller_Router_Exception
      */
-    public static function run() {
-
+    public static function run()
+    {
         self::setSystemRequirements();
 
         // detect frontend (website)
@@ -80,7 +78,7 @@ class Pimcore {
         $front = \Zend_Controller_Front::getInstance();
 
         $conf = Config::getSystemConfig();
-        if(!$conf) {
+        if (!$conf) {
             // redirect to installer if configuration isn't present
             if (!preg_match("/^\/install.*/", $_SERVER["REQUEST_URI"])) {
                 header("Location: /install/");
@@ -88,12 +86,13 @@ class Pimcore {
             }
         }
 
-        if(self::inDebugMode() && $frontend && !$conf->general->disable_whoops && !defined("HHVM_VERSION")) {
+        if (self::inDebugMode() && $frontend && !$conf->general->disable_whoops && !defined("HHVM_VERSION")) {
             $whoops = new \Whoops\Run;
             $whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
-            $jsonErrorHandler = new \Whoops\Handler\JsonResponseHandler;
-            $jsonErrorHandler->onlyForAjaxRequests(true);
-            $whoops->pushHandler($jsonErrorHandler);
+            if (\Whoops\Util\Misc::isAjaxRequest()) {
+                $jsonErrorHandler = new \Whoops\Handler\JsonResponseHandler;
+                $whoops->pushHandler($jsonErrorHandler);
+            }
             $whoops->register();
 
             // add event handler before Pimcore::shutdown() to ensure fatal errors are handled by Whoops
@@ -107,7 +106,6 @@ class Pimcore {
         if ($frontend) {
             $front->registerPlugin(new Controller\Plugin\Thumbnail(), 795);
             $front->registerPlugin(new Controller\Plugin\Less(), 799);
-            $front->registerPlugin(new Controller\Plugin\AdminButton(), 806);
         }
 
         if (Tool::useFrontendOutputFilters(new \Zend_Controller_Request_Http())) {
@@ -120,6 +118,7 @@ class Pimcore {
             $front->registerPlugin(new Controller\Plugin\TagManagement(), 804);
             $front->registerPlugin(new Controller\Plugin\Targeting(), 805);
             $front->registerPlugin(new Controller\Plugin\EuCookieLawNotice(), 807);
+            $front->registerPlugin(new Controller\Plugin\GoogleTagManager(), 810);
             $front->registerPlugin(new Controller\Plugin\HttpErrorLog(), 850);
             $front->registerPlugin(new Controller\Plugin\Cache(), 901); // for caching
         }
@@ -225,13 +224,13 @@ class Pimcore {
             // check if this request routes into a plugin, if so check if the plugin is enabled
             if (preg_match("@^/plugin/([^/]+)/.*@", $_SERVER["REQUEST_URI"], $matches)) {
                 $pluginName = $matches[1];
-                if(!Pimcore\ExtensionManager::isEnabled("plugin", $pluginName)) {
+                if (!Pimcore\ExtensionManager::isEnabled("plugin", $pluginName)) {
                     \Pimcore\Tool::exitWithError("Plugin is disabled. To use this plugin please enable it in the extension manager!");
                 }
             }
 
             // force the main (default) domain for "admin" requests
-            if($conf->general->domain && $conf->general->domain != Tool::getHostname()) {
+            if ($conf->general->domain && $conf->general->domain != Tool::getHostname()) {
                 $url = (($_SERVER['HTTPS'] == "on") ? "https" : "http") . "://" . $conf->general->domain . $_SERVER["REQUEST_URI"];
                 header("HTTP/1.1 301 Moved Permanently");
                 header("Location: " . $url, true, 301);
@@ -239,20 +238,6 @@ class Pimcore {
             }
         }
 
-        // check if webdav is configured and add router
-        if ($conf instanceof \Zend_Config) {
-            if ($conf->assets->webdav->hostname) {
-                $routeWebdav = new \Zend_Controller_Router_Route_Hostname(
-                    $conf->assets->webdav->hostname,
-                    array(
-                        "module" => "admin",
-                        'controller' => 'asset',
-                        'action' => 'webdav'
-                    )
-                );
-                $router->addRoute('webdav', $routeWebdav);
-            }
-        }
 
         $front->setRouter($router);
 
@@ -260,9 +245,9 @@ class Pimcore {
 
         // throw exceptions also when in preview or in editmode (documents) to see it immediately when there's a problem with this page
         $throwExceptions = false;
-        if(Tool::isFrontentRequestByAdmin()) {
+        if (Tool::isFrontentRequestByAdmin()) {
             $user = \Pimcore\Tool\Authentication::authenticateSession();
-            if($user instanceof User) {
+            if ($user instanceof User) {
                 $throwExceptions = true;
             }
         }
@@ -274,8 +259,7 @@ class Pimcore {
             @ini_set("display_startup_errors", "Off");
 
             $front->dispatch();
-        }
-        else {
+        } else {
             @ini_set("display_errors", "On");
             @ini_set("display_startup_errors", "On");
 
@@ -284,13 +268,13 @@ class Pimcore {
             try {
                 $front->dispatch();
             } catch (\Zend_Controller_Router_Exception $e) {
-                if(!headers_sent()) {
+                if (!headers_sent()) {
                     header("HTTP/1.0 404 Not Found");
                 }
                 \Logger::err($e);
                 throw new \Zend_Controller_Router_Exception("No route, document, custom route or redirect is matching the request: " . $_SERVER["REQUEST_URI"] . " | \n" . "Specific ERROR: " . $e->getMessage());
             } catch (\Exception $e) {
-                if(!headers_sent()) {
+                if (!headers_sent()) {
                     header("HTTP/1.0 500 Internal Server Error");
                 }
                 throw $e;
@@ -302,7 +286,8 @@ class Pimcore {
      * @static
      * @param \Zend_Controller_Front $front
      */
-    public static function initControllerFront (\Zend_Controller_Front $front) {
+    public static function initControllerFront(\Zend_Controller_Front $front)
+    {
 
         // disable build-in error handler
         $front->setParam('noErrorHandler', true);
@@ -323,7 +308,8 @@ class Pimcore {
      * @static
      *
      */
-    public static function initLogger() {
+    public static function initLogger()
+    {
 
         // for forks, etc ...
         \Logger::resetLoggers();
@@ -331,56 +317,40 @@ class Pimcore {
         // try to load configuration
         $conf = Config::getSystemConfig();
 
-        if($conf) {
+        if ($conf) {
             // redirect php error_log to /website/var/log/php.log
-            if($conf->general->custom_php_logfile) {
+            if ($conf->general->custom_php_logfile) {
                 $phpLog = PIMCORE_LOG_DIRECTORY . "/php.log";
-                if(!file_exists($phpLog)) {
+                if (!file_exists($phpLog)) {
                     touch($phpLog);
                 }
-                if(is_writable($phpLog)) {
+                if (is_writable($phpLog)) {
                     ini_set("error_log", $phpLog);
                     ini_set("log_errors", "1");
                 }
             }
         }
 
-        if(!is_file(PIMCORE_LOG_DEBUG)) {
-            if(is_writable(dirname(PIMCORE_LOG_DEBUG))) {
+        if (!is_file(PIMCORE_LOG_DEBUG)) {
+            if (is_writable(dirname(PIMCORE_LOG_DEBUG))) {
                 File::put(PIMCORE_LOG_DEBUG, "AUTOCREATE\n");
             }
         }
 
-        $prioMapping = array(
-            "debug" => \Zend_Log::DEBUG,
-            "info" => \Zend_Log::INFO,
-            "notice" => \Zend_Log::NOTICE,
-            "warning" => \Zend_Log::WARN,
-            "error" => \Zend_Log::ERR,
-            "critical" => \Zend_Log::CRIT,
-            "alert" => \Zend_Log::ALERT,
-            "emergency" => \Zend_Log::EMERG
-        );
+        $prios = [];
+        $availablePrios = \Logger::getAvailablePriorities();
 
-        $prios = array();
-
-        if($conf && $conf->general->debugloglevel) {
-            $prioMapping = array_reverse($prioMapping);
-            foreach ($prioMapping as $level => $state) {
-                $prios[] = $prioMapping[$level];
-                if($level == $conf->general->debugloglevel) {
+        if ($conf && $conf->general->debugloglevel) {
+            foreach ($availablePrios as $level) {
+                $prios[] = $level;
+                if ($level == $conf->general->debugloglevel) {
                     break;
                 }
             }
+            \Logger::setPriorities($prios);
+        } else {
+            \Logger::setVerbosePriorities();
         }
-        else {
-            // log everything if config isn't loaded (eg. at the installer)
-            foreach ($prioMapping as $p) {
-                $prios[] = $p;
-            }
-        }
-
-        \Logger::setPriorities($prios);
 
         if (is_writable(PIMCORE_LOG_DEBUG)) {
 
@@ -390,29 +360,25 @@ class Pimcore {
                 File::put(PIMCORE_LOG_DEBUG, "");
             }
 
-            if(!empty($prios)) {
-                $writerFile = new \Zend_Log_Writer_Stream(PIMCORE_LOG_DEBUG);
-                $loggerFile = new \Zend_Log($writerFile);
+            // set default core logger (debug.log)
+            if (!empty($prios)) {
+                $loggerFile = new \Monolog\Logger('core');
+                $loggerFile->pushHandler(new \Monolog\Handler\StreamHandler(PIMCORE_LOG_DEBUG));
                 \Logger::addLogger($loggerFile);
             }
 
             $conf = Config::getSystemConfig();
-            if($conf) {
+            if ($conf) {
                 //email logger
-                if(!empty($conf->general->logrecipient)) {
+                if (!empty($conf->general->logrecipient)) {
                     $user = User::getById($conf->general->logrecipient);
-                    if($user instanceof User && $user->isAdmin()) {
+                    if ($user instanceof User && $user->isAdmin()) {
                         $email = $user->getEmail();
-                        if(!empty($email)){
-                            $mail = Tool::getMail(array($email),"pimcore log notification");
-                            $mail->setIgnoreDebugMode(true);
-                            if(!is_dir(PIMCORE_LOG_MAIL_TEMP)){
-                                File::mkdir(PIMCORE_LOG_MAIL_TEMP);
-                            }
-                            $tempfile = PIMCORE_LOG_MAIL_TEMP."/log-".uniqid().".log";
-                            $writerEmail = new \Pimcore\Log\Writer\Mail($tempfile,$mail);
-                            $loggerEmail = new \Zend_Log($writerEmail);
-                            \Logger::addLogger($loggerEmail);
+                        if (!empty($email)) {
+                            $loggerMail = new \Monolog\Logger('email');
+                            $mailHandler = new \Pimcore\Log\Handler\Mail($email);
+                            $loggerMail->pushHandler(new \Monolog\Handler\BufferHandler($mailHandler));
+                            \Logger::addLogger($loggerMail);
                         }
                     }
                 }
@@ -420,29 +386,29 @@ class Pimcore {
         } else {
             // try to use syslog instead
             try {
-                $writerSyslog = new \Zend_Log_Writer_Syslog(array('application' => 'pimcore'));
-                $loggerSyslog = new \Zend_Log($writerSyslog);
+                $loggerSyslog = new \Monolog\Logger('core');
+                $loggerSyslog->pushHandler(new \Monolog\Handler\SyslogHandler("pimcore"));
                 \Logger::addLogger($loggerSyslog);
             } catch (\Exception $e) {
-
+                // nothing to do here
             }
         }
 
-        if(array_key_exists("pimcore_log", $_REQUEST) && self::inDebugMode()) {
-
-            if(empty($_REQUEST["pimcore_log"])) {
+        // special request log -> if parameter pimcore_log is set
+        if (array_key_exists("pimcore_log", $_REQUEST) && self::inDebugMode()) {
+            if (empty($_REQUEST["pimcore_log"])) {
                 $requestLogName = date("Y-m-d_H-i-s");
             } else {
                 $requestLogName = $_REQUEST["pimcore_log"];
             }
 
             $requestLogFile = dirname(PIMCORE_LOG_DEBUG) . "/request-" . $requestLogName . ".log";
-            if(!file_exists($requestLogFile)) {
-                File::put($requestLogFile,"");
+            if (!file_exists($requestLogFile)) {
+                File::put($requestLogFile, "");
             }
 
-            $writerRequestLog = new \Zend_Log_Writer_Stream($requestLogFile);
-            $loggerRequest = new \Zend_Log($writerRequestLog);
+            $loggerRequest = new \Monolog\Logger('request');
+            $loggerRequest->pushHandler(new \Monolog\Handler\StreamHandler($requestLogFile));
             \Logger::addLogger($loggerRequest);
 
             \Logger::setVerbosePriorities();
@@ -453,11 +419,12 @@ class Pimcore {
      * @static
      *
      */
-    public static function setSystemRequirements() {
+    public static function setSystemRequirements()
+    {
         // try to set system-internal variables
 
         $maxExecutionTime = 240;
-        if(php_sapi_name() == "cli") {
+        if (php_sapi_name() == "cli") {
             $maxExecutionTime = 0;
         }
 
@@ -470,15 +437,21 @@ class Pimcore {
         // this is for simple_dom_html
         ini_set('pcre.recursion-limit', 100000);
 
+        // zlib.output_compression conflicts with while (@ob_end_flush()) ;
+        // see also: https://github.com/pimcore/pimcore/issues/291
+        if (ini_get('zlib.output_compression')) {
+            @ini_set('zlib.output_compression', 'Off');
+        }
+
         // set dummy timezone if no tz is specified / required for example by the logger, ...
         $defaultTimezone = @date_default_timezone_get();
-        if(!$defaultTimezone) {
+        if (!$defaultTimezone) {
             date_default_timezone_set("UTC"); // UTC -> default timezone
         }
 
         // check some system variables
-        if (version_compare(PHP_VERSION, '5.4', "<")) {
-            $m = "pimcore requires at least PHP version 5.4.0 your PHP version is: " . PHP_VERSION;
+        if (version_compare(PHP_VERSION, '5.5', "<")) {
+            $m = "pimcore requires at least PHP version 5.5.0 your PHP version is: " . PHP_VERSION;
             Tool::exitWithError($m);
         }
     }
@@ -489,13 +462,13 @@ class Pimcore {
      * @static
      * @return void
      */
-    public static function initModules() {
-
+    public static function initModules()
+    {
         $broker = \Pimcore\API\Plugin\Broker::getInstance();
         $broker->registerModule("\\Pimcore\\Model\\Search\\Backend\\Module");
 
         $conf = Config::getSystemConfig();
-        if($conf->general->instanceIdentifier) {
+        if ($conf->general->instanceIdentifier) {
             $broker->registerModule("\\Pimcore\\Model\\Tool\\UUID\\Module");
         }
     }
@@ -503,16 +476,15 @@ class Pimcore {
     /**
      *
      */
-    public static function initPlugins() {
+    public static function initPlugins()
+    {
         // add plugin include paths
 
         $autoloader = \Zend_Loader_Autoloader::getInstance();
 
         try {
-
             $pluginConfigs = ExtensionManager::getPluginConfigs();
             if (!empty($pluginConfigs)) {
-
                 $includePaths = array(
                     get_include_path()
                 );
@@ -520,8 +492,7 @@ class Pimcore {
                 //adding plugin include paths and namespaces
                 if (count($pluginConfigs) > 0) {
                     foreach ($pluginConfigs as $p) {
-
-                        if(!ExtensionManager::isEnabled("plugin", $p["plugin"]["pluginName"])){
+                        if (!ExtensionManager::isEnabled("plugin", $p["plugin"]["pluginName"])) {
                             continue;
                         }
 
@@ -529,20 +500,17 @@ class Pimcore {
                             foreach ($p['plugin']['pluginIncludePaths']['path'] as $path) {
                                 $includePaths[] = PIMCORE_PLUGINS_PATH . $path;
                             }
-                        }
-                        else if ($p['plugin']['pluginIncludePaths']['path'] != null) {
+                        } elseif ($p['plugin']['pluginIncludePaths']['path'] != null) {
                             $includePaths[] = PIMCORE_PLUGINS_PATH . $p['plugin']['pluginIncludePaths']['path'];
                         }
                         if (is_array($p['plugin']['pluginNamespaces']['namespace'])) {
                             foreach ($p['plugin']['pluginNamespaces']['namespace'] as $namespace) {
                                 $autoloader->registerNamespace($namespace);
                             }
-                        }
-                        else if ($p['plugin']['pluginNamespaces']['namespace'] != null) {
+                        } elseif ($p['plugin']['pluginNamespaces']['namespace'] != null) {
                             $autoloader->registerNamespace($p['plugin']['pluginNamespaces']['namespace']);
                         }
                     }
-
                 }
 
                 set_include_path(implode(PATH_SEPARATOR, $includePaths));
@@ -551,28 +519,25 @@ class Pimcore {
 
                 //registering plugins
                 foreach ($pluginConfigs as $p) {
-
-                    if(!ExtensionManager::isEnabled("plugin", $p["plugin"]["pluginName"])){
+                    if (!ExtensionManager::isEnabled("plugin", $p["plugin"]["pluginName"])) {
                         continue;
                     }
 
                     $jsPaths = array();
-                    $isExtJs5 = \Pimcore\Tool\Admin::isExtJS5();
+                    $isExtJs6 = \Pimcore\Tool\Admin::isExtJS6();
 
-                    if ($isExtJs5 && is_array($p['plugin']['pluginJsPaths-extjs5'])
-                        && isset($p['plugin']['pluginJsPaths-extjs5']['path'])
-                        && is_array($p['plugin']['pluginJsPaths-extjs5']['path'])) {
-                        $jsPaths = $p['plugin']['pluginJsPaths-extjs5']['path'];
-                    }
-                    else if ($isExtJs5 && is_array($p['plugin']['pluginJsPaths-extjs5'])
-                        && $p['plugin']['pluginJsPaths-extjs5']['path'] != null) {
-                        $jsPaths[0] = $p['plugin']['pluginJsPaths-extjs5']['path'];
-                    } else  if (is_array($p['plugin']['pluginJsPaths'])
+                    if ($isExtJs6 && is_array($p['plugin']['pluginJsPaths-extjs6'])
+                        && isset($p['plugin']['pluginJsPaths-extjs6']['path'])
+                        && is_array($p['plugin']['pluginJsPaths-extjs6']['path'])) {
+                        $jsPaths = $p['plugin']['pluginJsPaths-extjs6']['path'];
+                    } elseif ($isExtJs6 && is_array($p['plugin']['pluginJsPaths-extjs6'])
+                        && $p['plugin']['pluginJsPaths-extjs6']['path'] != null) {
+                        $jsPaths[0] = $p['plugin']['pluginJsPaths-extjs6']['path'];
+                    } elseif (is_array($p['plugin']['pluginJsPaths'])
                         && isset($p['plugin']['pluginJsPaths']['path'])
                         && is_array($p['plugin']['pluginJsPaths']['path'])) {
                         $jsPaths = $p['plugin']['pluginJsPaths']['path'];
-                    }
-                    else if (is_array($p['plugin']['pluginJsPaths'])
+                    } elseif (is_array($p['plugin']['pluginJsPaths'])
                         && $p['plugin']['pluginJsPaths']['path'] != null) {
                         $jsPaths[0] = $p['plugin']['pluginJsPaths']['path'];
                     }
@@ -586,20 +551,18 @@ class Pimcore {
                     }
 
                     $cssPaths = array();
-                    if ($isExtJs5 && is_array($p['plugin']['pluginCssPaths-extjs5'])
-                        && isset($p['plugin']['pluginCssPaths-extjs5']['path'])
-                        && is_array($p['plugin']['pluginCssPaths-extjs5']['path'])) {
-                        $cssPaths = $p['plugin']['pluginCssPaths-extjs5']['path'];
-                    }
-                    else if ($isExtJs5 && is_array($p['plugin']['pluginCssPaths-extjs5'])
-                        && $p['plugin']['pluginCssPaths-extjs5']['path'] != null) {
-                        $cssPaths[0] = $p['plugin']['pluginCssPaths-extjs5']['path'];
-                    } else  if (is_array($p['plugin']['pluginCssPaths'])
+                    if ($isExtJs6 && is_array($p['plugin']['pluginCssPaths-extjs6'])
+                        && isset($p['plugin']['pluginCssPaths-extjs6']['path'])
+                        && is_array($p['plugin']['pluginCssPaths-extjs6']['path'])) {
+                        $cssPaths = $p['plugin']['pluginCssPaths-extjs6']['path'];
+                    } elseif ($isExtJs6 && is_array($p['plugin']['pluginCssPaths-extjs6'])
+                        && $p['plugin']['pluginCssPaths-extjs6']['path'] != null) {
+                        $cssPaths[0] = $p['plugin']['pluginCssPaths-extjs6']['path'];
+                    } elseif (is_array($p['plugin']['pluginCssPaths'])
                         && isset($p['plugin']['pluginCssPaths']['path'])
                         && is_array($p['plugin']['pluginCssPaths']['path'])) {
                         $cssPaths = $p['plugin']['pluginCssPaths']['path'];
-                    }
-                    else if (is_array($p['plugin']['pluginCssPaths'])
+                    } elseif (is_array($p['plugin']['pluginCssPaths'])
                         && $p['plugin']['pluginCssPaths']['path'] != null) {
                         $cssPaths[0] = $p['plugin']['pluginCssPaths']['path'];
                     }
@@ -616,45 +579,32 @@ class Pimcore {
                     try {
                         $className = $p['plugin']['pluginClassName'];
                         if (!empty($className) && Tool::classExists($className)) {
-
                             $plugin = new $className($jsPaths, $cssPaths);
                             if ($plugin instanceof \Pimcore\API\Plugin\AbstractPlugin) {
                                 $broker->registerPlugin($plugin);
                             }
                         }
-
                     } catch (\Exception $e) {
                         \Logger::err("Could not instantiate and register plugin [" . $p['plugin']['pluginClassName'] . "]");
                     }
-
                 }
                 \Zend_Registry::set("Pimcore_API_Plugin_Broker", $broker);
             }
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             \Logger::alert("there is a problem with the plugin configuration");
             \Logger::alert($e);
         }
-
     }
 
     /**
      * @static
      */
-    public static function initAutoloader() {
-
+    public static function initAutoloader()
+    {
         $autoloader = \Zend_Loader_Autoloader::getInstance();
 
-        $autoloader->registerNamespace('Logger');
-        $autoloader->registerNamespace('Pimcore');
-        $autoloader->registerNamespace('Sabre');
-        $autoloader->registerNamespace('Net_');
         $autoloader->registerNamespace('Website');
-        $autoloader->registerNamespace('Csv');
         $autoloader->registerNamespace('Search');
-        $autoloader->registerNamespace('Whoops');
-        $autoloader->registerNamespace('Google');
-        $autoloader->registerNamespace('Symfony');
 
         // these are necessary to be backward compatible
         // so if e.g. plugins use the namespace Object but do not include them in their own autoloader definition (plugin.xml)
@@ -683,7 +633,8 @@ class Pimcore {
      * @static
      * @return bool
      */
-    public static function initConfiguration() {
+    public static function initConfiguration()
+    {
 
         // init configuration
         try {
@@ -698,24 +649,31 @@ class Pimcore {
 
             $debug = self::inDebugMode();
 
-            if (!defined("PIMCORE_DEBUG")) define("PIMCORE_DEBUG", $debug);
-            if (!defined("PIMCORE_DEVMODE")) define("PIMCORE_DEVMODE", (bool) $conf->general->devmode);
+            if (!defined("PIMCORE_DEBUG")) {
+                define("PIMCORE_DEBUG", $debug);
+            }
+            if (!defined("PIMCORE_DEVMODE")) {
+                define("PIMCORE_DEVMODE", (bool) $conf->general->devmode);
+            }
 
             return true;
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             $m = "Couldn't load system configuration";
             \Logger::err($m);
 
             //@TODO check here for /install otherwise exit here
         }
 
-        if (!defined("PIMCORE_DEBUG")) define("PIMCORE_DEBUG", true);
-        if (!defined("PIMCORE_DEVMODE")) define("PIMCORE_DEVMODE", false);
+        if (!defined("PIMCORE_DEBUG")) {
+            define("PIMCORE_DEBUG", true);
+        }
+        if (!defined("PIMCORE_DEVMODE")) {
+            define("PIMCORE_DEVMODE", false);
+        }
 
         // custom error logging in DEVMODE
-        if(PIMCORE_DEVMODE) {
-            error_reporting( (E_ALL ^ E_NOTICE) | E_STRICT);
+        if (PIMCORE_DEVMODE) {
+            error_reporting((E_ALL ^ E_NOTICE) | E_STRICT);
             ini_set('error_log', PIMCORE_LOG_DIRECTORY . '/php.log');
         }
     }
@@ -724,20 +682,20 @@ class Pimcore {
      * @static
      * @return bool
      */
-    public static function inDebugMode () {
-
-        if(defined("PIMCORE_DEBUG")) {
+    public static function inDebugMode()
+    {
+        if (defined("PIMCORE_DEBUG")) {
             return PIMCORE_DEBUG;
         }
 
         $conf = Config::getSystemConfig();
         $debug = (bool) $conf->general->debug;
         // enable debug mode only for one IP
-        if($conf->general->debug_ip && $conf->general->debug) {
+        if ($conf->general->debug_ip && $conf->general->debug) {
             $debug = false;
 
-            $debugIpAddresses = explode_and_trim(',',$conf->general->debug_ip);
-            if(in_array(Tool::getClientIp(),$debugIpAddresses)) {
+            $debugIpAddresses = explode_and_trim(',', $conf->general->debug_ip);
+            if (in_array(Tool::getClientIp(), $debugIpAddresses)) {
                 $debug = true;
             }
         }
@@ -749,7 +707,8 @@ class Pimcore {
      * @static
      *
      */
-    public static function setupFramework () {
+    public static function setupFramework()
+    {
 
         // try to set tmp directoy into superglobals, ZF and other frameworks (PEAR) sometimes relies on that
         foreach (array('TMPDIR', 'TEMP', 'TMP', 'windir', 'SystemRoot') as $key) {
@@ -767,7 +726,8 @@ class Pimcore {
      * @static
      * @return void
      */
-    public static function setAdminMode () {
+    public static function setAdminMode()
+    {
         self::$adminMode = true;
     }
 
@@ -776,7 +736,8 @@ class Pimcore {
      * @static
      * @return void
      */
-    public static function unsetAdminMode() {
+    public static function unsetAdminMode()
+    {
         self::$adminMode = false;
     }
 
@@ -785,9 +746,9 @@ class Pimcore {
      * @static
      * @return bool
      */
-    public static function inAdmin () {
-
-        if(self::$adminMode !== null) {
+    public static function inAdmin()
+    {
+        if (self::$adminMode !== null) {
             return self::$adminMode;
         }
 
@@ -797,8 +758,9 @@ class Pimcore {
     /**
      * @return \Zend_EventManager_EventManager
      */
-    public static function getEventManager() {
-        if(!self::$eventManager) {
+    public static function getEventManager()
+    {
+        if (!self::$eventManager) {
             self::$eventManager = new \Zend_EventManager_EventManager();
         }
         return self::$eventManager;
@@ -807,7 +769,8 @@ class Pimcore {
     /** Add $keepItems to the list of items which are protected from garbage collection.
      * @param $keepItems
      */
-    public static function addToGloballyProtectedItems($keepItems) {
+    public static function addToGloballyProtectedItems($keepItems)
+    {
         if (is_string($keepItems)) {
             $keepItems = array($keepItems);
         }
@@ -821,15 +784,16 @@ class Pimcore {
     /** Items to be deleted.
      * @param $deleteItems
      */
-    public static function removeFromGloballyProtectedItems($deleteItems) {
+    public static function removeFromGloballyProtectedItems($deleteItems)
+    {
         if (is_string($deleteItems)) {
             $deleteItems = array($deleteItems);
         }
 
         if (is_array($deleteItems) && is_array(self::$globallyProtectedItems)) {
             foreach ($deleteItems as $item) {
-                $key = array_search($item,self::$globallyProtectedItems);
-                if($key!==false){
+                $key = array_search($item, self::$globallyProtectedItems);
+                if ($key!==false) {
                     unset(self::$globallyProtectedItems[$key]);
                 }
             }
@@ -841,10 +805,11 @@ class Pimcore {
      * @static
      * @return void
      */
-    public static function collectGarbage ($keepItems = array()) {
+    public static function collectGarbage($keepItems = array())
+    {
 
         // close mysql-connection
-        Resource::close();
+        Db::close();
 
         $protectedItems = array(
             "Zend_Locale",
@@ -861,10 +826,10 @@ class Pimcore {
             "pimcore_editmode",
             "pimcore_error_document",
             "pimcore_site",
-            "Pimcore_Resource_Mysql"
+            "Pimcore_Db"
         );
 
-        if(is_array($keepItems) && count($keepItems) > 0) {
+        if (is_array($keepItems) && count($keepItems) > 0) {
             $protectedItems = array_merge($protectedItems, $keepItems);
         }
 
@@ -875,7 +840,7 @@ class Pimcore {
         $registryBackup = array();
 
         foreach ($protectedItems as $item) {
-            if(\Zend_Registry::isRegistered($item)) {
+            if (\Zend_Registry::isRegistered($item)) {
                 $registryBackup[$item] = \Zend_Registry::get($item);
             }
         }
@@ -886,7 +851,7 @@ class Pimcore {
             \Zend_Registry::set($key, $value);
         }
 
-        Resource::reset();
+        Db::reset();
 
         // force PHP garbage collector
         gc_enable();
@@ -907,10 +872,11 @@ class Pimcore {
      * @static
      * @return void
      */
-    public static function outputBufferStart () {
+    public static function outputBufferStart()
+    {
 
         // only for HTTP(S)
-        if(php_sapi_name() != "cli") {
+        if (php_sapi_name() != "cli") {
             ob_start("\\Pimcore::outputBufferEnd");
         }
     }
@@ -921,22 +887,22 @@ class Pimcore {
      * @static
      * @return string
      */
-    public static function outputBufferEnd ($data) {
-
+    public static function outputBufferEnd($data)
+    {
         $output = null;
         $contentEncoding = null;
 
-        if(headers_sent()) {
+        if (headers_sent()) {
             return $data;
         }
 
         // cleanup admin session Set-Cookie headers if needed
         // a detailed description why this is necessary can be found in the doc-block of \Pimcore\Tool\Session::$sessionCookieCleanupNeeded
-        if(Tool\Session::isSessionCookieCleanupNeeded()) {
+        if (Tool\Session::isSessionCookieCleanupNeeded()) {
             $headers = headers_list();
             $headers = array_reverse($headers);
-            foreach($headers as $header) {
-                if(strpos($header, Tool\Session::getOption("name")) !== false) {
+            foreach ($headers as $header) {
+                if (strpos($header, Tool\Session::getOption("name")) !== false) {
                     header($header, true); // setting the header again with 2nd arg = true, overrides all duplicates
                     break;
                 }
@@ -944,13 +910,13 @@ class Pimcore {
         }
 
         // only send this headers in the shutdown-function, so that it is also possible to get the contents of this buffer earlier without sending headers
-        if(self::$inShutdown) {
+        if (self::$inShutdown) {
 
             // force closing the connection at the client, this enables to do certain tasks (writing the cache) in the "background"
             header("Connection: close\r\n");
 
             // check for supported content-encodings
-            if(strpos($_SERVER["HTTP_ACCEPT_ENCODING"], "gzip") !== false) {
+            if (strpos($_SERVER["HTTP_ACCEPT_ENCODING"], "gzip") !== false) {
                 $contentEncoding = "gzip";
             }
 
@@ -1029,18 +995,19 @@ class Pimcore {
      * @static
      * @return void
      */
-    public static function shutdown () {
+    public static function shutdown()
+    {
 
         // set inShutdown to true so that the output-buffer knows that he is allowed to send the headers
         self::$inShutdown = true;
 
         // flush all custom output buffers
-        while(@ob_end_flush());
+        while (@ob_end_flush());
 
         // flush everything
         flush();
 
-        if(function_exists("fastcgi_finish_request")) {
+        if (function_exists("fastcgi_finish_request")) {
             fastcgi_finish_request();
         }
 
@@ -1058,4 +1025,3 @@ class Pimcore {
         \Logger::resetLoggers();
     }
 }
-

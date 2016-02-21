@@ -2,23 +2,21 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore;
 
-use Pimcore\Tool; 
+use Pimcore\Tool;
 use Pimcore\Image\Adapter;
 
-class Image {
+class Image
+{
 
     /**
      * @var string
@@ -30,25 +28,26 @@ class Image {
      * @return null|Adapter\GD|Adapter\Imagick
      * @throws \Exception
      */
-    public static function getInstance ($adapter = null) {
+    public static function getInstance($adapter = null)
+    {
 
         // use the default adapter if set manually (!= null) and no specify adapter is given
-        if(!$adapter && self::$defaultAdapter) {
+        if (!$adapter && self::$defaultAdapter) {
             $adapter = self::$defaultAdapter;
         }
 
         try {
-            if($adapter) {
+            if ($adapter) {
                 $adapterClass = "\\Pimcore\\Image\\Adapter\\" . $adapter;
-                if(Tool::classExists($adapterClass)) {
+                if (Tool::classExists($adapterClass)) {
                     return new $adapterClass();
-                } else if (Tool::classExists($adapter)) {
+                } elseif (Tool::classExists($adapter)) {
                     return new $adapter();
                 } else {
                     throw new \Exception("Image-transform adapter `" . $adapter . "´ does not exist.");
                 }
             } else {
-                if(extension_loaded("imagick")) {
+                if (extension_loaded("imagick")) {
                     return new Adapter\Imagick();
                 } else {
                     return new Adapter\GD();
@@ -65,7 +64,8 @@ class Image {
     /**
      * @param $adapter
      */
-    public static function setDefaultAdapter($adapter) {
+    public static function setDefaultAdapter($adapter)
+    {
         self::$defaultAdapter = $adapter;
     }
 }

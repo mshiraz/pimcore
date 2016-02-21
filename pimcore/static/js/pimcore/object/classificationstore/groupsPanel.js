@@ -1,15 +1,12 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 pimcore.registerNS("pimcore.object.classificationstore.groupsPanel");
@@ -23,6 +20,7 @@ pimcore.object.classificationstore.groupsPanel = Class.create({
         if (this.layout == null) {
             this.layout = new Ext.Panel({
                 title: t("classificationstore_group_definition"),
+                iconCls: "pimcore_icon_keys",
                 border: false,
                 layout: "border",
                 items: [
@@ -38,7 +36,7 @@ pimcore.object.classificationstore.groupsPanel = Class.create({
 
 
     createRelationsGrid: function() {
-        this.relationsFields = ['id', 'keyId', 'groupId', 'keyName', 'keyDescription'];
+        this.relationsFields = ['id', 'keyId', 'groupId', 'keyName', 'keyDescription', 'sorter'];
 
         var readerFields = [];
         for (var i = 0; i < this.relationsFields.length; i++) {
@@ -50,7 +48,11 @@ pimcore.object.classificationstore.groupsPanel = Class.create({
             method: 'post'
         });
 
-        var writer = new Ext.data.JsonWriter();
+        var writer = new Ext.data.JsonWriter(
+            {
+                writeAllFields: true
+            }
+        );
 
         var listeners = {};
 
@@ -69,22 +71,33 @@ pimcore.object.classificationstore.groupsPanel = Class.create({
         }, readerFields);
 
         this.relationsStore = new Ext.data.Store({
-            restful: false,
+            restful: true,
             idProperty: 'id',
             remoteSort: true,
             proxy: proxy,
             reader: reader,
             writer: writer,
-            listeners: listeners
+            listeners: listeners,
+            baseParams: {
+                groupId: null
+            }
         });
 
 
         var gridColumns = [];
 
-        gridColumns.push({header: t("id"), width: 60, sortable: true, dataIndex: 'id'});
+        gridColumns.push({header: t("id"), width: 60, sortable: true, dataIndex: 'id', hidden: true});
         gridColumns.push({header: t("key_id"), width: 60, sortable: true, dataIndex: 'keyId'});
         gridColumns.push({header: t("name"), width: 200, sortable: true, dataIndex: 'keyName'});
         gridColumns.push({header: t("description"), width: 200, sortable: true, dataIndex: 'keyDescription'});
+
+        gridColumns.push({header: t('sorter'), width: 100, sortable: true, dataIndex: 'sorter',
+            tooltip: t("classificationstore_tooltip_sorter"),
+            editor: new Ext.ux.form.SpinnerField({
+                editable: true
+
+            })});
+
 
         gridColumns.push({
             hideable: false,
@@ -123,8 +136,25 @@ pimcore.object.classificationstore.groupsPanel = Class.create({
             emptyMsg: t("classificationstore_group_empty")
         });
 
+        var configuredFilters = [
+            {
+                type: "string",
+                dataIndex: "keyId"
+            },
+            {
+            type: "string",
+            dataIndex: "keyName"
+        },{
+            type: "string",
+            dataIndex: "keyDescription"
+        }];
+        var gridfilters = new Ext.ux.grid.GridFilters({
+            encode: true,
+            local: false,
+            filters: configuredFilters
+        });
 
-        var plugins = [this.gridfilters];
+        var plugins = [gridfilters];
 
         var gridConfig = {
             frame: false,
@@ -138,7 +168,7 @@ pimcore.object.classificationstore.groupsPanel = Class.create({
             trackMouseOver: true,
             region: "west",
             split: true,
-            width: 500,
+            //width: 750,
             hidden: true,
             viewConfig: {
                 forceFit: true
@@ -231,10 +261,9 @@ pimcore.object.classificationstore.groupsPanel = Class.create({
         var gridColumns = [];
 
         gridColumns.push({header: "ID", width: 60, sortable: true, dataIndex: 'id'});
-        gridColumns.push({header: t("parent_id"), width: 160, sortable: true, dataIndex: 'parentId', editor: new Ext.form.TextField({})});
+        gridColumns.push({header: t("parent_id"), width: 160, sortable: true, dataIndex: 'parentId', hidden: true, editor: new Ext.form.TextField({})});
         gridColumns.push({header: t("name"), width: 200, sortable: true, dataIndex: 'name', editor: new Ext.form.TextField({})});
-        gridColumns.push({header: t("description"), width: 200, sortable: true, dataIndex: 'description', editor: new Ext.form.TextField({})});
-
+        gridColumns.push({header: t("description"), width: 300, sortable: true, dataIndex: 'description', editor: new Ext.form.TextField({})});
 
         gridColumns.push(
             {header: t("creationDate"), sortable: true, dataIndex: 'creationDate', editable: false, width: 130,
@@ -298,25 +327,28 @@ pimcore.object.classificationstore.groupsPanel = Class.create({
             store: this.groupsStore,
             displayInfo: true,
             displayMsg: '{0} - {1} / {2}',
-            //TODO translate
             emptyMsg: t("classificationstore_no_groups")
         });
 
-        var selectFilterFields;
-        var configuredFilters = [{
+        var configuredFilters = [
+            {
+                type: "string",
+                dataIndex: "id"
+            },
+            {
             type: "string",
             dataIndex: "name"
         },{
             type: "string",
             dataIndex: "description"
         }];
-        this.gridfilters = new Ext.ux.grid.GridFilters({
+        var gridfilters = new Ext.ux.grid.GridFilters({
             encode: true,
             local: false,
             filters: configuredFilters
         });
 
-        var plugins = [this.gridfilters];
+        var plugins = [gridfilters];
 
         var gridConfig = {
             frame: false,
@@ -330,7 +362,7 @@ pimcore.object.classificationstore.groupsPanel = Class.create({
             trackMouseOver: true,
             region: "west",
             split: true,
-            width: 500,
+            width: 600,
             viewConfig: {
                 forceFit: true
             },
@@ -391,7 +423,7 @@ pimcore.object.classificationstore.groupsPanel = Class.create({
     },
 
     onAddKey: function() {
-        var window = new pimcore.object.classificationstore.keySelectionWindow(this, false, true);
+        var window = new pimcore.object.classificationstore.keySelectionWindow(this, false, true, false);
         window.show();
     },
 
@@ -405,7 +437,7 @@ pimcore.object.classificationstore.groupsPanel = Class.create({
         value = value.trim();
         if (button == "ok" && value.length > 1) {
             Ext.Ajax.request({
-                url: "/admin/classificationstore/addgroup",
+                url: "/admin/classificationstore/create-group",
                 params: {
                     name: value
                 },
@@ -422,8 +454,6 @@ pimcore.object.classificationstore.groupsPanel = Class.create({
                                     if (rowIndex != -1) {
                                         var sm = this.grid.getSelectionModel();
                                         sm.selectRow(rowIndex);
-                                        // alert(sm);
-
                                     }
 
                                     var lastOptions = this.groupsStore.lastOptions;

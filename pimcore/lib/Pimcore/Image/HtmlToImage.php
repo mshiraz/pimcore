@@ -2,38 +2,37 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Image;
 
-use Pimcore\Config; 
+use Pimcore\Config;
 use Pimcore\Tool\Console;
 
-class HtmlToImage {
+class HtmlToImage
+{
 
     /**
      * @return bool
      */
-    public static function isSupported() {
+    public static function isSupported()
+    {
         return (bool) self::getWkhtmltoimageBinary();
     }
 
     /**
      * @return bool
      */
-    public static function getWkhtmltoimageBinary () {
-
-        if(Config::getSystemConfig()->documents->wkhtmltoimage) {
-            if(@is_executable(Config::getSystemConfig()->documents->wkhtmltoimage)) {
+    public static function getWkhtmltoimageBinary()
+    {
+        if (Config::getSystemConfig()->documents->wkhtmltoimage) {
+            if (@is_executable(Config::getSystemConfig()->documents->wkhtmltoimage)) {
                 return (string) Config::getSystemConfig()->documents->wkhtmltoimage;
             } else {
                 \Logger::critical("wkhtmltoimage binary: " . Config::getSystemConfig()->documents->wkhtmltoimage . " is not executable");
@@ -51,7 +50,7 @@ class HtmlToImage {
         );
 
         foreach ($paths as $path) {
-            if(@is_executable($path)) {
+            if (@is_executable($path)) {
                 return $path;
             }
         }
@@ -62,11 +61,12 @@ class HtmlToImage {
     /**
      * @return bool
      */
-    public static function getXvfbBinary () {
+    public static function getXvfbBinary()
+    {
         $paths = array("/usr/bin/xvfb-run","/usr/local/bin/xvfb-run","/bin/xvfb-run");
 
         foreach ($paths as $path) {
-            if(@is_executable($path)) {
+            if (@is_executable($path)) {
                 return $path;
             }
         }
@@ -81,7 +81,8 @@ class HtmlToImage {
      * @param string $format
      * @return bool
      */
-    public static function convert($url, $outputFile, $screenWidth = 1200, $format = "png") {
+    public static function convert($url, $outputFile, $screenWidth = 1200, $format = "png")
+    {
 
         // add parameter pimcore_preview to prevent inclusion of google analytics code, cache, etc.
         $url .= (strpos($url, "?") ? "&" : "?") . "pimcore_preview=true";
@@ -90,7 +91,7 @@ class HtmlToImage {
         $arguments = " --width " . $screenWidth . " --format " . $format . " \"" . $url . "\" " . $outputFile;
 
         // use xvfb if possible
-        if($xvfb = self::getXvfbBinary()) {
+        if ($xvfb = self::getXvfbBinary()) {
             $command = $xvfb . " --auto-servernum --server-args=\"-screen 0, 1280x1024x24\" " .
                 self::getWkhtmltoimageBinary() . " --use-xserver" . $arguments;
         } else {
@@ -99,7 +100,7 @@ class HtmlToImage {
 
         Console::exec($command, PIMCORE_LOG_DIRECTORY . "/wkhtmltoimage.log", 60);
 
-        if(file_exists($outputFile) && filesize($outputFile) > 1000) {
+        if (file_exists($outputFile) && filesize($outputFile) > 1000) {
             return true;
         }
         return false;

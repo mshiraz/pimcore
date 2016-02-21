@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Asset
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Asset\Image\Thumbnail;
@@ -22,7 +19,8 @@ use Pimcore\Model\Tool\TmpStore;
 use Pimcore\Tool\StopWatch;
 use Pimcore\Model\Asset;
 
-class Processor {
+class Processor
+{
 
 
     protected static $argumentMapping = array(
@@ -56,17 +54,18 @@ class Processor {
      * @param string $fallback
      * @return string
      */
-    protected static function getAllowedFormat($format, $allowed = array(), $fallback = "png") {
+    protected static function getAllowedFormat($format, $allowed = array(), $fallback = "png")
+    {
         $typeMappings = array(
             "jpg" => "jpeg",
             "tif" => "tiff"
         );
 
-        if(array_key_exists($format, $typeMappings)) {
+        if (array_key_exists($format, $typeMappings)) {
             $format = $typeMappings[$format];
         }
 
-        if(in_array($format, $allowed)) {
+        if (in_array($format, $allowed)) {
             $target = $format;
         } else {
             $target = $fallback;
@@ -82,22 +81,22 @@ class Processor {
      * @param bool $deferred deferred means that the image will be generated on-the-fly (details see below)
      * @return mixed|string
      */
-    public static function process ($asset, Config $config, $fileSystemPath = null, $deferred = false) {
-
+    public static function process($asset, Config $config, $fileSystemPath = null, $deferred = false)
+    {
         $format = strtolower($config->getFormat());
         $contentOptimizedFormat = false;
 
-        if(!$fileSystemPath && $asset instanceof Asset) {
+        if (!$fileSystemPath && $asset instanceof Asset) {
             $fileSystemPath = $asset->getFileSystemPath();
         }
 
-        if($asset instanceof Asset) {
+        if ($asset instanceof Asset) {
             $id = $asset->getId();
         } else {
             $id = "dyn~" . crc32($fileSystemPath);
         }
 
-        if(!file_exists($fileSystemPath)) {
+        if (!file_exists($fileSystemPath)) {
             return "/pimcore/static/img/filetype-not-supported.png";
         }
 
@@ -106,29 +105,29 @@ class Processor {
         $fileExt = File::getFileExtension(basename($fileSystemPath));
 
         // simple detection for source type if SOURCE is selected
-        if($format == "source" || empty($format)) {
-            $format = self::getAllowedFormat($fileExt, array("jpeg","gif","png"), "png");
+        if ($format == "source" || empty($format)) {
+            $format = self::getAllowedFormat($fileExt, array("jpeg", "gif", "png"), "png");
             $contentOptimizedFormat = true; // format can change depending of the content (alpha-channel, ...)
         }
 
-        if($format == "print") {
-            $format = self::getAllowedFormat($fileExt, array("svg","jpeg","png","tiff"), "png");
+        if ($format == "print") {
+            $format = self::getAllowedFormat($fileExt, array("svg", "jpeg", "png", "tiff"), "png");
 
-            if(($format == "tiff" || $format == "svg") && \Pimcore\Tool::isFrontentRequestByAdmin()) {
+            if (($format == "tiff" || $format == "svg") && \Pimcore\Tool::isFrontentRequestByAdmin()) {
                 // return a webformat in admin -> tiff cannot be displayed in browser
                 $format = "png";
-            } else if($format == "tiff") {
+            } elseif ($format == "tiff") {
                 $transformations = $config->getItems();
-                if(is_array($transformations) && count($transformations) > 0) {
+                if (is_array($transformations) && count($transformations) > 0) {
                     foreach ($transformations as $transformation) {
-                        if(!empty($transformation)) {
-                            if($transformation["method"] == "tifforiginal") {
+                        if (!empty($transformation)) {
+                            if ($transformation["method"] == "tifforiginal") {
                                 return str_replace(PIMCORE_DOCUMENT_ROOT, "", $fileSystemPath);
                             }
                         }
                     }
                 }
-            } else if($format == "svg") {
+            } elseif ($format == "svg") {
                 return str_replace(PIMCORE_DOCUMENT_ROOT, "", $fileSystemPath);
             }
         }
@@ -138,18 +137,18 @@ class Processor {
         $thumbDir = $asset->getImageThumbnailSavePath() . "/thumb__" . $config->getName();
         $filename = preg_replace("/\." . preg_quote(File::getFileExtension($asset->getFilename())) . "/", "", $asset->getFilename());
         // add custom suffix if available
-        if($config->getFilenameSuffix()) {
+        if ($config->getFilenameSuffix()) {
             $filename .= "~-~" . $config->getFilenameSuffix();
         }
         // add high-resolution modifier suffix to the filename
-        if($config->getHighResolution() > 1) {
+        if ($config->getHighResolution() > 1) {
             $filename .= "@" . $config->getHighResolution() . "x";
         }
         $filename .= "." . $format;
 
         $fsPath = $thumbDir . "/" . $filename;
 
-        if(!is_dir(dirname($fsPath))) {
+        if (!is_dir(dirname($fsPath))) {
             File::mkdir(dirname($fsPath));
         }
         $path = str_replace(PIMCORE_DOCUMENT_ROOT, "", $fsPath);
@@ -162,7 +161,7 @@ class Processor {
         // deferred means that the image will be generated on-the-fly (when requested by the browser)
         // the configuration is saved for later use in Pimcore\Controller\Plugin\Thumbnail::routeStartup()
         // so that it can be used also with dynamic configurations
-        if($deferred) {
+        if ($deferred) {
             $configId = "thumb_" . $id . "__" . md5($path);
             TmpStore::add($configId, $config, "thumbnail_deferred");
 
@@ -171,7 +170,7 @@ class Processor {
 
         // transform image
         $image = Asset\Image::getImageTransformInstance();
-        if(!$image->load($fileSystemPath)) {
+        if (!$image->load($fileSystemPath)) {
             return "/pimcore/static/img/filetype-not-supported.png";
         }
 
@@ -187,10 +186,10 @@ class Processor {
         if (function_exists("exif_read_data")) {
             $exif = @exif_read_data($fileSystemPath);
             if (is_array($exif)) {
-                if(array_key_exists("Orientation", $exif)) {
+                if (array_key_exists("Orientation", $exif)) {
                     $orientation = intval($exif["Orientation"]);
 
-                    if($orientation > 1) {
+                    if ($orientation > 1) {
                         $angleMappings = [
                             2 => 180,
                             3 => 180,
@@ -201,7 +200,7 @@ class Processor {
                             8 => 270,
                         ];
 
-                        if(array_key_exists($orientation, $angleMappings)) {
+                        if (array_key_exists($orientation, $angleMappings)) {
                             array_unshift($transformations, [
                                 "method" => "rotate",
                                 "arguments" => [
@@ -218,7 +217,7 @@ class Processor {
                             7 => "horizontal"
                         ];
 
-                        if(array_key_exists($orientation, $mirrorMappings)) {
+                        if (array_key_exists($orientation, $mirrorMappings)) {
                             array_unshift($transformations, [
                                 "method" => "mirror",
                                 "arguments" => [
@@ -231,20 +230,20 @@ class Processor {
             }
         }
 
-        if(is_array($transformations) && count($transformations) > 0) {
+        if (is_array($transformations) && count($transformations) > 0) {
             foreach ($transformations as $transformation) {
-                if(!empty($transformation)) {
+                if (!empty($transformation)) {
                     $arguments = array();
                     $mapping = self::$argumentMapping[$transformation["method"]];
 
-                    if(is_array($transformation["arguments"])) {
+                    if (is_array($transformation["arguments"])) {
                         foreach ($transformation["arguments"] as $key => $value) {
                             $position = array_search($key, $mapping);
-                            if($position !== false) {
+                            if ($position !== false) {
 
                                 // high res calculations if enabled
-                                if(!in_array($transformation["method"], ["cropPercent"]) && in_array($key, array("width","height", "x", "y"))) {
-                                    if($config->getHighResolution() && $config->getHighResolution() > 1) {
+                                if (!in_array($transformation["method"], ["cropPercent"]) && in_array($key, array("width", "height", "x", "y"))) {
+                                    if ($config->getHighResolution() && $config->getHighResolution() > 1) {
                                         $value *= $config->getHighResolution();
                                     }
                                 }
@@ -255,14 +254,14 @@ class Processor {
                     }
 
                     ksort($arguments);
-                    call_user_func_array(array($image,$transformation["method"]),$arguments);
+                    call_user_func_array(array($image, $transformation["method"]), $arguments);
                 }
             }
         }
 
         $image->save($fsPath, $format, $config->getQuality());
 
-        if($contentOptimizedFormat) {
+        if ($contentOptimizedFormat) {
             $tmpStoreKey = str_replace(PIMCORE_TEMPORARY_DIRECTORY . "/", "", $fsPath);
             TmpStore::add($tmpStoreKey, "-", "image-optimize-queue");
         }
@@ -277,7 +276,7 @@ class Processor {
         // quick bugfix / workaround, it seems that imagemagick / image optimizers creates sometimes empty PNG chunks (total size 33 bytes)
         // no clue why it does so as this is not continuous reproducible, and this is the only fix we can do for now
         // if the file is corrupted the file will be created on the fly when requested by the browser (because it's deleted here)
-        if(is_file($fsPath) && filesize($fsPath) < 50) {
+        if (is_file($fsPath) && filesize($fsPath) < 50) {
             unlink($fsPath);
         }
 
@@ -287,14 +286,14 @@ class Processor {
     /**
      *
      */
-    public static function processOptimizeQueue() {
-
+    public static function processOptimizeQueue()
+    {
         $ids = TmpStore::getIdsByTag("image-optimize-queue");
 
         // id = path of image relative to PIMCORE_TEMPORARY_DIRECTORY
-        foreach($ids as $id) {
+        foreach ($ids as $id) {
             $file = PIMCORE_TEMPORARY_DIRECTORY . "/" . $id;
-            if(file_exists($file)) {
+            if (file_exists($file)) {
                 $originalFilesize = filesize($file);
                 \Pimcore\Image\Optimizer::optimize($file);
                 \Logger::debug("Optimized image: " . $file . " saved " . formatBytes($originalFilesize-filesize($file)));

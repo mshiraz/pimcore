@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Document
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Document;
@@ -50,8 +47,9 @@ class Hardlink extends Document
     /**
      * @return Document\PageSnippet
      */
-    public function getSourceDocument () {
-        if($this->getSourceId()) {
+    public function getSourceDocument()
+    {
+        if ($this->getSourceId()) {
             return Document::getById($this->getSourceId());
         }
 
@@ -155,20 +153,20 @@ class Hardlink extends Document
     /**
      * @return array|null|Model\Property[]
      */
-    public function getProperties() {
-
+    public function getProperties()
+    {
         if ($this->properties === null) {
             $properties = parent::getProperties();
 
-            if($this->getPropertiesFromSource() && $this->getSourceDocument()) {
+            if ($this->getPropertiesFromSource() && $this->getSourceDocument()) {
                 $sourceProperties = $this->getSourceDocument()->getProperties();
                 foreach ($sourceProperties as &$prop) {
                     $prop = clone $prop; // because of cache
                     $prop->setInherited(true);
                 }
                 $properties = array_merge($sourceProperties, $properties);
-            } else if ($this->getSourceDocument()) {
-                $sourceProperties = $this->getSourceDocument()->getResource()->getProperties(false,true);
+            } elseif ($this->getSourceDocument()) {
+                $sourceProperties = $this->getSourceDocument()->getDao()->getProperties(false, true);
                 foreach ($sourceProperties as &$prop) {
                     $prop = clone $prop; // because of cache
                     $prop->setInherited(true);
@@ -186,15 +184,15 @@ class Hardlink extends Document
      * @param bool $unpublished
      * @return array|null
      */
-    public function getChilds($unpublished = false) {
-
+    public function getChilds($unpublished = false)
+    {
         if ($this->childs === null) {
             $childs = parent::getChilds();
 
             $sourceChilds = array();
-            if($this->getChildsFromSource() && $this->getSourceDocument() && !\Pimcore::inAdmin()) {
+            if ($this->getChildsFromSource() && $this->getSourceDocument() && !\Pimcore::inAdmin()) {
                 $sourceChilds = $this->getSourceDocument()->getChilds();
-                foreach($sourceChilds as &$c) {
+                foreach ($sourceChilds as &$c) {
                     $c = Document\Hardlink\Service::wrap($c);
                     $c->setHardLinkSource($this);
                     $c->setPath(preg_replace("@^" . preg_quote($this->getSourceDocument()->getFullpath()) . "@", $this->getFullpath(), $c->getPath()));
@@ -212,7 +210,8 @@ class Hardlink extends Document
      * hast to overwrite the resource implementation because there can be inherited childs
      * @return bool
      */
-    public function hasChilds() {
+    public function hasChilds()
+    {
         return count($this->getChilds()) > 0;
     }
 
@@ -221,7 +220,8 @@ class Hardlink extends Document
      * @see Document::delete
      * @return void
      */
-    public function delete() {
+    public function delete()
+    {
 
         // hardlinks cannot have direct children in "real" world, so we have to empty them before we delete it
         $this->childs = [];
@@ -231,7 +231,7 @@ class Hardlink extends Document
         $redirects->setCondition("target = ?", $this->getId());
         $redirects->load();
 
-        foreach($redirects->getRedirects() as $redirect) {
+        foreach ($redirects->getRedirects() as $redirect) {
             $redirect->delete();
         }
 
@@ -245,9 +245,9 @@ class Hardlink extends Document
     /**
      *
      */
-    protected function update() {
-
-        $oldPath = $this->getResource()->getCurrentFullPath();
+    protected function update()
+    {
+        $oldPath = $this->getDao()->getCurrentFullPath();
 
         parent::update();
 

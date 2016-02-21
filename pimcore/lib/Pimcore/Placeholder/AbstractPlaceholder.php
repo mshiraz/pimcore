@@ -2,15 +2,12 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Placeholder;
@@ -155,7 +152,7 @@ abstract class AbstractPlaceholder
      */
     public function getParam($key)
     {
-        if(array_key_exists($key, $this->params)) {
+        if (array_key_exists($key, $this->params)) {
             return $this->params[$key];
         }
         return null;
@@ -249,7 +246,7 @@ abstract class AbstractPlaceholder
             }
 
             if (is_null($this->locale)) { //last chance -> get it from registry or use the first Language defined in the system settings
-                if(\Zend_Registry::isRegistered("Zend_Locale")) {
+                if (\Zend_Registry::isRegistered("Zend_Locale")) {
                     $this->locale = \Zend_Registry::get("Zend_Locale");
                 } else {
                     list($language) = \Pimcore\Tool::getValidLanguages();
@@ -287,7 +284,7 @@ abstract class AbstractPlaceholder
      * @abstract
      * @return string
      */
-    abstract function getTestValue();
+    abstract public function getTestValue();
 
     /**
      * Has to return the placeholder with the corresponding value
@@ -295,6 +292,5 @@ abstract class AbstractPlaceholder
      * @abstract
      * @return string
      */
-    abstract function getReplacement();
-
+    abstract public function getReplacement();
 }

@@ -2,93 +2,104 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
-use \Pimcore\Resource;
-use \Pimcore\Log;
-use \Pimcore\Log\Writer;
+use Pimcore\Db;
+use Pimcore\Log;
+use Pimcore\Log\Writer;
+use Pimcore\Log\Handler\ApplicationLoggerDb;
 
-class Admin_LogController extends \Pimcore\Controller\Action\Admin {
+class Admin_LogController extends \Pimcore\Controller\Action\Admin
+{
 
-    public function init() {
+    public function init()
+    {
         parent::init();
     }
 
-    public function showAction(){
-        $offset = $this->_getParam("start");
-        $limit = $this->_getParam("limit");
+    public function showAction()
+    {
+        $offset = $this->getParam("start");
+        $limit = $this->getParam("limit");
 
         $orderby = "ORDER BY id DESC";
-        if($this->_getParam("sort") && $this->_getParam("dir")) {
-            $orderby = "ORDER BY " . $this->_getParam("sort") . " " . $this->_getParam("dir");
+        $sortingSettings = \Pimcore\Admin\Helper\QueryParams::extractSortingSettings($this->getAllParams());
+        if ($sortingSettings['orderKey']) {
+            $orderby = "ORDER BY " . $sortingSettings['orderKey'] . " " . $sortingSettings['order'];
         }
 
 
         $queryString = " WHERE 1=1";
-        if($this->_getParam("priority") != "-1" && ($this->_getParam("priority") == "0" || $this->_getParam("priority"))) {
-            $queryString .= " AND priority <= " . $this->_getParam("priority");
-        } else {
-            $queryString .= " AND (priority = 6 OR priority = 5 OR priority = 4 OR priority = 3 OR priority = 2 OR priority = 1 OR priority = 0)";
+
+        if ($this->getParam("priority") != "-1" && ($this->getParam("priority") == "0" || $this->getParam("priority"))) {
+            $levels = [];
+            foreach (["emergency", "alert", "critical", "error", "warning", "notice", "info", "debug"] as $level) {
+                $levels[] = "priority = '" . $level . "'";
+                
+                if ($this->getParam("priority") == $level) {
+                    break;
+                }
+            }
+
+            $queryString .= " AND (" . implode(" OR ", $levels) . ")";
         }
-        if($this->_getParam("fromDate")) {
-            $datetime = $this->_getParam("fromDate");
-            if($this->_getParam("fromTime")) {
-                $datetime =  substr($datetime, 0, 11) . $this->_getParam("fromTime") . ":00";
+
+        if ($this->getParam("fromDate")) {
+            $datetime = $this->getParam("fromDate");
+            if ($this->getParam("fromTime")) {
+                $datetime =  substr($datetime, 0, 11) . $this->getParam("fromTime") . ":00";
             }
             $queryString .= " AND timestamp >= '" . $datetime . "'";
         }
-        if($this->_getParam("toDate")) {
-            $datetime = $this->_getParam("toDate");
-            if($this->_getParam("toTime")) {
-                $datetime =  substr($datetime, 0, 11) . $this->_getParam("toTime") . ":00";
+        if ($this->getParam("toDate")) {
+            $datetime = $this->getParam("toDate");
+            if ($this->getParam("toTime")) {
+                $datetime =  substr($datetime, 0, 11) . $this->getParam("toTime") . ":00";
             }
             $queryString .= " AND timestamp <= '" . $datetime . "'";
         }
         
-        if($this->_getParam("component")) {
-            $queryString .= " AND component =  '" . $this->_getParam("component") . "'";
+        if ($this->getParam("component")) {
+            $queryString .= " AND component =  '" . $this->getParam("component") . "'";
         }
          
-        if($this->_getParam("relatedobject")) {
-            $queryString .= " AND relatedobject = " . $this->_getParam("relatedobject");
+        if ($this->getParam("relatedobject")) {
+            $queryString .= " AND relatedobject = " . $this->getParam("relatedobject");
         }
 
-        if($this->_getParam("message")) {
-            $queryString .= " AND message like '%" . $this->_getParam("message") ."%'";
+        if ($this->getParam("message")) {
+            $queryString .= " AND message like '%" . $this->getParam("message") ."%'";
         }
 
 
-        $db = Resource::get();
-        $count = $db->fetchCol("SELECT count(*) FROM " . Log\Helper::ERROR_LOG_TABLE_NAME . $queryString);
+        $db = Db::get();
+        $count = $db->fetchCol("SELECT count(*) FROM " . \Pimcore\Log\Handler\ApplicationLoggerDb::TABLE_NAME . $queryString);
         $total = $count[0];
 
 
-        $result = $db->fetchAll("SELECT * FROM " . Log\Helper::ERROR_LOG_TABLE_NAME . $queryString . " $orderby LIMIT $offset, $limit");
+        $result = $db->fetchAll("SELECT * FROM " . \Pimcore\Log\Handler\ApplicationLoggerDb::TABLE_NAME . $queryString . " $orderby LIMIT $offset, $limit");
 
         $errorDataList = array();
-        if(!empty($result)) {
-            foreach($result as $r) {
-
+        if (!empty($result)) {
+            foreach ($result as $r) {
                 $parts = explode("/", $r['filelink']);
                 $filename = $parts[count($parts)-1];
                 $fileobject = str_replace(PIMCORE_DOCUMENT_ROOT, "", $r['fileobject']);
 
                 $errorData =  array("id"=>$r['id'],
+                                    "pid" => $r['pid'],
                                     "message"=>$r['message'],
                                     "timestamp"=>$r['timestamp'],
                                     "priority"=>$this->getPriorityName($r['priority']),
                                     "filename" => $filename,
                                     "fileobject" => $fileobject,
-            						"relatedobject" => $r['relatedobject'],
+                                    "relatedobject" => $r['relatedobject'],
                                     "component" => $r['component'],
                                     "source" => $r['source']);
                 $errorDataList[] = $errorData;
@@ -99,28 +110,29 @@ class Admin_LogController extends \Pimcore\Controller\Action\Admin {
         $this->_helper->json($results);
     }
 
-    private function getPriorityName($priority) {
-        $p = Writer\Db::getPriorities();
+    private function getPriorityName($priority)
+    {
+        $p = ApplicationLoggerDb::getPriorities();
         return $p[$priority];
     }
     
-    public function priorityJsonAction() {
-
+    public function priorityJsonAction()
+    {
         $priorities[] = array("key" => "-1", "value" => "-");
-        foreach(Writer\Db::getPriorities() as $key => $p) {
+        foreach (ApplicationLoggerDb::getPriorities() as $key => $p) {
             $priorities[] = array("key" => $key, "value" => $p);
         }
 
         $this->_helper->json(array("priorities" => $priorities));
     }
 
-    public function componentJsonAction() {
+    public function componentJsonAction()
+    {
         $components[] = array("key" => "-", "value" => "");
-        foreach(Writer\Db::getComponents() as $p) {
+        foreach (ApplicationLoggerDb::getComponents() as $p) {
             $components[] = array("key" => $p, "value" => $p);
         }
 
         $this->_helper->json(array("components" => $components));
-    }    
-
+    }
 }

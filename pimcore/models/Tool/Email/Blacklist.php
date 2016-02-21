@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Element
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Tool\Email;
 
 use Pimcore\Model;
 
-class Blacklist extends Model\AbstractModel {
+class Blacklist extends Model\AbstractModel
+{
 
     /**
      * @var int
@@ -40,11 +38,11 @@ class Blacklist extends Model\AbstractModel {
      * @param $addr
      * @return null|Blacklist
      */
-    public static function getByAddress ($addr) {
-
+    public static function getByAddress($addr)
+    {
         try {
             $address = new self();
-            $address->getResource()->getByAddress($addr);
+            $address->getDao()->getByAddress($addr);
 
             return $address;
         } catch (\Exception $e) {
@@ -81,7 +79,7 @@ class Blacklist extends Model\AbstractModel {
      */
     public function getCreationDate()
     {
-        if(!$this->creationDate) {
+        if (!$this->creationDate) {
             $this->creationDate = time();
         }
 
@@ -101,7 +99,7 @@ class Blacklist extends Model\AbstractModel {
      */
     public function getModificationDate()
     {
-        if(!$this->modificationDate) {
+        if (!$this->modificationDate) {
             $this->modificationDate = time();
         }
         return $this->modificationDate;

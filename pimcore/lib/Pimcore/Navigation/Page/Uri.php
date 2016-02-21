@@ -2,15 +2,12 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Navigation\Page;
@@ -116,11 +113,11 @@ class Uri extends \Zend_Navigation_Page_Uri
      */
     public function setDocument($document)
     {
-        if($document instanceof Document\Hardlink\Wrapper\WrapperInterface) {
+        if ($document instanceof Document\Hardlink\Wrapper\WrapperInterface) {
             $this->setDocumentId($document->getHardlinkSource()->getId());
             $this->setDocumentType($document->getHardlinkSource()->getType());
             $this->setRealFullPath($document->getHardlinkSource()->getRealFullPath());
-        } else if($document instanceof Document) {
+        } elseif ($document instanceof Document) {
             $this->setDocumentId($document->getId());
             $this->setDocumentType($document->getType());
             $this->setRealFullPath($document->getRealFullPath());
@@ -134,9 +131,9 @@ class Uri extends \Zend_Navigation_Page_Uri
     public function getDocument()
     {
         $docId = $this->getDocumentId();
-        if($docId) {
+        if ($docId) {
             $doc = Document::getById($docId);
-            if($doc instanceof Document\Hardlink) {
+            if ($doc instanceof Document\Hardlink) {
                 $doc = Document\Hardlink\Service::wrap($doc);
             }
             return $doc;
@@ -198,7 +195,8 @@ class Uri extends \Zend_Navigation_Page_Uri
      * @param $value
      * @return $this
      */
-    public function setCustomSetting($name, $value) {
+    public function setCustomSetting($name, $value)
+    {
         $this->customSettings[$name] = $value;
         return $this;
     }
@@ -207,8 +205,9 @@ class Uri extends \Zend_Navigation_Page_Uri
      * @param $name
      * @return null
      */
-    public function getCustomSetting($name) {
-        if(array_key_exists($name, $this->customSettings)) {
+    public function getCustomSetting($name)
+    {
+        if (array_key_exists($name, $this->customSettings)) {
             return $this->customSettings[$name];
         }
 

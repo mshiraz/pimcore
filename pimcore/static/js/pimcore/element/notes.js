@@ -1,15 +1,12 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 pimcore.registerNS("pimcore.element.notes");
@@ -203,7 +200,7 @@ pimcore.element.notes = Class.create({
             });
 
             this.layout = new Ext.Panel({
-                title: t('notes') + " & " + t("events"),
+                title: t('notes_events'),
                 border: true,
                 iconCls: "pimcore_icon_tab_notes",
                 items: [this.grid, this.detailView],

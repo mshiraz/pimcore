@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object\Listing;
@@ -20,7 +17,8 @@ namespace Pimcore\Model\Object\Listing;
 use Pimcore\Model;
 use Pimcore\Model\Object;
 
-abstract class Concrete extends Model\Object\Listing {
+abstract class Concrete extends Model\Object\Listing
+{
 
     /**
      * @var int
@@ -48,11 +46,10 @@ abstract class Concrete extends Model\Object\Listing {
     /**
      * @throws Model\Exception
      */
-    public function __construct() {
-
+    public function __construct()
+    {
         $this->objectTypeObject = true;
-        $this->initResource("\\Pimcore\\Model\\Object\\Listing\\Concrete");
-
+        $this->initDao("\\Pimcore\\Model\\Object\\Listing\\Concrete");
     }
 
     /**
@@ -60,21 +57,24 @@ abstract class Concrete extends Model\Object\Listing {
      * @param string $key
      * @return boolean
      */
-    public function isValidOrderKey($key) {
+    public function isValidOrderKey($key)
+    {
         return true;
     }
 
     /**
      * @return integer
      */
-    public function getClassId() {
+    public function getClassId()
+    {
         return $this->classId;
     }
 
     /**
      * @return string
      */
-    public function getClassName() {
+    public function getClassName()
+    {
         return $this->className;
     }
 
@@ -82,7 +82,8 @@ abstract class Concrete extends Model\Object\Listing {
      * @param $classId
      * @return $this
      */
-    public function setClassId($classId) {
+    public function setClassId($classId)
+    {
         $this->classId = $classId;
         return $this;
     }
@@ -91,7 +92,8 @@ abstract class Concrete extends Model\Object\Listing {
      * @param $className
      * @return $this
      */
-    public function setClassName($className) {
+    public function setClassName($className)
+    {
         $this->className = $className;
         return $this;
     }
@@ -99,7 +101,8 @@ abstract class Concrete extends Model\Object\Listing {
     /**
      * @return Object\ClassDefinition
      */
-    public function getClass() {
+    public function getClass()
+    {
         $class = Object\ClassDefinition::getById($this->getClassId());
         return $class;
     }
@@ -152,14 +155,15 @@ abstract class Concrete extends Model\Object\Listing {
      * @param null $fieldname
      * @throws \Exception
      */
-    public function addFieldCollection($type, $fieldname = null) {
-
-        if(empty($type)) {
+    public function addFieldCollection($type, $fieldname = null)
+    {
+        if (empty($type)) {
             throw new \Exception("No fieldcollectiontype given");
         }
 
         Object\Fieldcollection\Definition::getByKey($type);
-        $this->fieldCollectionConfigs[] = array("type" => $type, "fieldname" => $fieldname);  ;
+        $this->fieldCollectionConfigs[] = array("type" => $type, "fieldname" => $fieldname);
+        ;
     }
 
     /**
@@ -167,8 +171,9 @@ abstract class Concrete extends Model\Object\Listing {
      * @return $this
      * @throws \Exception
      */
-    public function setFieldCollections($fieldCollections) {
-        foreach($fieldCollections as $fc) {
+    public function setFieldCollections($fieldCollections)
+    {
+        foreach ($fieldCollections as $fc) {
             $this->addFieldCollection($fc['type'], $fc['fieldname']);
         }
         return $this;
@@ -177,7 +182,8 @@ abstract class Concrete extends Model\Object\Listing {
     /**
      * @return array
      */
-    public function getFieldCollections() {
+    public function getFieldCollections()
+    {
         return $this->fieldCollectionConfigs;
     }
 
@@ -192,9 +198,9 @@ abstract class Concrete extends Model\Object\Listing {
      * @param $type
      * @throws \Exception
      */
-    public function addObjectbrick($type) {
-
-        if(empty($type)) {
+    public function addObjectbrick($type)
+    {
+        if (empty($type)) {
             throw new \Exception("No objectbrick given");
         }
 
@@ -209,9 +215,10 @@ abstract class Concrete extends Model\Object\Listing {
      * @return $this
      * @throws \Exception
      */
-    public function setObjectbricks($objectbricks) {
-        foreach($objectbricks as $ob) {
-            if(!in_array($ob,$this->objectBrickConfigs)){
+    public function setObjectbricks($objectbricks)
+    {
+        foreach ($objectbricks as $ob) {
+            if (!in_array($ob, $this->objectBrickConfigs)) {
                 $this->addObjectbrick($ob);
             }
         }
@@ -221,7 +228,8 @@ abstract class Concrete extends Model\Object\Listing {
     /**
      * @return array
      */
-    public function getObjectbricks() {
+    public function getObjectbricks()
+    {
         return $this->objectBrickConfigs;
     }
 }

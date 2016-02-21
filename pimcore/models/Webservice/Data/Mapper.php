@@ -2,25 +2,23 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Webservice
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Webservice\Data;
 
-use Pimcore\Tool; 
+use Pimcore\Tool;
 use Pimcore\Model;
 
-abstract class Mapper {
+abstract class Mapper
+{
 
     /**
      * @param $object
@@ -28,8 +26,8 @@ abstract class Mapper {
      * @return null|string
      * @throws \Exception
      */
-    public static function findWebserviceClass($object, $type) {
-
+    public static function findWebserviceClass($object, $type)
+    {
         $mappingClasses = array(
             "Asset\\File",
             "Asset\\Folder",
@@ -44,14 +42,14 @@ abstract class Mapper {
         );
 
         $retVal = null;
-        if($object instanceof Model\Property){
+        if ($object instanceof Model\Property) {
             $retVal = "\\Pimcore\\Model\\Webservice\\Data\\Property";
-        } else if ($object instanceof Model\Document\Tag) {
+        } elseif ($object instanceof Model\Document\Tag) {
             $retVal = "\\Pimcore\\Model\\Webservice\\Data\\Document\\Element";
-        } else if (is_object($object)) {
+        } elseif (is_object($object)) {
             $orgclass = str_replace("Pimcore\\Model\\", "", get_class($object));
 
-            if (in_array($orgclass,$mappingClasses)) {
+            if (in_array($orgclass, $mappingClasses)) {
                 $apiclass = "\\Pimcore\\Model\\Webservice\\Data\\" . $orgclass . "\\" . ucfirst($type);
                 if (!Tool::classExists($apiclass)) {
                     $apiclass = "\\Pimcore\\Model\\Webservice\\Data\\" . $orgclass;
@@ -63,7 +61,9 @@ abstract class Mapper {
                 $apiclass = $orgclass;
             }
             $retVal = $apiclass;
-        } else $retVal = "Array";
+        } else {
+            $retVal = "Array";
+        }
         return $retVal;
     }
 
@@ -75,10 +75,11 @@ abstract class Mapper {
      * @return array|string
      * @throws \Exception
      */
-    public static function map($object, $apiclass, $type, $options = null) {
-        if($object instanceof \Zend_Date){
-            $object=$object->toString();
-        } else if (is_object($object)) {
+    public static function map($object, $apiclass, $type, $options = null)
+    {
+        if ($object instanceof \Zend_Date || $object instanceof \DateTime) {
+            $object = $object->getTimestamp();
+        } elseif (is_object($object)) {
             if (Tool::classExists($apiclass)) {
                 $new = new $apiclass();
                 if (method_exists($new, "map")) {
@@ -88,8 +89,7 @@ abstract class Mapper {
             } else {
                 throw new \Exception("Webservice\\Data\\Mapper: Cannot map [ $apiclass ] - class does not exist");
             }
-        }
-        else if (is_array($object)) {
+        } elseif (is_array($object)) {
             $tmpArray = array();
             foreach ($object as $v) {
                 $className = self::findWebserviceClass($v, $type);
@@ -105,7 +105,8 @@ abstract class Mapper {
      * @param $el
      * @return \stdClass
      */
-    public static function toObject($el) {
+    public static function toObject($el)
+    {
         if (is_object($el)) {
             $el = object2array($el);
         }
@@ -117,5 +118,4 @@ abstract class Mapper {
 
         return $obj;
     }
-
 }

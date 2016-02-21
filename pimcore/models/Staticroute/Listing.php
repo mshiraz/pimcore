@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Staticroute
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Staticroute;
 
 use Pimcore\Model;
 
-class Listing extends Model\Listing\AbstractListing {
+class Listing extends Model\Listing\JsonListing
+{
 
     /**
      * Contains the results of the list. They are all an instance of Staticroute
@@ -29,19 +27,10 @@ class Listing extends Model\Listing\AbstractListing {
     public $routes = array();
 
     /**
-     * Tests if the given key is an valid order key to sort the results
-     *
-     * @todo remove the dummy-always-true rule
-     * @return boolean
-     */
-    public function isValidOrderKey($key) {
-        return true;
-    }
-
-    /**
      * @return array
      */
-    public function getRoutes() {
+    public function getRoutes()
+    {
         return $this->routes;
     }
 
@@ -49,9 +38,9 @@ class Listing extends Model\Listing\AbstractListing {
      * @param array $routes
      * @return void
      */
-    public function setRoutes($routes) {
+    public function setRoutes($routes)
+    {
         $this->routes = $routes;
         return $this;
     }
-
 }

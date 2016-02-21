@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    User
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model;
 
-use Pimcore\File; 
+use Pimcore\File;
 
-class User extends User\UserRole {
+class User extends User\UserRole
+{
 
     /**
      * @var string
@@ -87,11 +85,17 @@ class User extends User\UserRole {
      */
     public $apiKey;
 
+    /**
+     * @var string|null
+     */
+    public $contentLanguages;
+
 
     /**
      * @return string
      */
-    public function getPassword() {
+    public function getPassword()
+    {
         return $this->password;
     }
 
@@ -99,7 +103,8 @@ class User extends User\UserRole {
      * @param string $password
      * @return void
      */
-    public function setPassword($password) {
+    public function setPassword($password)
+    {
         if (strlen($password) > 4) {
             $this->password = $password;
         }
@@ -111,7 +116,8 @@ class User extends User\UserRole {
      * @deprecated
      * @return string
      */
-    public function getUsername () {
+    public function getUsername()
+    {
         return $this->getName();
     }
 
@@ -119,7 +125,8 @@ class User extends User\UserRole {
      * @param $username
      * @return $this
      */
-    public function setUsername ($username) {
+    public function setUsername($username)
+    {
         $this->setName($username);
         return $this;
     }
@@ -128,7 +135,8 @@ class User extends User\UserRole {
      *
      * @return string
      */
-    public function getFirstname() {
+    public function getFirstname()
+    {
         return $this->firstname;
     }
 
@@ -136,7 +144,8 @@ class User extends User\UserRole {
      * @param $firstname
      * @return $this
      */
-    public function setFirstname($firstname) {
+    public function setFirstname($firstname)
+    {
         $this->firstname = $firstname;
         return $this;
     }
@@ -145,7 +154,8 @@ class User extends User\UserRole {
      *
      * @return string
      */
-    public function getLastname() {
+    public function getLastname()
+    {
         return $this->lastname;
     }
 
@@ -153,7 +163,8 @@ class User extends User\UserRole {
      * @param $lastname
      * @return $this
      */
-    public function setLastname($lastname) {
+    public function setLastname($lastname)
+    {
         $this->lastname = $lastname;
         return $this;
     }
@@ -162,7 +173,8 @@ class User extends User\UserRole {
      *
      * @return string
      */
-    public function getEmail() {
+    public function getEmail()
+    {
         return $this->email;
     }
 
@@ -170,7 +182,8 @@ class User extends User\UserRole {
      * @param $email
      * @return $this
      */
-    public function setEmail($email) {
+    public function setEmail($email)
+    {
         $this->email = $email;
         return $this;
     }
@@ -178,7 +191,8 @@ class User extends User\UserRole {
     /**
      * @return string
      */
-    public function getLanguage() {
+    public function getLanguage()
+    {
         return $this->language;
     }
 
@@ -186,7 +200,8 @@ class User extends User\UserRole {
      * @param string $language
      * @return void
      */
-    public function setLanguage($language) {
+    public function setLanguage($language)
+    {
         if ($language) {
             $this->language = $language;
         }
@@ -197,14 +212,16 @@ class User extends User\UserRole {
      * @see getAdmin()
      * @return boolean
      */
-    public function isAdmin() {
+    public function isAdmin()
+    {
         return $this->getAdmin();
     }
 
     /**
      * @return boolean
      */
-    public function getAdmin() {
+    public function getAdmin()
+    {
         return $this->admin;
     }
 
@@ -212,7 +229,8 @@ class User extends User\UserRole {
      * @param boolean $admin
      * @return void
      */
-    public function setAdmin($admin) {
+    public function setAdmin($admin)
+    {
         $this->admin = (bool) $admin;
         return $this;
     }
@@ -220,7 +238,8 @@ class User extends User\UserRole {
     /**
      * @return boolean
      */
-    public function getActive() {
+    public function getActive()
+    {
         return $this->active;
     }
 
@@ -228,7 +247,8 @@ class User extends User\UserRole {
      * @param boolean $active
      * @return void
      */
-    public function setActive($active) {
+    public function setActive($active)
+    {
         $this->active = (bool) $active;
         return $this;
     }
@@ -236,7 +256,8 @@ class User extends User\UserRole {
     /**
      * @return bool
      */
-    public function isActive(){
+    public function isActive()
+    {
         return $this->getActive();
     }
 
@@ -244,44 +265,44 @@ class User extends User\UserRole {
      * @param String $key
      * @return boolean
      */
-    public function isAllowed($key, $type = "permission") {
-
+    public function isAllowed($key, $type = "permission")
+    {
         if ($this->isAdmin()) {
             return true;
         }
 
-        if($type == "permission") {
-            if(!$this->getPermission($key)) {
+        if ($type == "permission") {
+            if (!$this->getPermission($key)) {
                 // check roles
                 foreach ($this->getRoles() as $roleId) {
                     $role = User\Role::getById($roleId);
-                    if($role->getPermission($key)) {
+                    if ($role->getPermission($key)) {
                         return true;
                     }
                 }
             }
 
             return $this->getPermission($key);
-        } else if ($type == "class") {
+        } elseif ($type == "class") {
             $classes = $this->getClasses();
             foreach ($this->getRoles() as $roleId) {
                 $role = User\Role::getById($roleId);
                 $classes = array_merge($classes, $role->getClasses());
             }
 
-            if(!empty($classes)) {
+            if (!empty($classes)) {
                 return in_array($key, $classes);
             } else {
                 return true;
             }
-        } else  if ($type == "docType") {
+        } elseif ($type == "docType") {
             $docTypes = $this->getDocTypes();
             foreach ($this->getRoles() as $roleId) {
                 $role = User\Role::getById($roleId);
                 $docTypes = array_merge($docTypes, $role->getDocTypes());
             }
 
-            if(!empty($docTypes)) {
+            if (!empty($docTypes)) {
                 return in_array($key, $docTypes);
             } else {
                 return true;
@@ -296,8 +317,8 @@ class User extends User\UserRole {
      * @param string $permissionName
      * @return array
      */
-    public function getPermission($permissionName) {
-
+    public function getPermission($permissionName)
+    {
         if ($this->isAdmin()) {
             return true;
         }
@@ -311,11 +332,11 @@ class User extends User\UserRole {
      */
     public function setRoles($roles)
     {
-        if(is_string($roles) && !empty($roles) ) {
+        if (is_string($roles) && !empty($roles)) {
             $this->roles = explode(",", $roles);
-        } else if (is_array($roles)) {
+        } elseif (is_array($roles)) {
             $this->roles = $roles;
-        } else if (empty($roles)) {
+        } elseif (empty($roles)) {
             $this->roles = array();
         }
         return $this;
@@ -326,7 +347,7 @@ class User extends User\UserRole {
      */
     public function getRoles()
     {
-        if(empty($this->roles)) {
+        if (empty($this->roles)) {
             return array();
         }
         return $this->roles;
@@ -392,7 +413,7 @@ class User extends User\UserRole {
      */
     public function setApiKey($apiKey)
     {
-        if(!empty($apiKey) && strlen($apiKey) < 32) {
+        if (!empty($apiKey) && strlen($apiKey) < 32) {
             throw new \Exception("API-Key has to be at least 32 characters long");
         }
         $this->apiKey = $apiKey;
@@ -403,7 +424,7 @@ class User extends User\UserRole {
      */
     public function getApiKey()
     {
-        if(empty($this->apiKey)) {
+        if (empty($this->apiKey)) {
             return null;
         }
         return $this->apiKey;
@@ -412,9 +433,10 @@ class User extends User\UserRole {
     /**
      * @param $path
      */
-    public function setImage($path) {
+    public function setImage($path)
+    {
         $userImageDir = PIMCORE_WEBSITE_VAR . "/user-image";
-        if(!is_dir($userImageDir)) {
+        if (!is_dir($userImageDir)) {
             File::mkdir($userImageDir);
         }
 
@@ -429,23 +451,23 @@ class User extends User\UserRole {
     /**
      * @return string
      */
-    public function getImage($width = null, $height = null) {
-
-        if(!$width) {
+    public function getImage($width = null, $height = null)
+    {
+        if (!$width) {
             $width = 46;
         }
-        if(!$height) {
+        if (!$height) {
             $height = 46;
         }
 
         $id = $this->getId();
         $user = PIMCORE_WEBSITE_VAR . "/user-image/user-" . $id . ".png";
-        if(file_exists($user)) {
+        if (file_exists($user)) {
             $thumb = PIMCORE_SYSTEM_TEMP_DIRECTORY . "/user-thumbnail-" . $id . ".png";
-            if(!file_exists($thumb)) {
+            if (!file_exists($thumb)) {
                 $image = \Pimcore\Image::getInstance();
                 $image->load($user);
-                $image->cover($width,$height);
+                $image->cover($width, $height);
                 $image->save($thumb, "png");
             }
 
@@ -453,5 +475,27 @@ class User extends User\UserRole {
         }
 
         return PIMCORE_PATH . "/static/img/avatar.png";
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getContentLanguages()
+    {
+        if (strlen($this->contentLanguages)) {
+            return explode(',', $this->contentLanguages);
+        }
+        return array();
+    }
+
+    /**
+     * @param null|string $contentLanguages
+     */
+    public function setContentLanguages($contentLanguages)
+    {
+        if ($contentLanguages && is_array($contentLanguages)) {
+            $contentLanguages = implode(',', $contentLanguages);
+        }
+        $this->contentLanguages = $contentLanguages;
     }
 }

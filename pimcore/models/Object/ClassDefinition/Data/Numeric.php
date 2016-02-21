@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object|Class
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object\ClassDefinition\Data;
 
 use Pimcore\Model;
 
-class Numeric extends Model\Object\ClassDefinition\Data {
+class Numeric extends Model\Object\ClassDefinition\Data
+{
 
     /**
      * Static type of this element
@@ -87,7 +85,8 @@ class Numeric extends Model\Object\ClassDefinition\Data {
     /**
      * @return integer
      */
-    public function getWidth() {
+    public function getWidth()
+    {
         return $this->width;
     }
 
@@ -95,7 +94,8 @@ class Numeric extends Model\Object\ClassDefinition\Data {
      * @param integer $width
      * @return void
      */
-    public function setWidth($width) {
+    public function setWidth($width)
+    {
         $this->width = $this->getAsIntegerCast($width);
         return $this;
     }
@@ -103,8 +103,9 @@ class Numeric extends Model\Object\ClassDefinition\Data {
     /**
      * @return integer
      */
-    public function getDefaultValue() {
-        if($this->defaultValue !== null) {
+    public function getDefaultValue()
+    {
+        if ($this->defaultValue !== null) {
             return $this->toNumeric($this->defaultValue);
         }
     }
@@ -113,8 +114,9 @@ class Numeric extends Model\Object\ClassDefinition\Data {
      * @param integer $defaultValue
      * @return void
      */
-    public function setDefaultValue($defaultValue) {
-        if(strlen(strval($defaultValue)) > 0) {
+    public function setDefaultValue($defaultValue)
+    {
+        if (strlen(strval($defaultValue)) > 0) {
             $this->defaultValue = $defaultValue;
         }
         return $this;
@@ -203,12 +205,13 @@ class Numeric extends Model\Object\ClassDefinition\Data {
     /**
      * @return string
      */
-    public function getColumnType() {
-        if($this->getInteger()) {
+    public function getColumnType()
+    {
+        if ($this->getInteger()) {
             return "bigint(20)";
         }
 
-        if($this->getDecimalPrecision()) {
+        if ($this->getDecimalPrecision()) {
             return "decimal(64, " . intval($this->getDecimalPrecision()) . ")";
         }
 
@@ -218,12 +221,13 @@ class Numeric extends Model\Object\ClassDefinition\Data {
     /**
      * @return string
      */
-    public function getQueryColumnType() {
-        if($this->getInteger()) {
+    public function getQueryColumnType()
+    {
+        if ($this->getInteger()) {
             return "bigint(20)";
         }
 
-        if($this->getDecimalPrecision()) {
+        if ($this->getDecimalPrecision()) {
             return "decimal(64, " . intval($this->getDecimalPrecision()) . ")";
         }
 
@@ -236,10 +240,10 @@ class Numeric extends Model\Object\ClassDefinition\Data {
      * @param null|Model\Object\AbstractObject $object
      * @return float
      */
-    public function getDataForResource($data, $object = null) {
-
-        if(is_numeric($data)) {
-           return $data;
+    public function getDataForResource($data, $object = null)
+    {
+        if (is_numeric($data)) {
+            return $data;
         }
         return null;
     }
@@ -249,8 +253,9 @@ class Numeric extends Model\Object\ClassDefinition\Data {
      * @param float $data
      * @return float
      */
-    public function getDataFromResource($data) {
-        if(is_numeric($data)) {
+    public function getDataFromResource($data)
+    {
+        if (is_numeric($data)) {
             return $this->toNumeric($data);
         }
         return $data;
@@ -262,7 +267,8 @@ class Numeric extends Model\Object\ClassDefinition\Data {
      * @param null|Model\Object\AbstractObject $object
      * @return float
      */
-    public function getDataForQueryResource($data, $object = null) {
+    public function getDataForQueryResource($data, $object = null)
+    {
         return $this->getDataForResource($data, $object);
     }
 
@@ -272,7 +278,8 @@ class Numeric extends Model\Object\ClassDefinition\Data {
      * @param null|Model\Object\AbstractObject $object
      * @return float
      */
-    public function getDataForEditmode($data, $object = null) {
+    public function getDataForEditmode($data, $object = null)
+    {
         return $this->getDataForResource($data, $object);
     }
 
@@ -282,7 +289,8 @@ class Numeric extends Model\Object\ClassDefinition\Data {
      * @param null|Model\Object\AbstractObject $object
      * @return float
      */
-    public function getDataFromEditmode($data, $object = null) {
+    public function getDataFromEditmode($data, $object = null)
+    {
         return $this->getDataFromResource($data);
     }
 
@@ -291,7 +299,8 @@ class Numeric extends Model\Object\ClassDefinition\Data {
      * @param float $data
      * @return float
      */
-    public function getVersionPreview($data) {
+    public function getVersionPreview($data)
+    {
         return $data;
     }
 
@@ -302,37 +311,36 @@ class Numeric extends Model\Object\ClassDefinition\Data {
      * @param boolean $omitMandatoryCheck
      * @throws \Exception
      */
-    public function checkValidity($data, $omitMandatoryCheck = false){
-
-        if(!$omitMandatoryCheck && $this->getMandatory() && $this->isEmpty($data)){
+    public function checkValidity($data, $omitMandatoryCheck = false)
+    {
+        if (!$omitMandatoryCheck && $this->getMandatory() && $this->isEmpty($data)) {
             throw new \Exception("Empty mandatory field [ ".$this->getName()." ]");
         }
 
-        if(!$this->isEmpty($data) and !is_numeric($data)){
-            throw new \Exception("invalid numeric data");
+        if (!$this->isEmpty($data) and !is_numeric($data)) {
+            throw new \Exception("invalid numeric data [" . $data . "]");
         }
 
-        if(!$omitMandatoryCheck ) {
-
+        if (!$omitMandatoryCheck) {
             $data = $this->toNumeric($data);
 
-            if($data >= PHP_INT_MAX) {
+            if ($data >= PHP_INT_MAX) {
                 throw new \Exception("value exceeds PHP_INT_MAX please use an input data type instead of numeric!");
             }
 
-            if($this->getInteger() && strpos((string) $data, ".") !== false) {
+            if ($this->getInteger() && strpos((string) $data, ".") !== false) {
                 throw new \Exception("Value in field [ ".$this->getName()." ] is not an integer");
             }
 
-            if(strlen($this->getMinValue()) && $this->getMinValue() > $data) {
+            if (strlen($this->getMinValue()) && $this->getMinValue() > $data) {
                 throw new \Exception("Value in field [ ".$this->getName()." ] is not at least " . $this->getMinValue());
             }
 
-            if(strlen($this->getMaxValue()) && $data > $this->getMaxValue()) {
+            if (strlen($this->getMaxValue()) && $data > $this->getMaxValue()) {
                 throw new \Exception("Value in field [ ".$this->getName()." ] is bigger than " . $this->getMaxValue());
             }
 
-            if($this->getUnsigned() && $data < 0) {
+            if ($this->getUnsigned() && $data < 0) {
                 throw new \Exception("Value in field [ ".$this->getName()." ] is not unsigned (bigger than 0)");
             }
         }
@@ -342,9 +350,11 @@ class Numeric extends Model\Object\ClassDefinition\Data {
      * converts object data to a simple string value or CSV Export
      * @abstract
      * @param Model\Object\AbstractObject $object
+     * @param array $params
      * @return string
      */
-    public function getForCsvExport($object) {
+    public function getForCsvExport($object, $params = array())
+    {
         $data = $this->getDataFromObjectParam($object);
         return strval($data);
     }
@@ -355,15 +365,17 @@ class Numeric extends Model\Object\ClassDefinition\Data {
      * @param string $importValue
      * @return float
      */
-    public function getFromCsvImport($importValue) {
-        $value = $this->toNumeric(str_replace(",",".",$importValue));
+    public function getFromCsvImport($importValue)
+    {
+        $value = $this->toNumeric(str_replace(",", ".", $importValue));
         return $value;
     }
 
     /** True if change is allowed in edit mode.
      * @return bool
      */
-    public function isDiffChangeAllowed() {
+    public function isDiffChangeAllowed()
+    {
         return true;
     }
 
@@ -371,7 +383,8 @@ class Numeric extends Model\Object\ClassDefinition\Data {
      * @param $data
      * @return bool
      */
-    public function isEmpty($data) {
+    public function isEmpty($data)
+    {
         return (strlen($data) < 1);
     }
 
@@ -379,8 +392,9 @@ class Numeric extends Model\Object\ClassDefinition\Data {
      * @param $value
      * @return float|int
      */
-    protected function toNumeric($value) {
-        if(strpos((string) $value, ".") === false) {
+    protected function toNumeric($value)
+    {
+        if (strpos((string) $value, ".") === false) {
             return (int) $value;
         }
         return (float) $value;

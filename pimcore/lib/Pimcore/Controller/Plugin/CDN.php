@@ -2,23 +2,21 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Controller\Plugin;
 
 use Pimcore\Tool;
-use Pimcore\Model\Cache as CacheManager;
+use Pimcore\Cache as CacheManager;
 
-class CDN extends \Zend_Controller_Plugin_Abstract {
+class CDN extends \Zend_Controller_Plugin_Abstract
+{
 
     /**
      * @var bool
@@ -63,25 +61,28 @@ class CDN extends \Zend_Controller_Plugin_Abstract {
     /**
      *
      */
-    public function enable () {
+    public function enable()
+    {
         $this->enabled = true;
     }
 
     /**
      *
      */
-    public function disable() {
+    public function disable()
+    {
         $this->enabled = false;
     }
 
     /**
      * @return array
      */
-    protected function getHostnames () {
-        if($this->hostnames === null) {
+    protected function getHostnames()
+    {
+        if ($this->hostnames === null) {
             $this->hostnames = array();
             $hosts = $this->getCdnhostnames();
-            if(is_array($hosts) && count($hosts) > 0) {
+            if (is_array($hosts) && count($hosts) > 0) {
                 $this->hostnames = $hosts;
             }
         }
@@ -91,11 +92,12 @@ class CDN extends \Zend_Controller_Plugin_Abstract {
     /**
      * @return array
      */
-    protected function getPatterns () {
-        if($this->patterns === null) {
+    protected function getPatterns()
+    {
+        if ($this->patterns === null) {
             $this->patterns = array();
             $patterns = $this->getCdnpatterns();
-            if(is_array($patterns) && count($patterns) > 0) {
+            if (is_array($patterns) && count($patterns) > 0) {
                 $this->patterns = $patterns;
             }
         }
@@ -106,10 +108,11 @@ class CDN extends \Zend_Controller_Plugin_Abstract {
      * @param $path
      * @return bool
      */
-    protected function pathMatch ($path) {
+    protected function pathMatch($path)
+    {
         foreach ($this->getPatterns() as $pattern) {
-            if(@preg_match($pattern,$path)) {
-                if(strpos($path,"/") === 0) {
+            if (@preg_match($pattern, $path)) {
+                if (strpos($path, "/") === 0) {
                     return true;
                 }
                 return true;
@@ -121,11 +124,12 @@ class CDN extends \Zend_Controller_Plugin_Abstract {
     /**
      * @return array|mixed
      */
-    protected function getStorage () {
-        if($this->cachedItems === null) {
+    protected function getStorage()
+    {
+        if ($this->cachedItems === null) {
             $this->cachedItems = array();
             if ($items = CacheManager::load(self::cacheKey)) {
-                $this->cachedItems = $items; 
+                $this->cachedItems = $items;
             }
         }
         return $this->cachedItems;
@@ -135,9 +139,10 @@ class CDN extends \Zend_Controller_Plugin_Abstract {
      * @param $path
      * @return string
      */
-    protected function rewritePath ($path) {
+    protected function rewritePath($path)
+    {
         $store = $this->getStorage();
-        if($store[$path]) {
+        if ($store[$path]) {
             return $store[$path];
         }
         
@@ -153,35 +158,32 @@ class CDN extends \Zend_Controller_Plugin_Abstract {
     /**
      *
      */
-    public function dispatchLoopShutdown() {
-        
-        if(!Tool::isHtmlResponse($this->getResponse())) {
+    public function dispatchLoopShutdown()
+    {
+        if (!Tool::isHtmlResponse($this->getResponse())) {
             return;
         }
         
         if ($this->enabled) {
-            
             include_once("simple_html_dom.php");
             
             $body = $this->getResponse()->getBody();
             
             $html = str_get_html($body);
-            if($html) {
+            if ($html) {
                 $elements = $html->find("link[rel=stylesheet], img, script[src]");
 
                 foreach ($elements as $element) {
-                    if($element->tag == "link") {
-                        if($this->pathMatch($element->href)) {
+                    if ($element->tag == "link") {
+                        if ($this->pathMatch($element->href)) {
                             $element->href = $this->rewritePath($element->href);
                         }
-                    }
-                    else if ($element->tag == "img") {
-                        if($this->pathMatch($element->src)) {
+                    } elseif ($element->tag == "img") {
+                        if ($this->pathMatch($element->src)) {
                             $element->src = $this->rewritePath($element->src);
                         }
-                    }
-                    else if ($element->tag == "script") {
-                        if($this->pathMatch($element->src)) {
+                    } elseif ($element->tag == "script") {
+                        if ($this->pathMatch($element->src)) {
                             $element->src = $this->rewritePath($element->src);
                         }
                     }
@@ -236,4 +238,3 @@ class CDN extends \Zend_Controller_Plugin_Abstract {
         return $this->cdnpatterns;
     }
 }
-

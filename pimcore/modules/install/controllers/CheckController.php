@@ -2,40 +2,38 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 use Pimcore\Model\User;
 
-class Install_CheckController extends \Pimcore\Controller\Action {
+class Install_CheckController extends \Pimcore\Controller\Action
+{
 
 
-    public function init() {
+    public function init()
+    {
         parent::init();
 
-        if (is_file(PIMCORE_CONFIGURATION_SYSTEM)) {
+        if (is_file(\Pimcore\Config::locateConfigFile("system.php"))) {
             // session authentication, only possible if user is logged in
             $user = \Pimcore\Tool\Authentication::authenticateSession();
-            if(!$user instanceof User) {
-               die("Authentication failed!<br />If you don't have access to the admin interface any more, and you want to find out if the server configuration matches the requirements you have to rename the the system.xml for the time of the check.");
+            if (!$user instanceof User) {
+                die("Authentication failed!<br />If you don't have access to the admin interface any more, and you want to find out if the server configuration matches the requirements you have to rename the the system.php for the time of the check.");
             }
-        } else if ($this->getParam("mysql_adapter")) {
-
+        } elseif ($this->getParam("mysql_adapter")) {
         } else {
             die("Not possible... no database settings given.<br />Parameters: mysql_adapter,mysql_host,mysql_username,mysql_password,mysql_database");
         }
     }
 
-    public function indexAction() {
-
+    public function indexAction()
+    {
         $checksPHP = array();
         $checksMySQL = array();
         $checksFS = array();
@@ -46,9 +44,9 @@ class Install_CheckController extends \Pimcore\Controller\Action {
         $memoryLimit = filesize2bytes($memoryLimit . "B");
         $state = "ok";
 
-        if($memoryLimit < 67108000) {
+        if ($memoryLimit < 67108000) {
             $state = "error";
-        } else if ($memoryLimit < 134217000) {
+        } elseif ($memoryLimit < 134217000) {
             $state = "warning";
         }
 
@@ -164,11 +162,11 @@ class Install_CheckController extends \Pimcore\Controller\Action {
             "state" => class_exists("Imagick") ? "ok" : "warning"
         );
 
-        // APC
+        // OPcache
         $checksPHP[] = array(
-            "name" => "APC / opcache",
+            "name" => "OPcache",
             "link" => "http://www.php.net/opcache",
-            "state" => (function_exists("apc_add") || function_exists("opcache_reset")) ? "ok" : "warning"
+            "state" => function_exists("opcache_reset") ? "ok" : "warning"
         );
 
         // memcache
@@ -176,6 +174,13 @@ class Install_CheckController extends \Pimcore\Controller\Action {
             "name" => "Memcache",
             "link" => "http://www.php.net/memcache",
             "state" => class_exists("Memcache") ? "ok" : "warning"
+        );
+
+        // Redis
+        $checksPHP[] = array(
+            "name" => "Redis",
+            "link" => "https://pecl.php.net/package/redis",
+            "state" => class_exists("Redis") ? "ok" : "warning"
         );
 
         // curl for google api sdk
@@ -188,10 +193,9 @@ class Install_CheckController extends \Pimcore\Controller\Action {
 
         $db = null;
 
-        if($this->getParam("mysql_adapter")) {
+        if ($this->getParam("mysql_adapter")) {
             // this is before installing
             try {
-
                 $dbConfig = [
                     'username' => $this->getParam("mysql_username"),
                     'password' => $this->getParam("mysql_password"),
@@ -199,7 +203,7 @@ class Install_CheckController extends \Pimcore\Controller\Action {
                 ];
 
                 $hostSocketValue = $this->getParam("mysql_host_socket");
-                if(file_exists($hostSocketValue)) {
+                if (file_exists($hostSocketValue)) {
                     $dbConfig["unix_socket"] = $hostSocketValue;
                 } else {
                     $dbConfig["host"] = $hostSocketValue;
@@ -214,10 +218,10 @@ class Install_CheckController extends \Pimcore\Controller\Action {
             }
         } else {
             // this is after installing, eg. after a migration, ...
-            $db = \Pimcore\Resource::get();
+            $db = \Pimcore\Db::get();
         }
 
-        if($db) {
+        if ($db) {
 
             // storage engines
             $engines = array();
@@ -444,7 +448,6 @@ class Install_CheckController extends \Pimcore\Controller\Action {
                 "name" => "DROP TABLE",
                 "state" => $queryCheck ? "ok" : "error"
             );
-
         } else {
             die("Not possible... no or wrong database settings given.<br />Please fill out the MySQL Settings in the install form an click again on `Check Requirements´");
         }
@@ -454,18 +457,26 @@ class Install_CheckController extends \Pimcore\Controller\Action {
 
         // website/var writable
         $websiteVarWritable = true;
-        $files = rscandir(PIMCORE_WEBSITE_VAR);
 
-        foreach ($files as $file) {
-            if (!is_writable($file)) {
-                $websiteVarWritable = false;
+        try {
+            $files = $this->rscandir(PIMCORE_WEBSITE_VAR);
+
+            foreach ($files as $file) {
+                if (!is_writable($file)) {
+                    $websiteVarWritable = false;
+                }
             }
-        }
 
-        $checksFS[] = array(
-            "name" => "/website/var/ writeable",
-            "state" => $websiteVarWritable ? "ok" : "error"
-        );
+            $checksFS[] = array(
+                "name" => "/website/var/ writeable",
+                "state" => $websiteVarWritable ? "ok" : "error"
+            );
+        } catch (\Exception $e) {
+            $checksFS[] = array(
+                "name" => "/website/var/ (not checked - too many files)",
+                "state" => "warning"
+            );
+        }
 
         // pimcore writeable
         $checksFS[] = array(
@@ -601,5 +612,27 @@ class Install_CheckController extends \Pimcore\Controller\Action {
         $this->view->checksPHP = $checksPHP;
         $this->view->checksMySQL = $checksMySQL;
         $this->view->checksFS = $checksFS;
+    }
+
+    protected function rscandir($base = '', &$data = array())
+    {
+        if (substr($base, -1, 1) != DIRECTORY_SEPARATOR) { //add trailing slash if it doesn't exists
+            $base .= DIRECTORY_SEPARATOR;
+        }
+
+        if (count($data) > 20) {
+            throw new \Exception("limit of 2000 files reached");
+        }
+
+        $array = array_diff(scandir($base), array('.', '..', '.svn'));
+        foreach ($array as $value) {
+            if (is_dir($base . $value)) {
+                $data[] = $base . $value . DIRECTORY_SEPARATOR;
+                $data = $this->rscandir($base . $value . DIRECTORY_SEPARATOR, $data);
+            } elseif (is_file($base . $value)) {
+                $data[] = $base . $value;
+            }
+        }
+        return $data;
     }
 }

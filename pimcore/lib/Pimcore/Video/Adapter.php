@@ -2,20 +2,18 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Video;
 
-abstract class Adapter {
+abstract class Adapter
+{
 
     /**
      * @var int
@@ -84,34 +82,34 @@ abstract class Adapter {
      * @param $file
      * @return mixed
      */
-    public abstract function load($file);
+    abstract public function load($file);
 
     /**
      * @return mixed
      */
-    public abstract function save ();
+    abstract public function save();
 
     /**
      * @abstract
      * @param $timeOffset
      */
-    public abstract function saveImage($file, $timeOffset = null);
+    abstract public function saveImage($file, $timeOffset = null);
 
     /**
      * @abstract
      */
-    public abstract function getConversionStatus();
+    abstract public function getConversionStatus();
 
     /**
      * @abstract
      */
-    public abstract function destroy();
+    abstract public function destroy();
 
     /**
      * @abstract
      * @return bool
      */
-    public abstract function isFinished();
+    abstract public function isFinished();
 
     /**
      * @param $format

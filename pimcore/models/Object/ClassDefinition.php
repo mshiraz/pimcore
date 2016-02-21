@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object;
@@ -20,9 +17,10 @@ namespace Pimcore\Model\Object;
 use Pimcore\Model;
 use Pimcore\Model\Object;
 use Pimcore\File;
-use Pimcore\Model\Cache; 
+use Pimcore\Cache;
 
-class ClassDefinition extends Model\AbstractModel {
+class ClassDefinition extends Model\AbstractModel
+{
 
     /**
      * @var int
@@ -129,9 +127,9 @@ class ClassDefinition extends Model\AbstractModel {
      * @return mixed|null|ClassDefinition
      * @throws \Exception
      */
-    public static function getById($id) {
-
-        if($id === null) {
+    public static function getById($id)
+    {
+        if ($id === null) {
             throw new \Exception("Class id is null");
         }
 
@@ -139,15 +137,13 @@ class ClassDefinition extends Model\AbstractModel {
 
         try {
             $class = \Zend_Registry::get($cacheKey);
-            if(!$class){
+            if (!$class) {
                 throw new \Exception("Class in registry is null");
             }
-        }
-        catch (\Exception $e) {
-
+        } catch (\Exception $e) {
             try {
                 $class = new self();
-                $class->getResource()->getById($id);
+                $class->getDao()->getById($id);
                 \Zend_Registry::set($cacheKey, $class);
             } catch (\Exception $e) {
                 \Logger::error($e);
@@ -162,18 +158,19 @@ class ClassDefinition extends Model\AbstractModel {
      * @param string $name
      * @return self
      */
-    public static function getByName($name) {
+    public static function getByName($name)
+    {
         $class = new self();
 
         try {
-            $class->getResource()->getByName($name);
+            $class->getDao()->getByName($name);
         } catch (\Exception $e) {
             \Logger::error($e);
             return null;
         }
 
         // to have a singleton in a way. like all instances of Element\ElementInterface do also, like Object\AbstractObject
-        if($class->getId() > 0) {
+        if ($class->getId() > 0) {
             return self::getById($class->getId());
         }
     }
@@ -182,7 +179,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param array $values
      * @return self
      */
-    public static function create($values = array()) {
+    public static function create($values = array())
+    {
         $class = new self();
         $class->setValues($values);
         return $class;
@@ -192,8 +190,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param string $name
      * @return void
      */
-    public function rename($name) {
-
+    public function rename($name)
+    {
         $this->deletePhpClasses();
         $this->updateClassNameInObjects($name);
 
@@ -205,20 +203,19 @@ class ClassDefinition extends Model\AbstractModel {
     /**
      * @throws \Exception
      */
-    public function save() {
-
+    public function save()
+    {
         $isUpdate = false;
         if ($this->getId()) {
             $isUpdate = true;
             \Pimcore::getEventManager()->trigger("object.class.preUpdate", $this);
-
         } else {
             \Pimcore::getEventManager()->trigger("object.class.preAdd", $this);
         }
 
         $this->setModificationDate(time());
 
-        $this->getResource()->save();
+        $this->getDao()->save();
 
         // create class for object
         $extendClass = "Concrete";
@@ -268,8 +265,8 @@ class ClassDefinition extends Model\AbstractModel {
         $cd .= "/**\n";
         if (is_array($this->getFieldDefinitions()) && count($this->getFieldDefinitions())) {
             foreach ($this->getFieldDefinitions() as $key => $def) {
-                if (!(method_exists($def,"isRemoteOwner") and $def->isRemoteOwner())) {
-                    $cd .= "* @method static \\Pimcore\\Model\\Object\\" . ucfirst($this->getName()) . ' getBy' . ucfirst($def->getName()) . ' ($value, $limit = 0) ' ."\n";
+                if (!(method_exists($def, "isRemoteOwner") and $def->isRemoteOwner())) {
+                    $cd .= "* @method static \\Pimcore\\Model\\Object\\" . ucfirst($this->getName()) . '\Listing getBy' . ucfirst($def->getName()) . ' ($value, $limit = 0) ' ."\n";
                 }
             }
         }
@@ -279,8 +276,8 @@ class ClassDefinition extends Model\AbstractModel {
         $cd .= "\n\n";
 
         if ($this->getUseTraits()) {
-          $cd .= 'use ' . $this->getUseTraits() . ";\n";
-          $cd .= "\n";
+            $cd .= 'use ' . $this->getUseTraits() . ";\n";
+            $cd .= "\n";
         }
 
         $cd .= 'public $o_classId = ' . $this->getId() . ";\n";
@@ -288,7 +285,7 @@ class ClassDefinition extends Model\AbstractModel {
 
         if (is_array($this->getFieldDefinitions()) && count($this->getFieldDefinitions())) {
             foreach ($this->getFieldDefinitions() as $key => $def) {
-                if (!(method_exists($def,"isRemoteOwner") and $def->isRemoteOwner())) {
+                if (!(method_exists($def, "isRemoteOwner") && $def->isRemoteOwner()) && !$def instanceof Object\ClassDefinition\Data\CalculatedValue) {
                     $cd .= "public $" . $key . ";\n";
                 }
             }
@@ -313,8 +310,7 @@ class ClassDefinition extends Model\AbstractModel {
         if (is_array($this->getFieldDefinitions()) && count($this->getFieldDefinitions())) {
             $relationTypes = array();
             foreach ($this->getFieldDefinitions() as $key => $def) {
-
-                if (method_exists($def,"isRemoteOwner") and $def->isRemoteOwner()) {
+                if (method_exists($def, "isRemoteOwner") and $def->isRemoteOwner()) {
                     continue;
                 }
 
@@ -323,7 +319,7 @@ class ClassDefinition extends Model\AbstractModel {
                 $cd .= $def->getSetterCode($this);
 
                 // call the method "classSaved" if exists, this is used to create additional data tables or whatever which depends on the field definition, for example for localizedfields
-                if(method_exists($def, "classSaved")) {
+                if (method_exists($def, "classSaved")) {
                     $def->classSaved($this);
                 }
 
@@ -332,7 +328,7 @@ class ClassDefinition extends Model\AbstractModel {
                 }
 
                 // collect lazyloaded fields
-                if (method_exists($def,"getLazyLoading") and $def->getLazyLoading()) {
+                if (method_exists($def, "getLazyLoading") and $def->getLazyLoading()) {
                     $lazyLoadedFields[] = $key;
                 }
             }
@@ -345,7 +341,7 @@ class ClassDefinition extends Model\AbstractModel {
         $cd .= "\n";
 
         $classFile = PIMCORE_CLASS_DIRECTORY . "/Object/" . ucfirst($this->getName()) . ".php";
-        if(!is_writable(dirname($classFile)) || (is_file($classFile) && !is_writable($classFile))) {
+        if (!is_writable(dirname($classFile)) || (is_file($classFile) && !is_writable($classFile))) {
             throw new \Exception("Cannot write class file in " . $classFile . " please check the rights on this directory");
         }
         File::put($classFile, $cd);
@@ -377,23 +373,29 @@ class ClassDefinition extends Model\AbstractModel {
         File::mkdir(PIMCORE_CLASS_DIRECTORY . "/Object/" . ucfirst($this->getName()));
 
         $classListFile = PIMCORE_CLASS_DIRECTORY . "/Object/" . ucfirst($this->getName()) . "/Listing.php";
-        if(!is_writable(dirname($classListFile)) || (is_file($classListFile) && !is_writable($classListFile))) {
+        if (!is_writable(dirname($classListFile)) || (is_file($classListFile) && !is_writable($classListFile))) {
             throw new \Exception("Cannot write class file in " . $classListFile . " please check the rights on this directory");
         }
-        File::put($classListFile,$cd);
+        File::put($classListFile, $cd);
 
         // empty object cache
         try {
             Cache::clearTag("class_" . $this->getId());
+        } catch (\Exception $e) {
         }
-        catch (\Exception $e) {
+
+        if ($isUpdate) {
+            \Pimcore::getEventManager()->trigger("object.class.postUpdate", $this);
+        } else {
+            \Pimcore::getEventManager()->trigger("object.class.postAdd", $this);
         }
     }
 
     /**
      * @return void
      */
-    public function delete() {
+    public function delete()
+    {
 
         // delete all objects using this class
         $list = new Listing();
@@ -409,14 +411,14 @@ class ClassDefinition extends Model\AbstractModel {
         // empty object cache
         try {
             Cache::clearTag("class_" . $this->getId());
+        } catch (\Exception $e) {
         }
-        catch (\Exception $e) {}
 
         // empty output cache
         try {
             Cache::clearTag("output");
+        } catch (\Exception $e) {
         }
-        catch (\Exception $e) {}
 
         $customLayouts = new ClassDefinition\CustomLayout\Listing();
         $customLayouts->setCondition("classId = " . $this->getId());
@@ -426,13 +428,14 @@ class ClassDefinition extends Model\AbstractModel {
             $customLayout->delete();
         }
 
-        $this->getResource()->delete();
+        $this->getDao()->delete();
     }
 
     /**
      * @return void
      */
-    protected function deletePhpClasses() {
+    protected function deletePhpClasses()
+    {
         // delete the class files
         @unlink(PIMCORE_CLASS_DIRECTORY . "/Object/" . ucfirst($this->getName()) . ".php");
         @unlink(PIMCORE_CLASS_DIRECTORY . "/Object/" . ucfirst($this->getName()) . "/Listing.php");
@@ -442,42 +445,48 @@ class ClassDefinition extends Model\AbstractModel {
     /**
      * @return int
      */
-    function getId() {
+    public function getId()
+    {
         return $this->id;
     }
 
     /**
      * @return string
      */
-    function getName() {
+    public function getName()
+    {
         return $this->name;
     }
 
     /**
      * @return int
      */
-    function getCreationDate() {
+    public function getCreationDate()
+    {
         return $this->creationDate;
     }
 
     /**
      * @return int
      */
-    function getModificationDate() {
+    public function getModificationDate()
+    {
         return $this->modificationDate;
     }
 
     /**
      * @return int
      */
-    function getUserOwner() {
+    public function getUserOwner()
+    {
         return $this->userOwner;
     }
 
     /**
      * @return int
      */
-    function getUserModification() {
+    public function getUserModification()
+    {
         return $this->userModification;
     }
 
@@ -485,7 +494,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param int $id
      * @return void
      */
-    public function setId($id) {
+    public function setId($id)
+    {
         $this->id = (int) $id;
         return $this;
     }
@@ -494,7 +504,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param string $name
      * @return void
      */
-    public function setName($name) {
+    public function setName($name)
+    {
         $this->name = $name;
         return $this;
     }
@@ -503,7 +514,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param int $creationDate
      * @return void
      */
-    public function setCreationDate($creationDate) {
+    public function setCreationDate($creationDate)
+    {
         $this->creationDate = (int) $creationDate;
         return $this;
     }
@@ -512,7 +524,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param int $modificationDate
      * @return void
      */
-    public function setModificationDate($modificationDate) {
+    public function setModificationDate($modificationDate)
+    {
         $this->modificationDate = (int) $modificationDate;
         return $this;
     }
@@ -521,7 +534,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param int $userOwner
      * @return void
      */
-    public function setUserOwner($userOwner) {
+    public function setUserOwner($userOwner)
+    {
         $this->userOwner = (int) $userOwner;
         return $this;
     }
@@ -530,7 +544,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param int $userModification
      * @return void
      */
-    public function setUserModification($userModification) {
+    public function setUserModification($userModification)
+    {
         $this->userModification = (int) $userModification;
         return $this;
     }
@@ -538,14 +553,16 @@ class ClassDefinition extends Model\AbstractModel {
     /**
      * @return Object\ClassDefinition\Data[]
      */
-    public function getFieldDefinitions() {
+    public function getFieldDefinitions()
+    {
         return $this->fieldDefinitions;
     }
 
     /**
      * @return array
      */
-    public function getLayoutDefinitions() {
+    public function getLayoutDefinitions()
+    {
         return $this->layoutDefinitions;
     }
 
@@ -553,7 +570,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param array $fieldDefinitions
      * @return void
      */
-    public function setFieldDefinitions($fieldDefinitions) {
+    public function setFieldDefinitions($fieldDefinitions)
+    {
         $this->fieldDefinitions = $fieldDefinitions;
         return $this;
     }
@@ -563,7 +581,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param Object\ClassDefinition\Data $data
      * @return void
      */
-    public function addFieldDefinition($key, $data) {
+    public function addFieldDefinition($key, $data)
+    {
         $this->fieldDefinitions[$key] = $data;
         return $this;
     }
@@ -571,8 +590,8 @@ class ClassDefinition extends Model\AbstractModel {
     /**
      * @return Object\ClassDefinition\Data
      */
-    public function getFieldDefinition($key) {
-
+    public function getFieldDefinition($key)
+    {
         if (array_key_exists($key, $this->fieldDefinitions)) {
             return $this->fieldDefinitions[$key];
         }
@@ -583,7 +602,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param array $layoutDefinitions
      * @return void
      */
-    public function setLayoutDefinitions($layoutDefinitions) {
+    public function setLayoutDefinitions($layoutDefinitions)
+    {
         $this->layoutDefinitions = $layoutDefinitions;
 
         $this->fieldDefinitions = array();
@@ -596,8 +616,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param array|Object\ClassDefinition\Layout|Object\ClassDefinition\Data $def
      * @return void
      */
-    public function extractDataDefinitions($def) {
-
+    public function extractDataDefinitions($def)
+    {
         if ($def instanceof Object\ClassDefinition\Layout) {
             if ($def->hasChilds()) {
                 foreach ($def->getChilds() as $child) {
@@ -608,7 +628,7 @@ class ClassDefinition extends Model\AbstractModel {
 
         if ($def instanceof Object\ClassDefinition\Data) {
             $existing = $this->getFieldDefinition($def->getName());
-            if($existing && method_exists($existing, "addReferencedField")) {
+            if ($existing && method_exists($existing, "addReferencedField")) {
                 // this is especially for localized fields which get aggregated here into one field definition
                 // in the case that there are more than one localized fields in the class definition
                 // see also pimcore.object.edit.addToDataFields();
@@ -622,7 +642,8 @@ class ClassDefinition extends Model\AbstractModel {
     /**
      * @return mixed
      */
-    public function getParent() {
+    public function getParent()
+    {
         return $this->parent;
     }
 
@@ -632,7 +653,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param mixed $parent
      * @return void
      */
-    public function setParent($parent) {
+    public function setParent($parent)
+    {
         $this->parent = $parent;
         return $this;
     }
@@ -640,37 +662,42 @@ class ClassDefinition extends Model\AbstractModel {
     /**
      * @return string
      */
-    public function getParentClass() {
+    public function getParentClass()
+    {
         return $this->parentClass;
     }
 
     /**
      * @return string
      */
-    public function getUseTraits() {
-      return $this->useTraits;
+    public function getUseTraits()
+    {
+        return $this->useTraits;
     }
 
     /**
      * @param string $useTraits
      * @return ClassDefinition
      */
-    public function setUseTraits($useTraits) {
-      $this->useTraits = $useTraits;
-      return $this;
+    public function setUseTraits($useTraits)
+    {
+        $this->useTraits = $useTraits;
+        return $this;
     }
 
     /**
      * @return boolean
      */
-    public function getAllowInherit() {
+    public function getAllowInherit()
+    {
         return $this->allowInherit;
     }
 
     /**
      * @return boolean
      */
-    public function getAllowVariants() {
+    public function getAllowVariants()
+    {
         return $this->allowVariants;
     }
 
@@ -678,7 +705,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param string $parentClass
      * @return void
      */
-    public function setParentClass($parentClass) {
+    public function setParentClass($parentClass)
+    {
         $this->parentClass = $parentClass;
         return $this;
     }
@@ -687,7 +715,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param boolean $allowInherit
      * @return void
      */
-    public function setAllowInherit($allowInherit) {
+    public function setAllowInherit($allowInherit)
+    {
         $this->allowInherit = (bool) $allowInherit;
         return $this;
     }
@@ -696,7 +725,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param boolean $allowVariants
      * @return void
      */
-    public function setAllowVariants($allowVariants) {
+    public function setAllowVariants($allowVariants)
+    {
         $this->allowVariants = (bool) $allowVariants;
         return $this;
     }
@@ -704,7 +734,8 @@ class ClassDefinition extends Model\AbstractModel {
     /**
      * @return string
      */
-    public function getIcon() {
+    public function getIcon()
+    {
         return $this->icon;
     }
 
@@ -712,7 +743,8 @@ class ClassDefinition extends Model\AbstractModel {
      * @param $icon
      * @return $this
      */
-    public function setIcon($icon) {
+    public function setIcon($icon)
+    {
         $this->icon = $icon;
         return $this;
     }
@@ -720,7 +752,8 @@ class ClassDefinition extends Model\AbstractModel {
     /**
      * @return array
      */
-    public function getPropertyVisibility() {
+    public function getPropertyVisibility()
+    {
         return $this->propertyVisibility;
     }
 
@@ -728,8 +761,9 @@ class ClassDefinition extends Model\AbstractModel {
      * @param $propertyVisibility
      * @return $this
      */
-    public function setPropertyVisibility($propertyVisibility) {
-        if(is_array($propertyVisibility)) {
+    public function setPropertyVisibility($propertyVisibility)
+    {
+        if (is_array($propertyVisibility)) {
             $this->propertyVisibility = $propertyVisibility;
         }
         return $this;

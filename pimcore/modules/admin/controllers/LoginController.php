@@ -2,25 +2,23 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
-use Pimcore\Tool; 
+use Pimcore\Tool;
 use Pimcore\File;
 use Pimcore\Model\User;
 
-class Admin_LoginController extends \Pimcore\Controller\Action\Admin {
+class Admin_LoginController extends \Pimcore\Controller\Action\Admin
+{
 
-    public function init() {
-
+    public function init()
+    {
         parent::init();
         $this->protect();
 
@@ -29,9 +27,8 @@ class Admin_LoginController extends \Pimcore\Controller\Action\Admin {
     }
 
 
-    public function lostpasswordAction() {
-
-
+    public function lostpasswordAction()
+    {
         $username = $this->getParam("username");
         if ($username) {
             $user = User::getByName($username);
@@ -45,7 +42,6 @@ class Admin_LoginController extends \Pimcore\Controller\Action\Admin {
                         $loginUrl = $uri . "/admin/login/login/?username=" . $username . "&token=" . $token . "&reset=true";
 
                         try {
-
                             $mail = Tool::getMail(array($user->getEmail()), "Pimcore lost password service");
                             $mail->setIgnoreDebugMode(true);
                             $mail->setBodyText("Login to pimcore and change your password using the following link. This temporary login link will expire in 30 minutes: \r\n\r\n" . $loginUrl);
@@ -54,23 +50,19 @@ class Admin_LoginController extends \Pimcore\Controller\Action\Admin {
                         } catch (\Exception $e) {
                             $this->view->error = "could not send email";
                         }
-
                     } else {
                         $this->view->error = "user has no email address";
                     }
                 } else {
                     $this->view->error = "user inactive";
                 }
-
             }
         }
-
-
     }
 
 
-    public function indexAction() {
-
+    public function indexAction()
+    {
         $user = $this->getUser();
 
         if (!$user) {
@@ -82,7 +74,7 @@ class Admin_LoginController extends \Pimcore\Controller\Action\Admin {
             $user = $this->getUser();
 
             if ($user instanceof User && $user->getId() && $user->isActive() && $user->getPassword()) {
-                Tool\Session::useSession(function($adminSession) use ($user) {
+                Tool\Session::useSession(function ($adminSession) use ($user) {
                     $adminSession->user = $user;
                 });
             }
@@ -100,20 +92,22 @@ class Admin_LoginController extends \Pimcore\Controller\Action\Admin {
         }
     }
 
-    public function deeplinkAction () {
+    public function deeplinkAction()
+    {
         // check for deeplink
         $queryString = $_SERVER["QUERY_STRING"];
-        if(preg_match("/(document|asset|object)_([0-9]+)_([a-z]+)/", $queryString, $deeplink)) {
-            if(strpos($queryString, "token")) {
+        if (preg_match("/(document|asset|object)_([0-9]+)_([a-z]+)/", $queryString, $deeplink)) {
+            if (strpos($queryString, "token")) {
                 $deeplink = $deeplink[0];
                 $this->redirect("/admin/login/login?deeplink=" . $deeplink . "&" . $queryString);
-            } else if($queryString) {
+            } elseif ($queryString) {
                 $this->view->tab = $queryString;
             }
         }
     }
 
-    public function loginAction() {
+    public function loginAction()
+    {
         $user = null;
 
         try {
@@ -127,21 +121,20 @@ class Admin_LoginController extends \Pimcore\Controller\Action\Admin {
             if (!$user instanceof User) {
                 if ($this->getParam("password")) {
                     $user = Tool\Authentication::authenticatePlaintext($this->getParam("username"), $this->getParam("password"));
-                    if(!$user) {
+                    if (!$user) {
                         throw new \Exception("Invalid username or password");
                     }
-                } else if ($this->getParam("token")) {
-
+                } elseif ($this->getParam("token")) {
                     $user = Tool\Authentication::authenticateToken($this->getParam("username"), $this->getParam("token"));
 
-                    if(!$user) {
+                    if (!$user) {
                         throw new \Exception("Invalid username or token");
                     }
 
                     // save the information to session when the user want's to reset the password
                     // this is because otherwise the old password is required => see also PIMCORE-1468
-                    if($this->getParam("reset")) {
-                        Tool\Session::useSession(function($adminSession) {
+                    if ($this->getParam("reset")) {
+                        Tool\Session::useSession(function ($adminSession) {
                             $adminSession->password_reset = true;
                         });
                     }
@@ -159,21 +152,21 @@ class Admin_LoginController extends \Pimcore\Controller\Action\Admin {
 
             $user = $this->getUser();
 
-            if(!$user instanceof User) {
+            if (!$user instanceof User) {
                 $this->writeLogFile($this->getParam("username"), $e->getMessage());
                 \Logger::info("Login failed: " . $e);
             }
         }
 
         if ($user instanceof User && $user->getId() && $user->isActive() && $user->getPassword()) {
-            Tool\Session::useSession(function($adminSession) use ($user) {
+            Tool\Session::useSession(function ($adminSession) use ($user) {
                 $adminSession->user = $user;
 
                 Tool\Session::regenerateId();
             });
 
-            if($this->_getParam('deeplink')){
-                $this->redirect('/admin/login/deeplink/?' . $this->_getParam('deeplink'));
+            if ($this->getParam('deeplink')) {
+                $this->redirect('/admin/login/deeplink/?' . $this->getParam('deeplink'));
             } else {
                 $this->redirect("/admin/?_dc=" . time());
             }
@@ -183,14 +176,14 @@ class Admin_LoginController extends \Pimcore\Controller\Action\Admin {
         }
     }
 
-    public function logoutAction() {
-
+    public function logoutAction()
+    {
         $controller = $this;
 
         // clear open edit locks for this session
         \Pimcore\Model\Element\Editlock::clearSession(session_id());
 
-        Tool\Session::useSession(function($adminSession) use ($controller) {
+        Tool\Session::useSession(function ($adminSession) use ($controller) {
             if ($adminSession->user instanceof User) {
                 \Pimcore::getEventManager()->trigger("admin.login.logout", $controller, ["user" => $adminSession->user]);
                 $adminSession->user = null;
@@ -209,8 +202,8 @@ class Admin_LoginController extends \Pimcore\Controller\Action\Admin {
     /**
      * Protection against bruteforce
      */
-    protected function getLogFile() {
-
+    protected function getLogFile()
+    {
         $logfile = PIMCORE_LOG_DIRECTORY . "/loginerror.log";
 
         if (!is_file($logfile)) {
@@ -227,8 +220,8 @@ class Admin_LoginController extends \Pimcore\Controller\Action\Admin {
         return file_get_contents($logfile);
     }
 
-    protected function protect() {
-
+    protected function protect()
+    {
         $user = $this->getParam("username");
         $data = $this->readLogFile();
 
@@ -241,7 +234,7 @@ class Admin_LoginController extends \Pimcore\Controller\Action\Admin {
             $matchUser = false;
 
             if ($login[0] > (time() - 300)) {
-                if($user && $login[2] == $user) {
+                if ($user && $login[2] == $user) {
                     $matchesUserOnly++;
                     $matchUser = true;
                 }
@@ -250,7 +243,7 @@ class Admin_LoginController extends \Pimcore\Controller\Action\Admin {
                     $matchIp = true;
                 }
 
-                if($matchIp && $matchUser) {
+                if ($matchIp && $matchUser) {
                     $matchesUserIp++;
                 }
             }
@@ -263,8 +256,8 @@ class Admin_LoginController extends \Pimcore\Controller\Action\Admin {
         }
     }
 
-    protected function readLogFile() {
-
+    protected function readLogFile()
+    {
         $data = $this->getLogFile();
         $lines = explode("\n", $data);
         $entries = array();
@@ -278,8 +271,8 @@ class Admin_LoginController extends \Pimcore\Controller\Action\Admin {
         return $entries;
     }
 
-    protected function writeLogFile($username, $error) {
-
+    protected function writeLogFile($username, $error)
+    {
         $logfile = PIMCORE_LOG_DIRECTORY . "/loginerror.log";
         $data = $this->readLogFile();
 
@@ -307,4 +300,3 @@ class Admin_LoginController extends \Pimcore\Controller\Action\Admin {
         File::put($logfile, implode("\n", $lines));
     }
 }
-

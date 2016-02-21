@@ -2,20 +2,18 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Log;
 
-class FileObject {
+class FileObject
+{
 
     protected $filename;
     protected $data;
@@ -24,23 +22,22 @@ class FileObject {
      * @param string $data
      * @param string $filename
      */
-    public function __construct($data, $filename=null) {
-
-        if(!is_dir(PIMCORE_LOG_FILEOBJECT_DIRECTORY))  {
+    public function __construct($data, $filename=null)
+    {
+        if (!is_dir(PIMCORE_LOG_FILEOBJECT_DIRECTORY)) {
             mkdir(PIMCORE_LOG_FILEOBJECT_DIRECTORY, 0755, true);
         }
 
         $this->data = $data;
         $this->filename = $filename;
 
-        if(empty($this->filename)) {
+        if (empty($this->filename)) {
             $folderpath = PIMCORE_LOG_FILEOBJECT_DIRECTORY . strftime('/%Y/%m/%d');
 
-            if(!is_dir($folderpath)) {
+            if (!is_dir($folderpath)) {
                 mkdir($folderpath, 0775, true);
             }
-            $this->filename = $folderpath."/".uniqid("fileobject_",true);
-
+            $this->filename = $folderpath."/".uniqid("fileobject_", true);
         }
 
         file_put_contents($this->filename, $this->data);
@@ -49,21 +46,24 @@ class FileObject {
     /**
      * @return string
      */
-    public function getSystemPath() {
+    public function getSystemPath()
+    {
         return $this->filename;
     }
 
     /**
      * @return string
      */
-    public function getFilename() {
+    public function getFilename()
+    {
         return str_replace(PIMCORE_DOCUMENT_ROOT."/", "", $this->filename);
     }
 
     /**
      * @return string
      */
-    public function getData() {
+    public function getData()
+    {
         return $this->data;
     }
 }

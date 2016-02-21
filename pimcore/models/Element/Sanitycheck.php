@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Element
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Element;
 
 use Pimcore\Model;
 
-class Sanitycheck extends Model\AbstractModel {
+class Sanitycheck extends Model\AbstractModel
+{
 
     /**
      * @var int
@@ -34,7 +32,8 @@ class Sanitycheck extends Model\AbstractModel {
     /**
      * @return int
      */
-    public function getId(){
+    public function getId()
+    {
         return $this->id;
     }
 
@@ -42,7 +41,8 @@ class Sanitycheck extends Model\AbstractModel {
      * @param  int $id
      * @return void
      */
-    public function setId($id){
+    public function setId($id)
+    {
         $this->id = (int) $id;
         return $this;
     }
@@ -50,7 +50,8 @@ class Sanitycheck extends Model\AbstractModel {
     /**
      * @return string
      */
-    public function getType(){
+    public function getType()
+    {
         return $this->type;
     }
 
@@ -58,7 +59,8 @@ class Sanitycheck extends Model\AbstractModel {
      * @param  string $type
      * @return void
      */
-    public function setType($type){
+    public function setType($type)
+    {
         $this->type = $type;
         return $this;
     }
@@ -69,8 +71,9 @@ class Sanitycheck extends Model\AbstractModel {
      *
      * @return void
      */
-    public function save(){
-        $this->getResource()->save();
+    public function save()
+    {
+        $this->getDao()->save();
     }
 
     /**
@@ -78,8 +81,9 @@ class Sanitycheck extends Model\AbstractModel {
      *
      * @return void
      */
-    public function delete(){
-        $this->getResource()->delete();
+    public function delete()
+    {
+        $this->getDao()->delete();
     }
 
 
@@ -87,11 +91,14 @@ class Sanitycheck extends Model\AbstractModel {
      * @static
      * @return Sanitycheck
      */
-    public static function getNext(){
+    public static function getNext()
+    {
         $sanityCheck = new Sanitycheck();
-        $sanityCheck->getResource()->getNext();
-        if($sanityCheck->getId() and $sanityCheck->getType()){
-                return $sanityCheck;
-        } else return null;
+        $sanityCheck->getDao()->getNext();
+        if ($sanityCheck->getId() and $sanityCheck->getType()) {
+            return $sanityCheck;
+        } else {
+            return null;
+        }
     }
 }

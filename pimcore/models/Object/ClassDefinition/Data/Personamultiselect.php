@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object|Class
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object\ClassDefinition\Data;
@@ -20,7 +17,8 @@ namespace Pimcore\Model\Object\ClassDefinition\Data;
 use Pimcore\Model;
 use Pimcore\Model\Tool;
 
-class Personamultiselect extends Model\Object\ClassDefinition\Data\Multiselect {
+class Personamultiselect extends Model\Object\ClassDefinition\Data\Multiselect
+{
 
     /**
      * Static type of this element
@@ -33,8 +31,8 @@ class Personamultiselect extends Model\Object\ClassDefinition\Data\Multiselect {
     /**
      *
      */
-    public function configureOptions() {
-
+    public function configureOptions()
+    {
         $list = new Tool\Targeting\Persona\Listing();
         $list->setOrder("asc");
         $list->setOrderKey("name");
@@ -54,9 +52,10 @@ class Personamultiselect extends Model\Object\ClassDefinition\Data\Multiselect {
     /**
      *
      */
-    public function __wakeup() {
+    public function __wakeup()
+    {
         $options = $this->getOptions();
-        if(\Pimcore::inAdmin() || empty($options)) {
+        if (\Pimcore::inAdmin() || empty($options)) {
             $this->configureOptions();
         }
     }

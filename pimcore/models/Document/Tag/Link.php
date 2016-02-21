@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Document
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Document\Tag;
@@ -46,6 +43,9 @@ class Link extends Model\Document\Tag
      */
     public function getData()
     {
+        // update path if internal link
+        $this->updatePathFromInternal();
+
         return $this->data;
     }
 
@@ -55,7 +55,6 @@ class Link extends Model\Document\Tag
      */
     public function frontend()
     {
-
         $url = $this->getHref();
 
         if (strlen($url) > 0) {
@@ -115,7 +114,7 @@ class Link extends Model\Document\Tag
                     $new = Document\Tag::factory($this->getType(), $this->getName(), $this->getDocumentId());
                     $this->data = $new->getData();
                 }
-            } else if ($this->data["internalType"] == "asset") {
+            } elseif ($this->data["internalType"] == "asset") {
                 $asset = Asset::getById($this->data["internalId"]);
                 if (!$asset) {
                     $sane = false;
@@ -134,21 +133,7 @@ class Link extends Model\Document\Tag
      */
     public function getHref()
     {
-        if ($this->data["internal"]) {
-            if ($this->data["internalType"] == "document") {
-                if ($doc = Document::getById($this->data["internalId"])) {
-                    if (!Document::doHideUnpublished() || $doc->isPublished()) {
-                        $this->data["path"] = $doc->getFullPath();
-                    } else {
-                        $this->data["path"] = "";
-                    }
-                }
-            } else if ($this->data["internalType"] == "asset") {
-                if ($asset = Asset::getById($this->data["internalId"])) {
-                    $this->data["path"] = $asset->getFullPath();
-                }
-            }
-        }
+        $this->updatePathFromInternal();
 
         $url = $this->data["path"];
 
@@ -161,6 +146,28 @@ class Link extends Model\Document\Tag
         }
 
         return $url;
+    }
+
+    /**
+     * 
+     */
+    protected function updatePathFromInternal()
+    {
+        if ($this->data["internal"]) {
+            if ($this->data["internalType"] == "document") {
+                if ($doc = Document::getById($this->data["internalId"])) {
+                    if (!Document::doHideUnpublished() || $doc->isPublished()) {
+                        $this->data["path"] = $doc->getFullPath();
+                    } else {
+                        $this->data["path"] = "";
+                    }
+                }
+            } elseif ($this->data["internalType"] == "asset") {
+                if ($asset = Asset::getById($this->data["internalId"])) {
+                    $this->data["path"] = $asset->getFullPath();
+                }
+            }
+        }
     }
 
     /**
@@ -236,7 +243,7 @@ class Link extends Model\Document\Tag
     public function setDataFromResource($data)
     {
         $this->data = \Pimcore\Tool\Serialize::unserialize($data);
-        if(!is_array($this->data)) {
+        if (!is_array($this->data)) {
             $this->data = array();
         }
         return $this;
@@ -249,13 +256,11 @@ class Link extends Model\Document\Tag
      */
     public function setDataFromEditmode($data)
     {
-
-        if(!is_array($data)) {
+        if (!is_array($data)) {
             $data = array();
         }
 
         if ($doc = Document::getByPath($data["path"])) {
-
             if ($doc instanceof Document) {
                 $data["internal"] = true;
                 $data["internalId"] = $doc->getId();
@@ -290,15 +295,12 @@ class Link extends Model\Document\Tag
      */
     public function resolveDependencies()
     {
-
         $dependencies = array();
 
         if (is_array($this->data) && $this->data["internal"]) {
-
             if (intval($this->data["internalId"]) > 0) {
                 if ($this->data["internalType"] == "document") {
                     if ($doc = Document::getById($this->data["internalId"])) {
-
                         $key = "document_" . $doc->getId();
 
                         $dependencies[$key] = array(
@@ -306,7 +308,7 @@ class Link extends Model\Document\Tag
                             "type" => "document"
                         );
                     }
-                } else if ($this->data["internalType"] == "asset") {
+                } elseif ($this->data["internalType"] == "asset") {
                     if ($asset = Asset::getById($this->data["internalId"])) {
                         $key = "asset_" . $asset->getId();
 
@@ -333,7 +335,6 @@ class Link extends Model\Document\Tag
         }
 
         if (empty($wsElement->value->data) or is_array($wsElement->value->data)) {
-
             $this->data = $wsElement->value->data;
             if ($this->data["internal"]) {
                 if (intval($this->data["internalId"]) > 0) {
@@ -351,7 +352,7 @@ class Link extends Model\Document\Tag
                                 throw new \Exception("cannot get values from web service import - link references unknown document with id [ " . $this->data["internalId"] . " ] ");
                             }
                         }
-                    } else if ($this->data["internalType"] == "asset") {
+                    } elseif ($this->data["internalType"] == "asset") {
                         if ($idMapper) {
                             $id = $idMapper->getMappedId("document", $id);
                         }
@@ -366,11 +367,9 @@ class Link extends Model\Document\Tag
                     }
                 }
             }
-
         } else {
             throw new \Exception("cannot get values from web service import - invalid data");
         }
-
     }
 
 
@@ -391,7 +390,7 @@ class Link extends Model\Document\Tag
                         //detected broken link
                         $document = Document::getById($this->getDocumentId());
                     }
-                } else if ($this->data["internalType"] == "asset") {
+                } elseif ($this->data["internalType"] == "asset") {
                     $referencedAsset = Asset::getById($this->data["internalId"]);
                     if (!$referencedAsset instanceof Asset) {
                         //detected broken link

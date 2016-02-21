@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    User
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\User;
 
 use Pimcore\Model;
 
-class AbstractUser extends Model\AbstractModel {
+class AbstractUser extends Model\AbstractModel
+{
 
     /**
      * @var integer
@@ -45,17 +43,17 @@ class AbstractUser extends Model\AbstractModel {
      * @param integer $id
      * @return AbstractUser
      */
-    public static function getById($id) {
-
+    public static function getById($id)
+    {
         $cacheKey = "user_" . $id;
         try {
-            if(\Zend_Registry::isRegistered($cacheKey)) {
+            if (\Zend_Registry::isRegistered($cacheKey)) {
                 $user =  \Zend_Registry::get($cacheKey);
             } else {
                 $user = new static();
-                $user->getResource()->getById($id);
+                $user->getDao()->getById($id);
 
-                if(get_class($user) == "Pimcore\\Model\\User\\AbstractUser") {
+                if (get_class($user) == "Pimcore\\Model\\User\\AbstractUser") {
                     $className = Service::getClassNameForType($user->getType());
                     $user = $className::getById($user->getId());
                 }
@@ -64,8 +62,7 @@ class AbstractUser extends Model\AbstractModel {
             }
 
             return $user;
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             return false;
         }
     }
@@ -74,7 +71,8 @@ class AbstractUser extends Model\AbstractModel {
      * @param array $values
      * @return self
      */
-    public static function create($values = array()) {
+    public static function create($values = array())
+    {
         $user = new static();
         $user->setValues($values);
         $user->save();
@@ -85,14 +83,13 @@ class AbstractUser extends Model\AbstractModel {
      * @param string $name
      * @return self
      */
-    public static function getByName($name) {
-
+    public static function getByName($name)
+    {
         try {
             $user = new static();
-            $user->getResource()->getByName($name);
+            $user->getDao()->getByName($name);
             return $user;
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             return false;
         }
     }
@@ -100,7 +97,8 @@ class AbstractUser extends Model\AbstractModel {
     /**
      * @return integer
      */
-    public function getId() {
+    public function getId()
+    {
         return $this->id;
     }
 
@@ -108,7 +106,8 @@ class AbstractUser extends Model\AbstractModel {
      * @param integer $id
      * @return void
      */
-    public function setId($id) {
+    public function setId($id)
+    {
         $this->id = $id;
         return $this;
     }
@@ -116,7 +115,8 @@ class AbstractUser extends Model\AbstractModel {
     /**
      * @return integer
      */
-    public function getParentId() {
+    public function getParentId()
+    {
         return $this->parentId;
     }
 
@@ -124,7 +124,8 @@ class AbstractUser extends Model\AbstractModel {
      * @param integer $parentId
      * @return void
      */
-    public function setParentId($parentId) {
+    public function setParentId($parentId)
+    {
         $this->parentId = $parentId;
         return $this;
     }
@@ -132,7 +133,8 @@ class AbstractUser extends Model\AbstractModel {
     /**
      * @return string
      */
-    public function getName() {
+    public function getName()
+    {
         return $this->name;
     }
 
@@ -140,7 +142,8 @@ class AbstractUser extends Model\AbstractModel {
      * @param string $name
      * @return void
      */
-    public function setName($name) {
+    public function setName($name)
+    {
         $this->name = $name;
         return $this;
     }
@@ -148,29 +151,31 @@ class AbstractUser extends Model\AbstractModel {
     /**
      * @return string
      */
-    public function getType() {
+    public function getType()
+    {
         return $this->type;
     }
 
     /**
      *
      */
-    public function delete() {
+    public function delete()
+    {
 
         // delete all childs
         $list = new Listing();
         $list->setCondition("parentId = ?", $this->getId());
         $list->load();
 
-        if(is_array($list->getUsers())){
+        if (is_array($list->getUsers())) {
             foreach ($list->getUsers() as $user) {
                 $user->delete();
             }
         }
 
         // now delete the current user
-        $this->getResource()->delete();
-        \Pimcore\Model\Cache::clearAll();
+        $this->getDao()->delete();
+        \Pimcore\Cache::clearAll();
     }
 
     /**

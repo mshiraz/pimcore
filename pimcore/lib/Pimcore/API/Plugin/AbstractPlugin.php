@@ -2,23 +2,21 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\API\Plugin;
 
 use Pimcore\API\AbstractAPI;
-use Pimcore\Resource;
+use Pimcore\Db;
 
-class AbstractPlugin extends AbstractAPI {
+class AbstractPlugin extends AbstractAPI
+{
 
     /**
      * @var null
@@ -35,7 +33,8 @@ class AbstractPlugin extends AbstractAPI {
      * @param string $language
      * @return string $languageFile for the specified language relative to plugin directory
      */
-    public static function getTranslationFile($language) {
+    public static function getTranslationFile($language)
+    {
         return null;
     }
 
@@ -43,54 +42,62 @@ class AbstractPlugin extends AbstractAPI {
      * @param null $jsPaths
      * @param null $cssPaths
      */
-    public function __construct($jsPaths = null, $cssPaths = null) {
-        if (!empty($jsPaths))
+    public function __construct($jsPaths = null, $cssPaths = null)
+    {
+        if (!empty($jsPaths)) {
             $this->jsPaths = $jsPaths;
-        if (!empty($cssPaths))
+        }
+        if (!empty($cssPaths)) {
             $this->cssPaths = $cssPaths;
-
+        }
     }
 
     /**
      * @return mixed|\Zend_Db_Adapter_Abstract
      */
-    protected static function getDb() {
-        $db = Resource::get();
+    protected static function getDb()
+    {
+        $db = Db::get();
         return $db;
     }
 
     /**
      * @return null
      */
-    public function getJsPaths() {
+    public function getJsPaths()
+    {
         return $this->jsPaths;
     }
 
     /**
      * @return null
      */
-    public function getCssPaths() {
+    public function getCssPaths()
+    {
         return $this->cssPaths;
     }
 
     /**
      * @return string
      */
-    public static function getJsClassName() {
+    public static function getJsClassName()
+    {
         return "";
     }
 
     /**
      * @return bool
      */
-    public static function needsReloadAfterInstall() {
+    public static function needsReloadAfterInstall()
+    {
         return false;
     }
 
     /**
      * @return boolean $readyForInstall
      */
-    public static function readyForInstall() {
+    public static function readyForInstall()
+    {
         return true;
     }
 
@@ -100,7 +107,8 @@ class AbstractPlugin extends AbstractAPI {
      * @static
      * @return string
      */
-    public static function getPluginState(){
+    public static function getPluginState()
+    {
         return "";
     }
 
@@ -110,7 +118,8 @@ class AbstractPlugin extends AbstractAPI {
      * @abstract
      * @return string
      */
-    public static function getTranslationFileDirectory(){
+    public static function getTranslationFileDirectory()
+    {
         return null;
     }
 
@@ -119,13 +128,14 @@ class AbstractPlugin extends AbstractAPI {
      * @param $args
      * @throws \Exception
      */
-    public function __call($method, $args) {
+    public function __call($method, $args)
+    {
         $legacyMethods = array_keys(self::$legacyMappings);
-        $legacyMethods = array_map(function($v) {
+        $legacyMethods = array_map(function ($v) {
             return strtolower($v);
         }, $legacyMethods);
 
-        if(in_array(strtolower($method), $legacyMethods)) {
+        if (in_array(strtolower($method), $legacyMethods)) {
             return;
         }
 

@@ -1,15 +1,12 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 pimcore.registerNS("pimcore.object.classificationstore.propertiespanel");
@@ -22,6 +19,7 @@ pimcore.object.classificationstore.propertiespanel = Class.create({
         if (this.layout == null) {
             this.layout = new Ext.Panel({
                 title: t("classificationstore_properties"),
+                iconCls: "pimcore_icon_key",
                 border: false,
                 layout: "fit",
                 region: "center"
@@ -43,7 +41,7 @@ pimcore.object.classificationstore.propertiespanel = Class.create({
 
     createGrid: function(response) {
         this.fields = ['id', 'name', 'description', 'type',
-            'creationDate', 'modificationDate', 'definition', 'title'];
+            'creationDate', 'modificationDate', 'definition', 'title', 'sorter'];
 
         var readerFields = [];
         for (var i = 0; i < this.fields.length; i++) {
@@ -97,7 +95,7 @@ pimcore.object.classificationstore.propertiespanel = Class.create({
                 editor: new Ext.form.TextField({})
             }
 
-        );gridColumns.push({header: t("title"), width: 200, sortable: true, dataIndex: 'title',editor: new Ext.form.TextField({})});
+        );gridColumns.push({header: t("title"), width: 200, sortable: false, dataIndex: 'title',editor: new Ext.form.TextField({})});
         gridColumns.push({header: t("description"), width: 300, sortable: true, dataIndex: 'description',editor: new Ext.form.TextField({})});
         gridColumns.push({header: t("definition"), width: 300, sortable: true, hidden: true, dataIndex: 'definition',editor: new Ext.form.TextField({})});
         gridColumns.push({header: t("type"), width: 150, sortable: true, dataIndex: 'type',
@@ -108,6 +106,13 @@ pimcore.object.classificationstore.propertiespanel = Class.create({
                     'date','datetime','language','languagemultiselect','country','countrymultiselect','table']
 
             })});
+        gridColumns.push({header: t('sorter'), width: 150, sortable: true, dataIndex: 'sorter',
+            tooltip: t("classificationstore_tooltip_sorter"),
+            editor: new Ext.ux.form.SpinnerField({
+                editable: true
+
+            })});
+
 
 
         gridColumns.push({
@@ -212,10 +217,6 @@ pimcore.object.classificationstore.propertiespanel = Class.create({
             },
             {
                 type: "string",
-                dataIndex: "title"
-            },
-            {
-                type: "string",
                 dataIndex: "description"
             },
             {
@@ -267,6 +268,10 @@ pimcore.object.classificationstore.propertiespanel = Class.create({
                         rec.set("definition", definition);
                     } else if (field == "type") {
                         definition.fieldtype = val;
+                        definition = Ext.util.JSON.encode(definition);
+                        rec.set("definition", definition);
+                    } else if (field == "title") {
+                        definition.title = val;
                         definition = Ext.util.JSON.encode(definition);
                         rec.set("definition", definition);
                     }
@@ -327,8 +332,6 @@ pimcore.object.classificationstore.propertiespanel = Class.create({
                                     if (rowIndex != -1) {
                                         var sm = this.grid.getSelectionModel();
                                         sm.selectRow(rowIndex);
-                                        // alert(sm);
-
                                     }
 
                                     var lastOptions = this.store.lastOptions;

@@ -1,15 +1,12 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 pimcore.registerNS("pimcore.object.tags.classificationstore");
@@ -20,6 +17,7 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
     initialize: function (data, fieldConfig) {
 
         this.activeGroups = {};
+        this.groupCollectionMapping = {};
         this.languageElements = {};
         this.groupElements = {};
         this.languagePanels = {};
@@ -38,6 +36,10 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
             }
             if (data.activeGroups) {
                 this.activeGroups = data.activeGroups;
+            }
+
+            if (data.groupCollectionMapping) {
+                this.groupCollectionMapping = data.groupCollectionMapping;
             }
         }
         this.fieldConfig = fieldConfig;
@@ -95,9 +97,7 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
 
         var wrapperConfig = {
             border: false,
-            layout: "fit",
-            autoHeight: true
-
+            layout: "fit"
         };
 
         if(this.fieldConfig.width) {
@@ -119,7 +119,7 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
         } else {
             var panelConf = {
                 autoScroll: true,
-                monitorResize: true,
+                //monitorResize: true,
                 cls: "object_field",
                 activeTab: 0,
                 //autoHeight: true,
@@ -127,7 +127,6 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
                 items: [],
                 deferredRender: true,
                 forceLayout: true,
-                //hideMode: "offsets",
                 enableTabScroll: true,
                 tbar: {
                     items: [
@@ -135,7 +134,7 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
                             xtype: 'button',
                             iconCls: "pimcore_icon_add",
                             handler: function() {
-                                var window = new pimcore.object.classificationstore.keySelectionWindow(this, true, false);
+                                var window = new pimcore.object.classificationstore.keySelectionWindow(this, true, false, true);
                                 window.setRestriction(this.object, this.fieldConfig.name);
                                 window.show();
                             }.bind(this)
@@ -153,7 +152,7 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
             panelConf.listeners = {
 
                 afterlayout: function () {
-                    return;
+
                     if (this.component.heightAlreadyFixed) {
                         return;
                     }
@@ -178,7 +177,7 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
                                 var height = panelBody.getHeight();
                                 if (height > 0) {
                                     // 100 is just a fixed value which seems to be ok(caused by title bar, tabs itself, ... )
-                                    this.component.setHeight(height+120);
+                                    this.component.setHeight(height+130);
                                     clearInterval(this.tabPanelAdjustInterval);
 
                                     //this.tabPanel.getEl().applyStyles("position:relative;");
@@ -209,7 +208,7 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
                     if (this.fieldConfig.activeGroupDefinitions.hasOwnProperty(groupId)) {
                         var group = this.fieldConfig.activeGroupDefinitions[groupId];
 
-                        var fieldset = this.createGroupFieldset(group, groupedChildItems);
+                        var fieldset = this.createGroupFieldset(this.currentLanguage, group, groupedChildItems);
 
                         childItems.push(fieldset);
 
@@ -225,9 +224,8 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
                 }
 
                 var item = new Ext.Panel({
-                    //layout: "pimcoreform",
                     border:false,
-                    autoScroll: true,
+                    //autoScroll: true,
                     height: 'auto',
                     //autoHeight: true,
                     padding: "10px",
@@ -257,6 +255,7 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
         this.currentLanguage = this.frontendLanguages[0];
 
         this.component = new Ext.Panel(wrapperConfig);
+
         this.component.doLayout();
         return this.component;
 
@@ -284,12 +283,15 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
             for (var s=0; s<this.languageElements[currentLanguage].length; s++) {
                 if(this.languageElements[currentLanguage][s].isDirty()) {
                     var languageElement = this.languageElements[currentLanguage][s];
-                    var value = {
-                        value: languageElement.getValue(),
-                        keyId: languageElement.fieldConfig.csKeyId,
-                        groupId: languageElement.fieldConfig.csGroupId
-                    };
-                    localizedData[currentLanguage][this.languageElements[currentLanguage][s].getName()] = value;
+                    var groupId =  languageElement.fieldConfig.csGroupId;
+                    var keyId = languageElement.fieldConfig.csKeyId;
+                    var value = languageElement.getValue();
+
+                    if (!localizedData[currentLanguage][groupId]) {
+                        localizedData[currentLanguage][groupId] = {};
+                    }
+
+                    localizedData[currentLanguage][groupId][keyId] = value;
 
                 }
             }
@@ -306,7 +308,8 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
 
         var container = {
             "data" : localizedData,
-            "activeGroups": activeGroups
+            "activeGroups": activeGroups,
+            "groupCollectionMapping" : this.groupCollectionMapping
         }
         return container;
 
@@ -431,7 +434,7 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
         return isInvalid;
     },
 
-    createGroupFieldset: function(group, groupedChildItems) {
+    createGroupFieldset: function(language, group, groupedChildItems, cls) {
         var groupId = group.id;
         var groupTitle = group.description ? group.name + " - " + group.description : group.name;
 
@@ -451,23 +454,27 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
         }
 
 
-        var fieldset =  new Ext.form.FieldSet({
-                title: groupTitle,
-                items: groupedChildItems,
-                collapsible: true,
-                tools: [
-                    {
+        config = {
+            title: ts(groupTitle),
+            items: groupedChildItems,
+            collapsible: true,
+            tools: [
+                {
                     id: 'close',
                     qtip: t('remove_group'),
-                   handler: function () {
-                       this.deleteGroup(groupId);
-                   }.bind(this)
+                    handler: function () {
+                        this.deleteGroup(groupId);
+                    }.bind(this)
 
                 }]
-            })
-            ;
+        };
+        if (cls) {
+            config.cls = cls;
+        }
 
-        this.groupElements[this.currentLanguage][groupId]  = fieldset;
+        var fieldset =  new Ext.form.FieldSet(config);
+
+        this.groupElements[language][groupId]  = fieldset;
         return fieldset;
     },
 
@@ -475,13 +482,18 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
         var currentLanguage;
 
         this.groupModified = true;
+        var itemHeight = 0;
 
         for (var i=0; i < this.frontendLanguages.length; i++) {
 
             currentLanguage = this.frontendLanguages[i];
 
-            fieldset = this.groupElements[currentLanguage][groupId];
+            var fieldset = this.groupElements[currentLanguage][groupId];
             if (fieldset) {
+
+                if (fieldset.getResizeEl()) {
+                    itemHeight = fieldset.getHeight();
+                }
                 fieldset.destroy();
                 var languagePanel = this.languagePanels[currentLanguage];
                 languagePanel.doLayout();
@@ -501,19 +513,27 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
             }
         }
 
-        delete this.activeGroups[groupId];
+        if (itemHeight > 0) {
+            var height = this.component.getHeight();
+            this.component.setHeight(height - itemHeight);
+            this.component.doLayout();
+        }
 
+        delete this.activeGroups[groupId];
+        delete this.groupCollectionMapping[groupId];
     },
 
     handleAddGroups: function (response) {
         var data = Ext.decode(response.responseText);
 
-        var numberOfGroups = data.length;
+        var handledGroups = {};
         var nrOfLanguages = this.frontendLanguages.length;
+
+        var activeLanguage = this.currentLanguage;
 
         for (var i=0; i < nrOfLanguages; i++) {
             var currentLanguage = this.frontendLanguages[i];
-            this.languageElements[this.currentLanguage] = [];
+            this.currentLanguage = currentLanguage;
 
             var childItems = [];
 
@@ -529,19 +549,42 @@ pimcore.object.tags.classificationstore = Class.create(pimcore.object.tags.abstr
                     }
 
                     this.activeGroups[groupId] = true;
+                    this.groupCollectionMapping[groupId] = group.collectionId;
 
-                    var fieldset = this.createGroupFieldset(group, groupedChildItems);
+                    var fieldset = this.createGroupFieldset(currentLanguage, group, groupedChildItems, "pimcore_new_cs_group");
                     var panel = this.languagePanels[currentLanguage];
 
+
+                    fieldset.on("afterlayout", function(groupId, panel, item) {
+                        try {
+                            var itemHeight = item.getHeight();
+
+                            if (!handledGroups[groupId]) {
+                                handledGroups[groupId] = true;
+
+                                var itemHeight = item.getHeight();
+                                var height = this.component.getHeight();
+                                this.component.setHeight(height + itemHeight);
+
+                                this.component.doLayout();
+
+                            }
+                        } catch (e) {
+                            console.log(e);
+                        }
+
+                    }.bind(this, groupId, panel));
+
                     panel.add(fieldset);
+                    fieldset.doLayout();
 
                     this.groupModified = true;
-
                 }
-
             }
         }
+
         this.component.doLayout();
+        this.currentLanguage = activeLanguage;
 
     },
 

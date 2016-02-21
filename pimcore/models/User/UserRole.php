@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    User
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\User;
 
 use Pimcore\Model;
 
-class UserRole extends AbstractUser {
+class UserRole extends AbstractUser
+{
 
     /**
      * @var array
@@ -54,11 +52,12 @@ class UserRole extends AbstractUser {
     /**
      *
      */
-    public function update () {
-        $this->getResource()->update();
+    public function update()
+    {
+        $this->getDao()->update();
 
         // save all workspaces
-        $this->getResource()->emptyWorkspaces();
+        $this->getDao()->emptyWorkspaces();
 
         foreach ($this->getWorkspacesAsset() as $workspace) {
             $workspace->save();
@@ -74,7 +73,8 @@ class UserRole extends AbstractUser {
     /**
      *
      */
-    public function setAllAclToFalse() {
+    public function setAllAclToFalse()
+    {
         $this->permissions = array();
         return $this;
     }
@@ -84,11 +84,11 @@ class UserRole extends AbstractUser {
      * @param null $value
      * @return $this
      */
-    public function setPermission($permissionName, $value = null) {
-
-        if(!in_array($permissionName, $this->permissions) && $value) {
+    public function setPermission($permissionName, $value = null)
+    {
+        if (!in_array($permissionName, $this->permissions) && $value) {
             $this->permissions[] = $permissionName;
-        } else if (in_array($permissionName, $this->permissions) && !$value) {
+        } elseif (in_array($permissionName, $this->permissions) && !$value) {
             $position = array_search($permissionName, $this->permissions);
             array_splice($this->permissions, $position, 1);
         }
@@ -98,7 +98,8 @@ class UserRole extends AbstractUser {
     /**
      * @return array
      */
-    public function getPermissions() {
+    public function getPermissions()
+    {
         return $this->permissions;
     }
 
@@ -106,9 +107,9 @@ class UserRole extends AbstractUser {
      * @param $permissionName
      * @return bool
      */
-    public function getPermission($permissionName) {
-
-        if(in_array($permissionName, $this->permissions)) {
+    public function getPermission($permissionName)
+    {
+        if (in_array($permissionName, $this->permissions)) {
             return true;
         }
 
@@ -120,7 +121,8 @@ class UserRole extends AbstractUser {
      *
      * @return void
      */
-    public function generatePermissionList() {
+    public function generatePermissionList()
+    {
         $permissionInfo = null;
 
         $list = new Permission\Definition\Listing();
@@ -139,9 +141,9 @@ class UserRole extends AbstractUser {
      */
     public function setPermissions($permissions)
     {
-        if(is_string($permissions)) {
+        if (is_string($permissions)) {
             $this->permissions = explode(",", $permissions);
-        } else if (is_array($permissions)) {
+        } elseif (is_array($permissions)) {
             $this->permissions = $permissions;
         }
         return $this;
@@ -206,13 +208,13 @@ class UserRole extends AbstractUser {
      */
     public function setClasses($classes)
     {
-        if (!\Pimcore\Tool\Admin::isExtJS5()) {
+        if (is_string($classes)) {
             if (strlen($classes)) {
                 $classes = explode(",", $classes);
             }
         }
 
-        if(empty($classes)) {
+        if (empty($classes)) {
             $classes = array();
         }
         $this->classes = $classes;
@@ -231,13 +233,13 @@ class UserRole extends AbstractUser {
      */
     public function setDocTypes($docTypes)
     {
-        if (!\Pimcore\Tool\Admin::isExtJS5()) {
+        if (is_string($docTypes)) {
             if (strlen($docTypes)) {
                 $docTypes = explode(",", $docTypes);
             }
         }
 
-        if(empty($docTypes)) {
+        if (empty($docTypes)) {
             $docTypes = array();
         }
 

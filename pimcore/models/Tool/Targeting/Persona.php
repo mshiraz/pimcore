@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Tool
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Tool\Targeting;
 
 use Pimcore\Model;
 
-class Persona extends Model\AbstractModel {
+class Persona extends Model\AbstractModel
+{
 
     /**
      * @var int
@@ -55,11 +53,12 @@ class Persona extends Model\AbstractModel {
      * @param $id
      * @return null|Persona
      */
-    public static function getById($id) {
+    public static function getById($id)
+    {
         try {
             $persona = new self();
             $persona->setId(intval($id));
-            $persona->getResource()->getById();
+            $persona->getDao()->getById();
             return $persona;
         } catch (\Exception $e) {
             return null;
@@ -70,10 +69,11 @@ class Persona extends Model\AbstractModel {
      * add the persona to the current user
      * @param $id
      */
-    public static function fire ($id) {
+    public static function fire($id)
+    {
         $front = \Zend_Controller_Front::getInstance();
         $plugin = $front->getPlugin("Pimcore\\Controller\\Plugin\\Targeting");
-        if($plugin instanceof \Pimcore\Controller\Plugin\Targeting) {
+        if ($plugin instanceof \Pimcore\Controller\Plugin\Targeting) {
             $plugin->addPersona($id);
         }
     }
@@ -82,9 +82,10 @@ class Persona extends Model\AbstractModel {
      * @param $id
      * @return bool
      */
-    public static function isIdActive($id) {
+    public static function isIdActive($id)
+    {
         $persona = Model\Tool\Targeting\Persona::getById($id);
-        if($persona) {
+        if ($persona) {
             return $persona->getActive();
         }
         return false;
@@ -151,7 +152,7 @@ class Persona extends Model\AbstractModel {
      */
     public function setConditions($conditions)
     {
-        if(!$conditions) {
+        if (!$conditions) {
             $conditions = array();
         }
         $this->conditions = $conditions;

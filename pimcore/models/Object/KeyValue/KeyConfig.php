@@ -2,34 +2,32 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object\KeyValue;
 
 use Pimcore\Model;
 
-class KeyConfig extends Model\AbstractModel {
+class KeyConfig extends Model\AbstractModel
+{
 
     /**
      * @var array
      */
-    static $cache = array();
+    public static $cache = array();
 
     /**
      * @var bool
      */
-    static $cacheEnabled = false;
+    public static $cacheEnabled = false;
 
     /**
      * @var integer
@@ -178,7 +176,8 @@ class KeyConfig extends Model\AbstractModel {
      * @param integer $id
      * @return Model\Object\KeyValue\KeyConfig
      */
-    public static function getById($id) {
+    public static function getById($id)
+    {
         try {
             $id = intval($id);
             if (self::$cacheEnabled && self::$cache[$id]) {
@@ -186,14 +185,13 @@ class KeyConfig extends Model\AbstractModel {
             }
             $config = new self();
             $config->setId($id);
-            $config->getResource()->getById();
+            $config->getDao()->getById();
             if (self::$cacheEnabled) {
                 self::$cache[$id] = $config;
             }
 
             return $config;
         } catch (\Exception $e) {
-
         }
     }
 
@@ -203,7 +201,7 @@ class KeyConfig extends Model\AbstractModel {
     public static function setCacheEnabled($cacheEnabled)
     {
         self::$cacheEnabled = $cacheEnabled;
-        if(!$cacheEnabled){
+        if (!$cacheEnabled) {
             self::$cache = array();
         }
     }
@@ -221,23 +219,24 @@ class KeyConfig extends Model\AbstractModel {
      * @param null $groupId
      * @return KeyConfig
      */
-    public static function getByName ($name, $groupId = null) {
+    public static function getByName($name, $groupId = null)
+    {
         try {
             $config = new self();
             $config->setName($name);
             $config->setGroup($groupId);
-            $config->getResource()->getByName();
+            $config->getDao()->getByName();
 
             return $config;
         } catch (\Exception $e) {
-
         }
     }
 
     /**
      * @return Model\Object\KeyValue\KeyConfig
      */
-    public static function create() {
+    public static function create()
+    {
         $config = new self();
         $config->save();
 
@@ -249,7 +248,8 @@ class KeyConfig extends Model\AbstractModel {
      * @param integer $id
      * @return void
      */
-    public function setId($id) {
+    public function setId($id)
+    {
         $this->id = (int) $id;
         return $this;
     }
@@ -257,7 +257,8 @@ class KeyConfig extends Model\AbstractModel {
     /**
      * @return integer
      */
-    public function getId() {
+    public function getId()
+    {
         return $this->id;
     }
 
@@ -265,7 +266,8 @@ class KeyConfig extends Model\AbstractModel {
      * @param string name
      * @return void
      */
-    public function setName($name) {
+    public function setName($name)
+    {
         $this->name = $name;
         return $this;
     }
@@ -273,14 +275,16 @@ class KeyConfig extends Model\AbstractModel {
     /**
      * @return string
      */
-    public function getName() {
+    public function getName()
+    {
         return $this->name;
     }
 
     /** Returns the key description.
      * @return mixed
      */
-    public function getDescription() {
+    public function getDescription()
+    {
         return $this->description;
     }
 
@@ -288,7 +292,8 @@ class KeyConfig extends Model\AbstractModel {
      * @param $description
      * @return Model\Object\KeyValue\KeyConfig
      */
-    public function setDescription($description) {
+    public function setDescription($description)
+    {
         $this->description = $description;
         return $this;
     }
@@ -297,7 +302,8 @@ class KeyConfig extends Model\AbstractModel {
     /**
      * Deletes the key value key configuration
      */
-    public function delete() {
+    public function delete()
+    {
         \Pimcore::getEventManager()->trigger("object.keyValue.keyConfig.preDelete", $this);
         if ($this->getId()) {
             unset(self::$cache[$this->getId()]);
@@ -309,8 +315,8 @@ class KeyConfig extends Model\AbstractModel {
     /**
      * Saves the key config
      */
-    public function save() {
-
+    public function save()
+    {
         $isUpdate = false;
 
         if ($this->getId()) {
@@ -321,7 +327,7 @@ class KeyConfig extends Model\AbstractModel {
             \Pimcore::getEventManager()->trigger("object.keyValue.keyConfig.preAdd", $this);
         }
 
-        $model = parent::save();
+        $model = $this->getDao()->save();
 
         if ($isUpdate) {
             \Pimcore::getEventManager()->trigger("object.keyValue.keyConfig.postUpdate", $this);
@@ -372,7 +378,7 @@ class KeyConfig extends Model\AbstractModel {
      */
     public function setMandatory($mandatory)
     {
-        $this->mandatory = $mandatory;
+        $this->mandatory = (bool)$mandatory;
     }
 
     /**

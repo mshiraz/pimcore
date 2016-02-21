@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 use Pimcore\Model\Element\Recyclebin;
 use Pimcore\Model\Element;
 
-class Admin_RecyclebinController extends \Pimcore\Controller\Action\Admin {
+class Admin_RecyclebinController extends \Pimcore\Controller\Action\Admin
+{
 
-    public function init() {
-
+    public function init()
+    {
         parent::init();
 
         // recyclebin actions might take some time (save & restore)
@@ -34,58 +32,70 @@ class Admin_RecyclebinController extends \Pimcore\Controller\Action\Admin {
         }
     }
 
-    public function listAction () {
-        
-        if($this->getParam("xaction") == "destroy") {
-            $item = Recyclebin\Item::getById($this->getParam("data"));
+    public function listAction()
+    {
+        if ($this->getParam("xaction") == "destroy") {
+            $item = Recyclebin\Item::getById(\Pimcore\Admin\Helper\QueryParams::getRecordIdForGridRequest($this->getParam("data")));
             $item->delete();
- 
+
             $this->_helper->json(array("success" => true, "data" => array()));
-        }
-        else {
+        } else {
             $list = new Recyclebin\Item\Listing();
             $list->setLimit($this->getParam("limit"));
             $list->setOffset($this->getParam("start"));
 
-            $list->setOrderKey($this->getParam("sort", "date"));
-            $list->setOrder($this->getParam("dir", "DESC"));
+            $list->setOrderKey("date");
+            $list->setOrder("DESC");
+
+            $sortingSettings = \Pimcore\Admin\Helper\QueryParams::extractSortingSettings($this->getAllParams());
+            if ($sortingSettings['orderKey']) {
+                $list->setOrderKey($sortingSettings['orderKey']);
+                $list->setOrder($sortingSettings['order']);
+            }
+
 
             $conditionFilters = array();
 
-            if($this->getParam("filterFullText")) {
+            if ($this->getParam("filterFullText")) {
                 $conditionFilters[] = "path LIKE " . $list->quote("%".$this->getParam("filterFullText")."%");
             }
 
             $filters = $this->getParam("filter");
-            if($filters) {
+            if ($filters) {
                 $filters = \Zend_Json::decode($filters);
 
                 foreach ($filters as $filter) {
-
                     $operator = "=";
 
-                    if($filter["type"] == "string") {
+                    $filterField = $filter["field"];
+                    $filterOperator = $filter["comparison"];
+                    if (\Pimcore\Tool\Admin::isExtJS6()) {
+                        $filterField = $filter["property"];
+                        $filterOperator = $filter["operator"];
+                    }
+
+                    if ($filter["type"] == "string") {
                         $operator = "LIKE";
-                    } else if ($filter["type"] == "numeric") {
-                        if($filter["comparison"] == "lt") {
+                    } elseif ($filter["type"] == "numeric") {
+                        if ($filterOperator == "lt") {
                             $operator = "<";
-                        } else if($filter["comparison"] == "gt") {
+                        } elseif ($filterOperator == "gt") {
                             $operator = ">";
-                        } else if($filter["comparison"] == "eq") {
+                        } elseif ($filterOperator == "eq") {
                             $operator = "=";
                         }
-                    } else if ($filter["type"] == "date") {
-                        if($filter["comparison"] == "lt") {
+                    } elseif ($filter["type"] == "date") {
+                        if ($filterOperator == "lt") {
                             $operator = "<";
-                        } else if($filter["comparison"] == "gt") {
+                        } elseif ($filterOperator == "gt") {
                             $operator = ">";
-                        } else if($filter["comparison"] == "eq") {
+                        } elseif ($filterOperator == "eq") {
                             $operator = "=";
                         }
                         $filter["value"] = strtotime($filter["value"]);
-                    } else if ($filter["type"] == "list") {
+                    } elseif ($filter["type"] == "list") {
                         $operator = "=";
-                    } else if ($filter["type"] == "boolean") {
+                    } elseif ($filter["type"] == "boolean") {
                         $operator = "=";
                         $filter["value"] = (int) $filter["value"];
                     }
@@ -95,8 +105,8 @@ class Admin_RecyclebinController extends \Pimcore\Controller\Action\Admin {
                         $value = "%" . $value . "%";
                     }
 
-                    $field = "`" . $filter["field"] . "` ";
-                    if($filter["field"] == "fullpath") {
+                    $field = "`" . $filterField . "` ";
+                    if ($filter["field"] == "fullpath") {
                         $field = "CONCAT(path,filename)";
                     }
 
@@ -104,44 +114,45 @@ class Admin_RecyclebinController extends \Pimcore\Controller\Action\Admin {
                 }
             }
 
-            if(!empty($conditionFilters)) {
+            if (!empty($conditionFilters)) {
                 $condition = implode(" AND ", $conditionFilters);
                 $list->setCondition($condition);
             }
 
             $items = $list->load();
-            
+
             $this->_helper->json(array("data" => $items, "success" => true, "total" => $list->getTotalCount()));
         }
     }
-    
-    public function restoreAction () {
+
+    public function restoreAction()
+    {
         $item = Recyclebin\Item::getById($this->getParam("id"));
         $item->restore();
- 
+
         $this->_helper->json(array("success" => true));
     }
- 
-    public function flushAction () {
+
+    public function flushAction()
+    {
         $bin = new Element\Recyclebin();
         $bin->flush();
-        
-        $this->_helper->json(array("success" => true)); 
+
+        $this->_helper->json(array("success" => true));
     }
 
-    public function addAction () {
-
+    public function addAction()
+    {
         $element = Element\Service::getElementById($this->getParam("type"), $this->getParam("id"));
 
-        if($element) {
-
+        if ($element) {
             $type = Element\Service::getElementType($element);
             $listClass = "\\Pimcore\\Model\\" . ucfirst($type) . "\\Listing";
             $list = new $listClass();
-            $list->setCondition( (($type == "object") ? "o_" : "") . "path LIKE '" . $element->getFullPath() . "/%'");
+            $list->setCondition((($type == "object") ? "o_" : "") . "path LIKE '" . $element->getFullPath() . "/%'");
             $children = $list->getTotalCount();
 
-            if($children <= 100) {
+            if ($children <= 100) {
                 Recyclebin\Item::create($element, $this->getUser());
             }
 
@@ -149,6 +160,5 @@ class Admin_RecyclebinController extends \Pimcore\Controller\Action\Admin {
         } else {
             $this->_helper->json(array("success" => false));
         }
-
     }
 }

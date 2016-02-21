@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Document
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Document\Tag\Block;
@@ -57,19 +54,16 @@ class Item
     public function getElement($name)
     {
         $root = $name . implode('_', $this->suffixes);
-        foreach($this->suffixes as $item)
-        {
-            if(preg_match('#[^\d]{1}(?<index>[\d]+)$#i', $item, $match))
-            {
+        foreach ($this->suffixes as $item) {
+            if (preg_match('#[^\d]{1}(?<index>[\d]+)$#i', $item, $match)) {
                 $root .= $match['index'] . '_';
             }
         }
         $root .= $this->index;
         $id = $root;
 
-        $element = $this->doc->getElement( $id );
-        if($element)
-        {
+        $element = $this->doc->getElement($id);
+        if ($element) {
             $element->suffixes = $this->suffixes;
         }
 
@@ -86,14 +80,11 @@ class Item
     public function __call($func, $args)
     {
         $element = $this->getElement($args[0]);
-        $class = "\\Pimcore\\Model\\Document\\Tag\\" . str_replace('get', '', $func);
+        $class = "Pimcore\\Model\\Document\\Tag\\" . str_replace('get', '', $func);
 
-        if(!strcasecmp(get_class($element), $class))
-        {
+        if (!strcasecmp(get_class($element), $class)) {
             return $element;
-        }
-        else if($element === NULL)
-        {
+        } elseif ($element === null) {
             return new $class;
         }
     }

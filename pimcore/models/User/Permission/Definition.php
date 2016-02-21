@@ -2,31 +2,30 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    User
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\User\Permission;
 
 use Pimcore\Model;
 
-class Definition extends Model\AbstractModel {
+class Definition extends Model\AbstractModel
+{
 
     public $key;
 
     /**
      * @param array
      */
-    public function __construct($data = array()) {
+    public function __construct($data = array())
+    {
         if (is_array($data) && !empty($data)) {
             $this->setValues($data);
         }
@@ -35,7 +34,8 @@ class Definition extends Model\AbstractModel {
     /**
      * @return string
      */
-    function getKey() {
+    public function getKey()
+    {
         return $this->key;
     }
 
@@ -43,7 +43,8 @@ class Definition extends Model\AbstractModel {
      * @param $key
      * @return $this
      */
-    function setKey($key) {
+    public function setKey($key)
+    {
         $this->key = $key;
         return $this;
     }
@@ -53,15 +54,16 @@ class Definition extends Model\AbstractModel {
      * @return mixed
      * @throws \Exception
      */
-    public static function getByKey($permission){
-        if(!$permission){
+    public static function getByKey($permission)
+    {
+        if (!$permission) {
             throw new \Exception("No permisson defined.");
         }
         $list = new Definition\Listing();
-        $list->setCondition("`key`=?",array($permission));
+        $list->setCondition("`key`=?", array($permission));
         $list->setLimit(1);
         $permissionDefinition = $list->load();
-        if($permissionDefinition[0]){
+        if ($permissionDefinition[0]) {
             return $permissionDefinition[0];
         }
     }
@@ -71,15 +73,16 @@ class Definition extends Model\AbstractModel {
      * @return mixed|static
      * @throws \Exception
      */
-    public static function create($permission){
-        if(!$permission){
+    public static function create($permission)
+    {
+        if (!$permission) {
             throw new \Exception("No permisson defined.");
         }
         $permissionDefinition = static::getByKey($permission);
-        if($permissionDefinition instanceof self){
+        if ($permissionDefinition instanceof self) {
             \Logger::info("Permission $permission allready exists. Skipping creation.");
             return $permissionDefinition;
-        }else{
+        } else {
             $permissionDefinition = new static();
             $permissionDefinition->setKey($permission);
             $permissionDefinition->save();

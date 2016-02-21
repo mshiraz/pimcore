@@ -1,20 +1,21 @@
 # pimcore
 
-THE PREMIER OPEN-SOURCE CMS/CMF, PIM, ECOMMERCE-SUITE
+THE OPEN-SOURCE ENTERPRISE CMS/CMF, PIM, DAM, ECOMMERCE-SUITE
 
-[![Software License](https://img.shields.io/badge/license-BSD-brightgreen.svg?style=flat)](LICENSE.txt)
+[![Software License](https://img.shields.io/badge/license-GPLv3-brightgreen.svg?style=flat)](LICENSE.md)
 [![Current Release](https://img.shields.io/packagist/v/pimcore/pimcore.svg?style=flat)](https://packagist.org/packages/pimcore/pimcore)
 [![Build Status](https://travis-ci.org/pimcore/pimcore.svg?branch=master)](https://travis-ci.org/pimcore/pimcore)
-[![HHVM Status](https://img.shields.io/hhvm/pimcore/pimcore.svg)](https://travis-ci.org/pimcore/pimcore)
 [![Gitter](https://img.shields.io/badge/gitter-join%20chat-brightgreen.svg?style=flat)](https://gitter.im/pimcore/pimcore?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 
-![Editing Interface](website_demo/static/screenshots/1.png)
+![Administration Interface](website_demo/static/screenshots/1.png)
 
+* [Documentation](https://www.pimcore.org/wiki/)
 * Homepage: [http://www.pimcore.org/](http://www.pimcore.org/) - Learn more about pimcore
 * Twitter: [@pimcore](https://twitter.com/pimcore) - Get the latest news
-* Issue Tracker: - [Issues](http://www.pimcore.org/issues) - Report bugs here
-* Forums: - http://www.pimcore.org/board/ - Get help
+* Issue Tracker: - [Issues](https://github.com/pimcore/pimcore/issues) - Report bugs here
+* [Google Group](https://groups.google.com/forum/#!forum/pimcore) - Discussions 
+* [StackOverflow](http://stackoverflow.com/questions/tagged/pimcore) - Questions / Support 
 
 
 ## Getting started
@@ -33,11 +34,18 @@ mysql -u root -p -e "CREATE DATABASE pimcore charset=utf8;"
 # now launch http://yourhostname.tld/install
 ```
 
-[A detailed installation guide can be found here.](http://www.pimcore.org/wiki/pages/viewpage.action?pageId=12124463)
+[A detailed installation guide can be found here.](https://www.pimcore.org/wiki/pages/viewpage.action?pageId=16854184)
 
 
-## Copyright and license
+## Contribute
 
-Copyright [pimcore](http://www.pimcore.org) GmbH under a modified [BSD license](LICENSE.txt).  
-For licensing details please visit http://www.pimcore.org/license
+Please have a look at our [contributing guide](CONTRIBUTING.md).
 
+#### Short summary:  
+**Bug fixes:** please create a pull request including a reproducible description of the problem  
+**Contribute features:** contact the core-team before you start developing (contribute@pimcore.org)  
+**Security vulnerabilities:** please contact us (security@pimcore.org)  
+
+## Copyright and license 
+Copyright: [pimcore](http://www.pimcore.org) GmbH  
+For licensing details please visit [LICENSE.md](LICENSE.md) 

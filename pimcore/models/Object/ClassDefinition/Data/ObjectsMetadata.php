@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object|Class
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object\ClassDefinition\Data;
@@ -21,9 +18,10 @@ use Pimcore\Model;
 use Pimcore\Model\Object;
 use Pimcore\Model\Element;
 use Pimcore\Tool;
-use Pimcore\Resource;
+use Pimcore\Db;
 
-class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
+class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects
+{
 
     /**
      * @var
@@ -60,8 +58,8 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param null|Model\Object\AbstractObject $object
      * @return array
      */
-    public function getDataForResource($data, $object = null) {
-
+    public function getDataForResource($data, $object = null)
+    {
         $return = array();
 
         if (is_array($data) && count($data) > 0) {
@@ -79,15 +77,13 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
                 $counter++;
             }
             return $return;
-        } else if (is_array($data) and count($data)===0) {
+        } elseif (is_array($data) and count($data)===0) {
             //give empty array if data was not null
             return array();
         } else {
             //return null if data was null - this indicates data was not loaded
             return null;
         }
-
-
     }
 
     /**
@@ -95,7 +91,8 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param array $data
      * @return array
      */
-    public function getDataFromResource($data) {
+    public function getDataFromResource($data)
+    {
         $objects = array();
 
         if (is_array($data) && count($data) > 0) {
@@ -125,10 +122,13 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param null $object
      * @throws \Exception
      */
-    public function getDataForQueryResource($data, $object = null) {
+    public function getDataForQueryResource($data, $object = null)
+    {
 
         //return null when data is not set
-        if(!$data) return null;
+        if (!$data) {
+            return null;
+        }
 
         $ids = array();
 
@@ -140,7 +140,7 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
                 }
             }
             return "," . implode(",", $ids) . ",";
-        } else if (is_array($data) && count($data) === 0){
+        } elseif (is_array($data) && count($data) === 0) {
             return "";
         } else {
             throw new \Exception("invalid data passed to getDataForQueryResource - must be array");
@@ -154,7 +154,8 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param null|Model\Object\AbstractObject $object
      * @return array
      */
-    public function getDataForEditmode($data, $object = null) {
+    public function getDataForEditmode($data, $object = null)
+    {
         $return = array();
 
         $visibleFieldsArray = explode(",", $this->getVisibleFields());
@@ -163,21 +164,17 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
 
         // add data
         if (is_array($data) && count($data) > 0) {
-
             foreach ($data as $metaObject) {
-
                 $object = $metaObject->getObject();
                 if ($object instanceof Object\Concrete) {
-
                     $columnData = Object\Service::gridObjectData($object, $gridFields);
-                    foreach($this->getColumns() as $c) {
+                    foreach ($this->getColumns() as $c) {
                         $getter = "get" . ucfirst($c['key']);
                         $columnData[$c['key']] = $metaObject->$getter();
                     }
                     $return[] = $columnData;
                 }
             }
-
         }
 
         return $return;
@@ -189,19 +186,21 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param null|Model\Object\AbstractObject $object
      * @return array
      */
-    public function getDataFromEditmode($data, $object = null) {
+    public function getDataFromEditmode($data, $object = null)
+    {
         //if not set, return null
-        if($data === null or $data === FALSE){ return null; }
+        if ($data === null or $data === false) {
+            return null;
+        }
 
         $objectsMetadata = array();
         if (is_array($data) && count($data) > 0) {
             foreach ($data as $object) {
-
                 $o = Object::getById($object["id"]);
-                if($o && $o->getClassId() == $this->getAllowedClassId()) {
+                if ($o && $o->getClassId() == $this->getAllowedClassId()) {
                     $className = Tool::getModelClassMapping('\Pimcore\Model\Object\Data\ObjectMetadata');
                     $metaData = new $className($this->getName(), $this->getColumnKeys(), $o);
-                    foreach($this->getColumns() as $c) {
+                    foreach ($this->getColumns() as $c) {
                         $setter = "set" . ucfirst($c["key"]);
                         $metaData->$setter($object[$c["key"]]);
                     }
@@ -219,7 +218,8 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param null $object
      * @return array
      */
-    public function getDataForGrid($data, $object = null) {
+    public function getDataForGrid($data, $object = null)
+    {
         if (is_array($data)) {
             $pathes = array();
             foreach ($data as $metaObject) {
@@ -237,8 +237,8 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param array $data
      * @return string
      */
-    public function getVersionPreview($data) {
-
+    public function getVersionPreview($data)
+    {
         if (is_array($data) && count($data) > 0) {
             foreach ($data as $metaObject) {
                 $o = $metaObject->getObject();
@@ -255,9 +255,9 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param boolean $omitMandatoryCheck
      * @throws \Exception
      */
-    public function checkValidity($data, $omitMandatoryCheck = false){
-
-        if(!$omitMandatoryCheck and $this->getMandatory() and empty($data)){
+    public function checkValidity($data, $omitMandatoryCheck = false)
+    {
+        if (!$omitMandatoryCheck and $this->getMandatory() and empty($data)) {
             throw new \Exception("Empty mandatory field [ ".$this->getName()." ]");
         }
 
@@ -269,7 +269,7 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
 
                 $o = $objectMetadata->getObject();
                 if ($o->getClassId() != $this->getAllowedClassId() || !($o instanceof Object\Concrete)) {
-                    if($o instanceof Object\Concrete){
+                    if ($o instanceof Object\Concrete) {
                         $id = $o->getId();
                     } else {
                         $id = "??";
@@ -283,10 +283,12 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
     /**
      * converts object data to a simple string value or CSV Export
      * @abstract
-     * @param Model\Object\AbstractObject $object
+     * @param Object\AbstractObject $object
+     * @param array $params
      * @return string
      */
-    public function getForCsvExport($object) {
+    public function getForCsvExport($object, $params = array())
+    {
         $data = $this->getDataFromObjectParam($object);
         if (is_array($data)) {
             $paths = array();
@@ -297,14 +299,17 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
                 }
             }
             return implode(",", $paths);
-        } else return null;
+        } else {
+            return null;
+        }
     }
 
     /**
      * @param $importValue
      * @return array|mixed
      */
-    public function getFromCsvImport($importValue) {
+    public function getFromCsvImport($importValue)
+    {
         $values = explode(",", $importValue);
 
         $value = array();
@@ -327,8 +332,8 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param array $tags
      * @return array
      */
-    public function getCacheTags ($data, $tags = array()) {
-
+    public function getCacheTags($data, $tags = array())
+    {
         $tags = is_array($tags) ? $tags : array();
 
         if (is_array($data) && count($data) > 0) {
@@ -346,8 +351,8 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param $data
      * @return array
      */
-    public function resolveDependencies ($data) {
-
+    public function resolveDependencies($data)
+    {
         $dependencies = array();
 
         if (is_array($data) && count($data) > 0) {
@@ -368,8 +373,8 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param Object\AbstractObject $object
      * @return array|mixed|null
      */
-    public function getForWebserviceExport ($object) {
-
+    public function getForWebserviceExport($object)
+    {
         $data = $this->getDataFromObjectParam($object);
         if (is_array($data)) {
             $items = array();
@@ -380,7 +385,7 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
                     $item["type"] = $eo->getType();
                     $item["id"] = $eo->getId();
 
-                    foreach($this->getColumns() as $c) {
+                    foreach ($this->getColumns() as $c) {
                         $getter = "get" . ucfirst($c['key']);
                         $item[$c['key']] = $metaObject->$getter();
                     }
@@ -388,7 +393,9 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
                 }
             }
             return $items;
-        } else return null;
+        } else {
+            return null;
+        }
     }
 
 
@@ -399,12 +406,13 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @return array|mixed
      * @throws \Exception
      */
-    public function getFromWebserviceImport ($value, $object = null, $idMapper = null) {
+    public function getFromWebserviceImport($value, $object = null, $idMapper = null)
+    {
         $objects = array();
-        if(empty($value)){
+        if (empty($value)) {
             return null;
-        } else if(is_array($value)){
-            foreach($value as $key => $item){
+        } elseif (is_array($value)) {
+            foreach ($value as $key => $item) {
                 $item = (array) $item;
                 $id = $item['id'];
 
@@ -417,12 +425,11 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
                     $dest = Object::getById($id);
                 }
 
-                if($dest instanceof Object\AbstractObject) {
-
+                if ($dest instanceof Object\AbstractObject) {
                     $className = Tool::getModelClassMapping('\Pimcore\Model\Object\Data\ObjectMetadata');
                     $metaObject = new $className($this->getName(), $this->getColumnKeys(), $dest);
 
-                    foreach($this->getColumns() as $c) {
+                    foreach ($this->getColumns() as $c) {
                         $setter = "set" . ucfirst($c['key']);
                         $metaObject->$setter($item[$c['key']]);
                     }
@@ -434,7 +441,6 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
                     } else {
                         $idMapper->recordMappingFailure("object", $object->getId(), "object", $item['id']);
                     }
-
                 }
             }
         } else {
@@ -449,33 +455,33 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param Object\Concrete $object
      * @return void
      */
-    public function save($object, $params = array()) {
-
+    public function save($object, $params = array())
+    {
         $objectsMetadata = $this->getDataFromObjectParam($object, $params);
 
         $classId = null;
         $objectId = null;
 
-        if($object instanceof Object\Concrete) {
+        if ($object instanceof Object\Concrete) {
             $objectId = $object->getId();
-        } else if($object instanceof Object\Fieldcollection\Data\AbstractData) {
+        } elseif ($object instanceof Object\Fieldcollection\Data\AbstractData) {
             $objectId = $object->getObject()->getId();
-        } else if ($object instanceof Object\Localizedfield) {
+        } elseif ($object instanceof Object\Localizedfield) {
             $objectId = $object->getObject()->getId();
-        } else if ($object instanceof Object\Objectbrick\Data\AbstractData) {
+        } elseif ($object instanceof Object\Objectbrick\Data\AbstractData) {
             $objectId = $object->getObject()->getId();
         }
 
         if ($object instanceof Object\Localizedfield) {
             $classId = $object->getClass()->getId();
-        } else if ($object instanceof Object\Objectbrick\Data\AbstractData || $object instanceof Object\Fieldcollection\Data\AbstractData) {
+        } elseif ($object instanceof Object\Objectbrick\Data\AbstractData || $object instanceof Object\Fieldcollection\Data\AbstractData) {
             $classId = $object->getObject()->getClassId();
         } else {
             $classId = $object->getClassId();
         }
 
         $table = "object_metadata_" . $classId;
-        $db = Resource::get();
+        $db = Db::get();
 
         $this->enrichRelation($object, $params, $classId, $relation);
 
@@ -488,8 +494,7 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
 
         $db->delete($table, $sql);
 
-        if(!empty($objectsMetadata)) {
-
+        if (!empty($objectsMetadata)) {
             if ($object instanceof Object\Localizedfield || $object instanceof Object\Objectbrick\Data\AbstractData
                 || $object instanceof Object\Fieldcollection\Data\AbstractData) {
                 $objectConcrete = $object->getObject();
@@ -497,7 +502,7 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
                 $objectConcrete = $object;
             }
 
-            foreach($objectsMetadata as $meta) {
+            foreach ($objectsMetadata as $meta) {
                 $ownerName = isset($relation["ownername"]) ? $relation["ownername"] : null;
                 $ownerType = isset($relation["ownertype"]) ? $relation["ownertype"] : null;
                 $meta->save($objectConcrete, $ownerType, $ownerName, $position);
@@ -507,33 +512,32 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
         parent::save($object, $params);
     }
 
-    public function preGetData ($object, $params = array()) {
-
+    public function preGetData($object, $params = array())
+    {
         $data = null;
-        if($object instanceof Object\Concrete) {
+        if ($object instanceof Object\Concrete) {
             $data = $object->{$this->getName()};
-            if($this->getLazyLoading() and !in_array($this->getName(), $object->getO__loadedLazyFields())){
+            if ($this->getLazyLoading() and !in_array($this->getName(), $object->getO__loadedLazyFields())) {
                 //$data = $this->getDataFromResource($object->getRelationData($this->getName(),true,null));
                 $data = $this->load($object, array("force" => true));
 
                 $setter = "set" . ucfirst($this->getName());
-                if(method_exists($object, $setter)) {
+                if (method_exists($object, $setter)) {
                     $object->$setter($data);
                 }
             }
-        } else if ($object instanceof Object\Localizedfield) {
+        } elseif ($object instanceof Object\Localizedfield) {
             $data = $params["data"];
-        } else if ($object instanceof Object\Fieldcollection\Data\AbstractData) {
+        } elseif ($object instanceof Object\Fieldcollection\Data\AbstractData) {
             $data = $object->{$this->getName()};
-        } else if ($object instanceof Object\Objectbrick\Data\AbstractData) {
+        } elseif ($object instanceof Object\Objectbrick\Data\AbstractData) {
             $data = $object->{$this->getName()};
         }
 
-        if(Object\AbstractObject::doHideUnpublished() and is_array($data)) {
+        if (Object\AbstractObject::doHideUnpublished() and is_array($data)) {
             $publishedList = array();
-            foreach($data as $listElement){
-
-                if(Element\Service::isPublished($listElement->getObject())){
+            foreach ($data as $listElement) {
+                if (Element\Service::isPublished($listElement->getObject())) {
                     $publishedList[] = $listElement;
                 }
             }
@@ -547,8 +551,9 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param Object\Concrete $object
      * @return void
      */
-    public function delete($object) {
-        $db = Resource::get();
+    public function delete($object)
+    {
+        $db = Db::get();
         $db->delete("object_metadata_" . $object->getClassId(), $db->quoteInto("o_id = ?", $object->getId()) . " AND " . $db->quoteInto("fieldname = ?", $this->getName()));
     }
 
@@ -556,7 +561,8 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param $allowedClassId
      * @return $this
      */
-    public function setAllowedClassId($allowedClassId) {
+    public function setAllowedClassId($allowedClassId)
+    {
         $this->allowedClassId = $allowedClassId;
         return $this;
     }
@@ -564,7 +570,8 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
     /**
      * @return mixed
      */
-    public function getAllowedClassId() {
+    public function getAllowedClassId()
+    {
         return $this->allowedClassId;
     }
 
@@ -572,7 +579,15 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param $visibleFields
      * @return $this
      */
-    public function setVisibleFields($visibleFields) {
+    public function setVisibleFields($visibleFields)
+    {
+        /**
+         * @extjs6
+         */
+        if (is_array($visibleFields)) {
+            $visibleFields = implode(",", $visibleFields);
+        }
+
         $this->visibleFields = $visibleFields;
         return $this;
     }
@@ -580,7 +595,8 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
     /**
      * @return mixed
      */
-    public function getVisibleFields() {
+    public function getVisibleFields()
+    {
         return $this->visibleFields;
     }
 
@@ -588,15 +604,16 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param $columns
      * @return $this
      */
-    public function setColumns($columns) {
-        if(isset($columns['key'])) {
+    public function setColumns($columns)
+    {
+        if (isset($columns['key'])) {
             $columns = array($columns);
         }
         usort($columns, array($this, 'sort'));
 
         $this->columns = array();
         $this->columnKeys = array();
-        foreach($columns as $c) {
+        foreach ($columns as $c) {
             $c['key'] = strtolower($c['key']);
             $this->columns[] = $c;
             $this->columnKeys[] = $c['key'];
@@ -607,16 +624,18 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
     /**
      * @return mixed
      */
-    public function getColumns() {
+    public function getColumns()
+    {
         return $this->columns;
     }
 
     /**
      * @return array
      */
-    public function getColumnKeys() {
+    public function getColumnKeys()
+    {
         $this->columnKeys = array();
-        foreach($this->columns as $c) {
+        foreach ($this->columns as $c) {
             $this->columnKeys[] = $c['key'];
         }
         return $this->columnKeys;
@@ -627,8 +646,9 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param $b
      * @return int
      */
-    public function sort($a, $b) {
-        if(is_array($a) && is_array($b)) {
+    public function sort($a, $b)
+    {
+        if (is_array($a) && is_array($b)) {
             return $a['position'] - $b['position'];
         }
         return strcmp($a, $b);
@@ -637,10 +657,11 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
     /**
      * @return void
      */
-    public function classSaved($class) {
+    public function classSaved($class)
+    {
         $className = Tool::getModelClassMapping('\Pimcore\Model\Object\Data\ObjectMetadata');
         $temp = new $className(null);
-        $temp->getResource()->createOrUpdateTable($class);
+        $temp->getDao()->createOrUpdateTable($class);
     }
 
     /**
@@ -658,7 +679,8 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
      * @param array $params
      * @return Element\ElementInterface
      */
-    public function rewriteIds($object, $idMapping, $params = array()) {
+    public function rewriteIds($object, $idMapping, $params = array())
+    {
         $data = $this->getDataFromObjectParam($object, $params);
 
         if (is_array($data)) {
@@ -668,7 +690,7 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
                     $id = $eo->getId();
                     $type = Element\Service::getElementType($eo);
 
-                    if(array_key_exists($type, $idMapping) && array_key_exists($id, $idMapping[$type])) {
+                    if (array_key_exists($type, $idMapping) && array_key_exists($id, $idMapping[$type])) {
                         $newElement = Element\Service::getElementById($type, $idMapping[$type][$id]);
                         $metaObject->setObject($newElement);
                     }
@@ -682,7 +704,8 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
     /**
      * @param Object\ClassDefinition\Data $masterDefinition
      */
-    public function synchronizeWithMasterDefinition(Object\ClassDefinition\Data $masterDefinition) {
+    public function synchronizeWithMasterDefinition(Object\ClassDefinition\Data $masterDefinition)
+    {
         $this->allowedClassId = $masterDefinition->allowedClassId;
         $this->visibleFields = $masterDefinition->visibleFields;
         $this->columns = $masterDefinition->columns;
@@ -691,7 +714,8 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
     /**
      *
      */
-    public function enrichLayoutDefinition($object) {
+    public function enrichLayoutDefinition($object)
+    {
         $classId = $this->allowedClassId;
         $class = Object\ClassDefinition::getById($classId);
 
@@ -713,8 +737,8 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
 
             if (!$fd) {
                 $fieldFound = false;
-                if($localizedfields = $class->getFieldDefinitions()['localizedfields']) {
-                    if($fd = $localizedfields->getFieldDefinition($field)) {
+                if ($localizedfields = $class->getFieldDefinitions()['localizedfields']) {
+                    if ($fd = $localizedfields->getFieldDefinition($field)) {
                         $this->visibleFieldDefinitions[$field]["name"] = $fd->getName();
                         $this->visibleFieldDefinitions[$field]["title"] = $fd->getTitle();
                         $this->visibleFieldDefinitions[$field]["fieldtype"] = $fd->getFieldType();
@@ -732,7 +756,6 @@ class ObjectsMetadata extends Model\Object\ClassDefinition\Data\Objects {
                     $this->visibleFieldDefinitions[$field]["title"] = $t->translate($field);
                     $this->visibleFieldDefinitions[$field]["fieldtype"] = "input";
                 }
-
             } else {
                 $this->visibleFieldDefinitions[$field]["name"] = $fd->getName();
                 $this->visibleFieldDefinitions[$field]["title"] = $fd->getTitle();

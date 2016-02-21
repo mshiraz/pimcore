@@ -2,15 +2,12 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 use Pimcore\File;
@@ -19,9 +16,11 @@ use Pimcore\Model\Document;
 use Pimcore\Model\Element;
 use Pimcore\Model\Redirect;
 
-class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
+class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document
+{
 
-    public function getDataByIdAction() {
+    public function getDataByIdAction()
+    {
 
         // check for lock
         if (Element\Editlock::isLocked($this->getParam("id"), "document")) {
@@ -32,6 +31,7 @@ class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
         Element\Editlock::lock($this->getParam("id"), "document");
 
         $page = Document\Page::getById($this->getParam("id"));
+        $page = clone $page;
         $page = $this->getLatestVersion($page);
 
         $page->setVersions(array_splice($page->getVersions(), 0, 1));
@@ -41,7 +41,7 @@ class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
         $page->setLocked($page->isLocked());
         $page->setParent(null);
 
-        if($page->getContentMasterDocument()) {
+        if ($page->getContentMasterDocument()) {
             $page->contentMasterDocumentPath = $page->getContentMasterDocument()->getRealFullPath();
         }
 
@@ -54,7 +54,7 @@ class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
         $page->setElements(null);
         $page->childs = null;
 
-        // cleanup properties
+        $this->addTranslationsData($page);
         $this->minimizeProperties($page);
 
         if ($page->isAllowed("view")) {
@@ -64,8 +64,8 @@ class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
         $this->_helper->json(false);
     }
 
-    public function saveAction() {
-
+    public function saveAction()
+    {
         if ($this->getParam("id")) {
             $page = Document\Page::getById($this->getParam("id"));
 
@@ -80,13 +80,13 @@ class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
             }
 
             $settings = array();
-            if($this->getParam("settings")) {
+            if ($this->getParam("settings")) {
                 $settings = \Zend_Json::decode($this->getParam("settings"));
             }
 
             // check for redirects
-            if($this->getUser()->isAllowed("redirects") && $this->getParam("settings")) {
-                if(is_array($settings)) {
+            if ($this->getUser()->isAllowed("redirects") && $this->getParam("settings")) {
+                if (is_array($settings)) {
                     $redirectList = new Redirect\Listing();
                     $redirectList->setCondition("target = ?", $page->getId());
                     $existingRedirects = $redirectList->load();
@@ -95,11 +95,11 @@ class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
                         $existingRedirectIds[$existingRedirect->getId()] = $existingRedirect->getId();
                     }
 
-                    for($i=1;$i<100;$i++) {
-                        if(array_key_exists("redirect_url_".$i, $settings)) {
+                    for ($i=1;$i<100;$i++) {
+                        if (array_key_exists("redirect_url_".$i, $settings)) {
 
                             // check for existing
-                            if($settings["redirect_id_".$i]) {
+                            if ($settings["redirect_id_".$i]) {
                                 $redirect = Redirect::getById($settings["redirect_id_".$i]);
                                 unset($existingRedirectIds[$redirect->getId()]);
                             } else {
@@ -123,10 +123,10 @@ class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
             }
 
             // check if settings exist, before saving meta data
-            if($this->getParam("settings") && is_array($settings)) {
+            if ($this->getParam("settings") && is_array($settings)) {
                 $metaData = array();
-                for($i=1; $i<30; $i++) {
-                    if(array_key_exists("metadata_idName_" . $i, $settings)) {
+                for ($i=1; $i<30; $i++) {
+                    if (array_key_exists("metadata_idName_" . $i, $settings)) {
                         $metaData[] = array(
                             "idName" => $settings["metadata_idName_" . $i],
                             "idValue" => $settings["metadata_idValue_" . $i],
@@ -143,45 +143,34 @@ class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
                 $this->setValuesToDocument($page);
 
 
-                try{
+                try {
                     $page->save();
                     $this->saveToSession($page);
                     $this->_helper->json(array("success" => true));
                 } catch (\Exception $e) {
                     \Logger::err($e);
-                    $this->_helper->json(array("success" => false,"message"=>$e->getMessage()));
+                    $this->_helper->json(array("success" => false, "message"=>$e->getMessage()));
                 }
-
-            }
-            else {
+            } else {
                 if ($page->isAllowed("save")) {
                     $this->setValuesToDocument($page);
 
-                    try{
+                    try {
                         $page->saveVersion();
                         $this->saveToSession($page);
                         $this->_helper->json(array("success" => true));
                     } catch (\Exception $e) {
                         \Logger::err($e);
-                        $this->_helper->json(array("success" => false,"message"=>$e->getMessage()));
+                        $this->_helper->json(array("success" => false, "message"=>$e->getMessage()));
                     }
-
                 }
             }
         }
         $this->_helper->json(false);
     }
 
-    public function mobilePreviewAction() {
-
-        $page = Document::getById($this->getParam("id"));
-
-        if($page instanceof Document\Page) {
-            $this->view->previewUrl = $page->getFullPath() . "?pimcore_preview=true&time=" . time();
-        }
-    }
-
-    public function getListAction() {
+    public function getListAction()
+    {
         $list = new Document\Listing();
         $list->setCondition("type = ?", array("page"));
         $data = $list->loadIdPathList();
@@ -192,14 +181,15 @@ class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
         ));
     }
 
-    public function uploadScreenshotAction() {
-        if($this->getParam("data") && $this->getParam("id")) {
-            $data = substr($this->getParam("data"),strpos($this->getParam("data"), ",")+1);
+    public function uploadScreenshotAction()
+    {
+        if ($this->getParam("data") && $this->getParam("id")) {
+            $data = substr($this->getParam("data"), strpos($this->getParam("data"), ",")+1);
             $data = base64_decode($data);
 
             $file = PIMCORE_TEMPORARY_DIRECTORY . "/document-page-previews/document-page-screenshot-" . $this->getParam("id") . ".jpg";
             $dir = dirname($file);
-            if(!is_dir($dir)) {
+            if (!is_dir($dir)) {
                 File::mkdir($dir);
             }
 
@@ -209,19 +199,18 @@ class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
         $this->_helper->json(array("success" => true));
     }
 
-    public function generateScreenshotAction() {
-
+    public function generateScreenshotAction()
+    {
         $success = false;
-        if($this->getParam("id")) {
-
+        if ($this->getParam("id")) {
             $doc = Document::getById($this->getParam("id"));
-            $url = Tool::getHostUrl() . $doc->getRealFullPath() . "?pimcore_preview=true";
+            $url = Tool::getHostUrl() . $doc->getRealFullPath();
 
             $config = \Pimcore\Config::getSystemConfig();
             if ($config->general->http_auth) {
                 $username = $config->general->http_auth->username;
                 $password = $config->general->http_auth->password;
-                if($username && $password) {
+                if ($username && $password) {
                     $url = str_replace("://", "://" . $username .":". $password . "@", $url);
                 }
             }
@@ -230,12 +219,12 @@ class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
             $file = PIMCORE_TEMPORARY_DIRECTORY . "/document-page-previews/document-page-screenshot-" . $doc->getId() . ".jpg";
 
             $dir = dirname($file);
-            if(!is_dir($dir)) {
+            if (!is_dir($dir)) {
                 File::mkdir($dir);
             }
 
             try {
-                if(\Pimcore\Image\HtmlToImage::convert($url, $tmpFile)) {
+                if (\Pimcore\Image\HtmlToImage::convert($url, $tmpFile)) {
                     $im = \Pimcore\Image::getInstance();
                     $im->load($tmpFile);
                     $im->scaleByWidth(400);
@@ -253,7 +242,8 @@ class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
         $this->_helper->json(array("success" => $success));
     }
 
-    public function checkPrettyUrlAction() {
+    public function checkPrettyUrlAction()
+    {
         $docId = $this->getParam("id");
         $path = trim($this->getParam("path"));
         $path = rtrim($path, "/");
@@ -261,15 +251,15 @@ class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
         $success = true;
 
         // must start with /
-        if(strpos($path, "/") !== 0) {
+        if (strpos($path, "/") !== 0) {
             $success = false;
         }
 
-        if(strlen($path) < 2) {
+        if (strlen($path) < 2) {
             $success = false;
         }
 
-        if(!Tool::isValidPath($path)) {
+        if (!Tool::isValidPath($path)) {
             $success = false;
         }
 
@@ -279,7 +269,7 @@ class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
             $path, $path, $docId
         ));
 
-        if($list->getTotalCount() > 0) {
+        if ($list->getTotalCount() > 0) {
             $success = false;
         }
 
@@ -288,20 +278,21 @@ class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
         ));
     }
 
-    public function clearEditableDataAction() {
+    public function clearEditableDataAction()
+    {
         $personaId = $this->getParam("persona");
         $docId = $this->getParam("id");
 
         $doc = Document::getById($docId);
 
-        foreach($doc->getElements() as $element) {
-            if($personaId && $doc instanceof Document\Page) {
-                if(preg_match("/^" . preg_quote($doc->getPersonaElementPrefix($personaId), "/") . "/", $element->getName())) {
+        foreach ($doc->getElements() as $element) {
+            if ($personaId && $doc instanceof Document\Page) {
+                if (preg_match("/^" . preg_quote($doc->getPersonaElementPrefix($personaId), "/") . "/", $element->getName())) {
                     $doc->removeElement($element->getName());
                 }
             } else {
                 // remove all but persona data
-                if(!preg_match("/^persona_\-/", $element->getName())) {
+                if (!preg_match("/^persona_\-/", $element->getName())) {
                     $doc->removeElement($element->getName());
                 }
             }
@@ -314,12 +305,11 @@ class Admin_PageController extends \Pimcore\Controller\Action\Admin\Document {
         ));
     }
 
-    protected function setValuesToDocument(Document $page) {
-
+    protected function setValuesToDocument(Document $page)
+    {
         $this->addSettingsToDocument($page);
         $this->addDataToDocument($page);
         $this->addPropertiesToDocument($page);
         $this->addSchedulerToDocument($page);
     }
-
 }

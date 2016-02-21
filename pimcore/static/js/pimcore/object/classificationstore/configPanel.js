@@ -1,15 +1,12 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2015 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 pimcore.registerNS("pimcore.object.classificationstore.configPanel");
@@ -35,10 +32,10 @@ pimcore.object.classificationstore.configPanel = Class.create({
                 closable: true,
                 deferredRender: false,
                 forceLayout: true,
-                activeTab: 0,               // yes, this is really needed
+                activeTab: 1,
                 id: "pimcore_object_classificationstore_configpanel",
                 iconCls: "pimcore_icon_classificationstore",
-                items: [this.getGroupsPanel(), this.getPropertiesPanel()],
+                items: [this.getCollectionsPanel(), this.getGroupsPanel(), this.getPropertiesPanel()],
                 buttons: panelButtons
             });
 
@@ -56,15 +53,17 @@ pimcore.object.classificationstore.configPanel = Class.create({
         return this.panel;
     },
 
+    getCollectionsPanel: function () {
+        var panel = new pimcore.object.classificationstore.collectionsPanel();
+        return panel.getPanel();
+    },
 
     getGroupsPanel: function () {
         var groupsPanel = new pimcore.object.classificationstore.groupsPanel();
         return groupsPanel.getPanel();
     },
 
-
     getPropertiesPanel: function () {
-        // TODO
         var propertiesPanel = new pimcore.object.classificationstore.propertiespanel();
         return propertiesPanel.getPanel();
     }

@@ -80,7 +80,7 @@
 
     .buttons a {
         display: inline-block;
-        background: #289fdc;
+        background: #0078be;
         color:#fff;
         padding: 5px 10px;
         margin-right: 10px;
@@ -102,7 +102,7 @@
 
 <div id="site">
     <div id="logo">
-        <a href="http://www.pimcore.org/"><img src="/pimcore/static/img/logo-gray.png" /></a>
+        <a href="http://www.pimcore.org/"><img src="/pimcore/static6/img/logo.svg" /></a>
         <hr />
         <div class="claim">
             The premier Open-Source

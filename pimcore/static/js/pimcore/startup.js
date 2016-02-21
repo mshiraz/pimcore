@@ -1,15 +1,12 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 
@@ -77,8 +74,11 @@ Ext.onReady(function () {
     Ext.Ajax.disableCaching = true;
     Ext.Ajax.timeout = 900000;
     Ext.Ajax.defaultHeaders = {
-        'X-pimcore-csrf-token': pimcore.settings["csrfToken"]
+        'X-pimcore-csrf-token': pimcore.settings["csrfToken"],
+        'X-pimcore-extjs-version-major': 3,
+        'X-pimcore-extjs-version-minor': 4
     };
+
     Ext.Ajax.on('requestexception', function (conn, response, options) {
         console.log("xhr request failed");
 
@@ -103,7 +103,9 @@ Ext.onReady(function () {
             var errorMessage = "";
 
             try {
-                errorMessage = "Status: " + response.status + " | " + response.statusText + "\n";
+                var date = new Date();
+                errorMessage += "Date: " + date.toISOString() + "\n";
+                errorMessage += "Status: " + response.status + " | " + response.statusText + "\n";
                 errorMessage += "URL: " + options.url + "\n";
                 if(options["params"]) {
                     errorMessage += "Params:\n";
@@ -116,14 +118,15 @@ Ext.onReady(function () {
                 }
                 errorMessage += "Message: \n" + response.responseText;
             } catch (e) {
-                errorMessage = response.responseText;
+                errorMessage += "\n\n";
+                errorMessage += response.responseText;
             }
             pimcore.helpers.showNotification(t("error"), t("error_general"), "error", errorMessage);
         }
 
         xhrActive--;
         if (xhrActive < 1) {
-            Ext.get("pimcore_logo").dom.innerHTML = '<img class="logo" src="/pimcore/static/img/logo.png"/>';
+            Ext.get("pimcore_logo").dom.innerHTML = '<img class="logo" src="/pimcore/static6/img/logo-white.svg"/>';
         }
     });
     Ext.Ajax.on("beforerequest", function () {
@@ -135,7 +138,7 @@ Ext.onReady(function () {
     Ext.Ajax.on("requestcomplete", function (conn, response, options) {
         xhrActive--;
         if (xhrActive < 1) {
-            Ext.get("pimcore_logo").dom.innerHTML = '<img class="logo" src="/pimcore/static/img/logo.png"/>';
+            Ext.get("pimcore_logo").dom.innerHTML = '<img class="logo" src="/pimcore/static6/img/logo-white.svg"/>';
         }
 
         // redirect to login-page if session is expired
@@ -240,6 +243,23 @@ Ext.onReady(function () {
     storeo.load();
 
     pimcore.globalmanager.add("object_types_store", storeo);
+
+
+    // classes
+    var proxyoc = new Ext.data.HttpProxy({
+        url:'/admin/class/get-tree?createAllowed=true'
+    });
+
+    var storeoc = new Ext.data.Store({
+        id:'object_types',
+        restful:false,
+        proxy:proxyoc,
+        reader:readero
+    });
+    storeoc.load();
+
+    pimcore.globalmanager.add("object_types_store_create", storeoc);
+
 
     // current user
     pimcore.globalmanager.add("user", new pimcore.user(pimcore.currentuser));

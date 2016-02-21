@@ -2,15 +2,12 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Tool;
@@ -308,7 +305,6 @@ class RestClient
                 $value = $tmp;
             }
             $wsData->$key = $value;
-
         }
         return $wsData;
     }
@@ -366,7 +362,7 @@ class RestClient
 
         $bodyObj = json_decode($body);
 
-        if($bodyObj === NULL) {
+        if ($bodyObj === null) {
             throw new \Exception("No valid JSON data: '" . $body . "'");
         }
 
@@ -589,7 +585,7 @@ class RestClient
             $object = new Object\Folder();
             $wsDocument->reverseMap($object);
             return $object;
-        } else if ($wsDocument->type == "object" || $wsDocument->type == "variant") {
+        } elseif ($wsDocument->type == "object" || $wsDocument->type == "variant") {
             $classname = "\\Pimcore\\Model\\Object\\" . ucfirst($wsDocument->className);
             // check for a mapped class
             $classname = Tool::getModelClassMapping($classname);
@@ -612,9 +608,7 @@ class RestClient
             } else {
                 throw new Exception("Unable to deocode object, class [" . $classname . "] does not exist");
             }
-
         }
-
     }
 
     /**
@@ -1099,10 +1093,10 @@ class RestClient
      * @param array $params
      * @return string
      */
-    public function buildEndpointUrl($customUrlPath,$params = array())
+    public function buildEndpointUrl($customUrlPath, $params = array())
     {
         $url = $this->getBaseUrl() . $customUrlPath . "?apikey=" . $this->getApiKey();
-        if(!empty($params)){
+        if (!empty($params)) {
             $url .= '&' . http_build_query($params);
         }
         return $url;

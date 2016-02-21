@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object|Class
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object\ClassDefinition\Data;
 
 use Pimcore\Model;
 
-class Countrymultiselect extends Model\Object\ClassDefinition\Data\Multiselect {
+class Countrymultiselect extends Model\Object\ClassDefinition\Data\Multiselect
+{
 
     /**
      * Static type of this element
@@ -34,7 +32,8 @@ class Countrymultiselect extends Model\Object\ClassDefinition\Data\Multiselect {
     public $restrictTo = null;
 
 
-    public function __construct() {
+    public function __construct()
+    {
         $countries = \Zend_Locale::getTranslationList('territory');
         asort($countries);
         $options = array();
@@ -56,6 +55,13 @@ class Countrymultiselect extends Model\Object\ClassDefinition\Data\Multiselect {
      */
     public function setRestrictTo($restrictTo)
     {
+        /**
+         * @extjs6
+         */
+        if (is_array($restrictTo)) {
+            $restrictTo = implode(",", $restrictTo);
+        }
+
         $this->restrictTo = $restrictTo;
     }
 
@@ -70,7 +76,8 @@ class Countrymultiselect extends Model\Object\ClassDefinition\Data\Multiselect {
     /**
      * @return array
      */
-    public function getOptions() {
+    public function getOptions()
+    {
         return $this->options;
     }
 }

@@ -2,56 +2,54 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Metadata
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Metadata\Predefined;
 
-class Listing extends \Pimcore\Model\Listing\AbstractListing {
+class Listing extends \Pimcore\Model\Listing\JsonListing
+{
 
     /**
      * Contains the results of the list. They are all an instance of Metadata\Predefined
      *
      * @var array
      */
-    public $properties = array();
-
-    /**
-     * Tests if the given key is an valid order key to sort the results
-     *
-     * @return boolean
-     */
-    public function isValidOrderKey($key) {
-        return true;
-    }
+    public $definitions = array();
 
     /**
      * @return array
      */
-    public function getDefinitions() {
+    public function getDefinitions()
+    {
         return $this->definitions;
     }
 
     /**
-     * @param array $properties
-     * @return void
+     * @param $definitions
+     * @return $this
      */
-    public function setDefinitions($definitions) {
+    public function setDefinitions($definitions)
+    {
         $this->definitions = $definitions;
         return $this;
     }
 
-    public static function getByTargetType($type, $subTypes) {
+    /**
+     * @param $type
+     * @param $subTypes
+     * @return Listing
+     * @throws \Exception
+     */
+    public static function getByTargetType($type, $subTypes)
+    {
         if ($type != "asset") {
             throw new \Exception("other types than assets are currently not supported");
         }
@@ -63,14 +61,16 @@ class Listing extends \Pimcore\Model\Listing\AbstractListing {
         }
 
         if (is_array($subTypes)) {
-            $types = array();
-            $db = \Pimcore\Resource::get();
-            foreach ($subTypes as $item) {
-                $types[] = $db->quote($item);
-            }
+            $list->setFilter(function ($row) use ($subTypes) {
+                if (empty($row["targetSubtype"])) {
+                    return true;
+                }
 
-            $condition = "(ISNULL(targetSubtype) OR targetSubtype = '' OR targetSubtype IN (" . implode(',',$types) . "))" ;
-            $list->setCondition($condition);
+                if (in_array($row["targetSubtype"], $subTypes)) {
+                    return true;
+                }
+                return false;
+            });
         }
         $list = $list->load();
         return $list;
@@ -81,22 +81,28 @@ class Listing extends \Pimcore\Model\Listing\AbstractListing {
      * @param $language
      * @return \Pimcore\Model\Metadata\Predefined
      */
-    public static function getByKeyAndLanguage($key, $language) {
-
-        $db = \Pimcore\Resource::get();
+    public static function getByKeyAndLanguage($key, $language, $targetSubtype = null)
+    {
         $list = new self();
-        $condition = "name = " . $db->quote($key);
-        if ($language) {
-            $condition .= " AND language = " . $db->quote($language);
-        } else {
-            $condition .= " AND (language = '' OR LANGUAGE IS NULL)";
-        }
-        $list->setCondition($condition);
+
+        $list->setFilter(function ($row) use ($key, $language, $targetSubtype) {
+            if ($row["name"] != $key) {
+                return false;
+            }
+
+            if ($language && $language != $row["language"]) {
+                return false;
+            }
+
+            if ($targetSubtype && $targetSubtype != $row["targetSubtype"]) {
+                return false;
+            }
+        });
+
         $list = $list->load();
         if ($list) {
             return $list[0];
         }
         return null;
     }
-
 }

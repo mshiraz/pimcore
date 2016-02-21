@@ -26,7 +26,7 @@ $defaultMd5s = [
 if(in_array($currentFileMd5, $defaultMd5s)) {
     // this instance is using a default .htaccess, so we can update it
     $oldData = file_get_contents($htaccessFile);
-    $data = \Pimcore\Tool::getHttpData("https://github.com/pimcore/pimcore/blob/4286080f649c79c97357e0c63cbb759224b20497/.htaccess");
+    $data = \Pimcore\Tool::getHttpData("https://raw.githubusercontent.com/pimcore/pimcore/4286080f649c79c97357e0c63cbb759224b20497/.htaccess");
     if(strpos($data, "RewriteEngine On")) { // check for a certain string in the content, that has to be in the file
         file_put_contents($htaccessFile, $data);
 

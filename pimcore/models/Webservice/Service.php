@@ -2,22 +2,19 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Webservice
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Webservice;
 
-use Pimcore\Tool; 
+use Pimcore\Tool;
 use Pimcore\Model\Document;
 use Pimcore\Model\Webservice;
 use Pimcore\Model\User;
@@ -33,7 +30,7 @@ class Service
      */
     public function getUser()
     {
-        if($user = Tool\Admin::getCurrentUser()) {
+        if ($user = Tool\Admin::getCurrentUser()) {
             return $user;
         }
 
@@ -220,19 +217,19 @@ class Service
      */
     public function unpublishDocument($id)
     {
-    	try {
-    		$doc = Document::getById($id);
-    		if ($doc instanceof Document) {
-    			$doc->setPublished(false);
-    			$doc->save();
-    			return true;
-    		}
+        try {
+            $doc = Document::getById($id);
+            if ($doc instanceof Document) {
+                $doc->setPublished(false);
+                $doc->save();
+                return true;
+            }
 
-    		throw new \Exception("Document with given ID (" . $id . ") does not exist.");
-    	} catch (\Exception $e) {
-    		\Logger::error($e);
-    		throw $e;
-    	}
+            throw new \Exception("Document with given ID (" . $id . ") does not exist.");
+        } catch (\Exception $e) {
+            \Logger::error($e);
+            throw $e;
+        }
     }
 
     /**
@@ -406,7 +403,6 @@ class Service
      */
     public function updateAssetFolder($wsDocument)
     {
-
         try {
             if ($wsDocument instanceof Webservice\Data\Asset\Folder\In) {
                 return $this->updateAsset($wsDocument);
@@ -580,10 +576,8 @@ class Service
      */
     public function createAssetFile($wsDocument)
     {
-
         try {
             if ($wsDocument instanceof Webservice\Data\Asset\File\In) {
-
                 $type = $wsDocument->type;
                 if (!empty($type)) {
                     $type = "\\Pimcore\\Model\\Asset\\" . ucfirst($type);
@@ -712,12 +706,24 @@ class Service
         try {
             $params = array();
 
-            if (!empty($condition)) $params["condition"] = $condition;
-            if (!empty($order)) $params["order"] = $order;
-            if (!empty($orderKey)) $params["orderKey"] = $orderKey;
-            if (!empty($offset)) $params["offset"] = $offset;
-            if (!empty($limit)) $params["limit"] = $limit;
-            if (!empty($groupBy)) $params["groupBy"] = $groupBy;
+            if (!empty($condition)) {
+                $params["condition"] = $condition;
+            }
+            if (!empty($order)) {
+                $params["order"] = $order;
+            }
+            if (!empty($orderKey)) {
+                $params["orderKey"] = $orderKey;
+            }
+            if (!empty($offset)) {
+                $params["offset"] = $offset;
+            }
+            if (!empty($limit)) {
+                $params["limit"] = $limit;
+            }
+            if (!empty($groupBy)) {
+                $params["groupBy"] = $groupBy;
+            }
 
 
             $list = Asset::getList($params);
@@ -744,7 +750,6 @@ class Service
      */
     public function deleteAsset($id)
     {
-
         try {
             $asset = Asset::getById($id);
             if ($asset instanceof Asset) {
@@ -817,18 +822,29 @@ class Service
         try {
             $params = array("objectTypes" => array(Object\AbstractObject::OBJECT_TYPE_FOLDER, Object\AbstractObject::OBJECT_TYPE_OBJECT, Object\AbstractObject::OBJECT_TYPE_VARIANT));
 
-            if (!empty($condition)) $params["condition"] = $condition;
-            if (!empty($order)) $params["order"] = $order;
-            if (!empty($orderKey)) $params["orderKey"] = $orderKey;
-            if (!empty($offset)) $params["offset"] = $offset;
-            if (!empty($limit)) $params["limit"] = $limit;
-            if (!empty($groupBy)) $params["groupBy"] = $groupBy;
+            if (!empty($condition)) {
+                $params["condition"] = $condition;
+            }
+            if (!empty($order)) {
+                $params["order"] = $order;
+            }
+            if (!empty($orderKey)) {
+                $params["orderKey"] = $orderKey;
+            }
+            if (!empty($offset)) {
+                $params["offset"] = $offset;
+            }
+            if (!empty($limit)) {
+                $params["limit"] = $limit;
+            }
+            if (!empty($groupBy)) {
+                $params["groupBy"] = $groupBy;
+            }
 
             $listClassName = "\\Pimcore\\Model\\Object";
-            if(!empty($objectClass)) {
-
+            if (!empty($objectClass)) {
                 $listClassName = "\\Pimcore\\Model\\Object\\" . ucfirst($objectClass);
-                if(!Tool::classExists($listClassName)) {
+                if (!Tool::classExists($listClassName)) {
                     $listClassName = "\\Pimcore\\Model\\Object";
                 }
             }
@@ -861,19 +877,19 @@ class Service
      */
     public function unpublishObject($id)
     {
-    	try {
-    		$object = Object\AbstractObject::getById($id);
-    		if ($object instanceof Object\AbstractObject) {
-    			$object->setPublished(false);
-    			$object->save();
-    			return true;
-    		}
+        try {
+            $object = Object\AbstractObject::getById($id);
+            if ($object instanceof Object\AbstractObject) {
+                $object->setPublished(false);
+                $object->save();
+                return true;
+            }
 
-    		throw new \Exception("Object with given ID (" . $id . ") does not exist.");
-    	} catch (\Exception $e) {
-    		\Logger::error($e);
-    		throw $e;
-    	}
+            throw new \Exception("Object with given ID (" . $id . ") does not exist.");
+        } catch (\Exception $e) {
+            \Logger::error($e);
+            throw $e;
+        }
     }
 
     /**
@@ -904,14 +920,13 @@ class Service
      */
     protected function create($wsDocument, $element)
     {
-
         $wsDocument->reverseMap($element);
         $element->setId(null);
         $element->setCreationDate(time());
         $this->setModificationParams($element, true);
         $key = $element->getKey();
         if (empty($key)) {
-            throw new \Exception ("Cannot create element without key");
+            throw new \Exception("Cannot create element without key");
         }
 
         $element->save();
@@ -927,13 +942,11 @@ class Service
      */
     protected function getSaveCopyName($element, $key, $path)
     {
-
-
         if ($element instanceof Object\AbstractObject) {
             $equal = Object\AbstractObject::getByPath($path . "/" . $key);
-        } else  if ($element instanceof Document) {
+        } elseif ($element instanceof Document) {
             $equal = Document::getByPath($path . "/" . $key);
-        } else if ($element instanceof Asset) {
+        } elseif ($element instanceof Asset) {
             $equal = Asset::getByPath($path . "/" . $key);
         }
 
@@ -942,7 +955,6 @@ class Service
             return $this->getSaveCopyName($element, $key, $path);
         }
         return $key;
-
     }
 
 
@@ -954,8 +966,9 @@ class Service
     {
         $document = Document::getById($wsDocument->id);
 
-        if ($document === NULL)
+        if ($document === null) {
             throw new \Exception("Document with given ID (" . $wsDocument->id . ") does not exist.");
+        }
 
         $this->setModificationParams($document, false);
 
@@ -977,16 +990,16 @@ class Service
     {
         $object = Object\AbstractObject::getById($wsDocument->id);
 
-        if ($object === NULL)
+        if ($object === null) {
             throw new \Exception("Object with given ID (" . $wsDocument->id . ") does not exist.");
+        }
 
         $this->setModificationParams($object, false);
         if ($object instanceof Object\Concrete and $object->getClassName() == $wsDocument->className) {
-
             $wsDocument->reverseMap($object);
             $object->save();
             return true;
-        } else if ($object instanceof Object\Folder and $object->getType() == strtolower($wsDocument->type)) {
+        } elseif ($object instanceof Object\Folder and $object->getType() == strtolower($wsDocument->type)) {
             $wsDocument->reverseMap($object);
             $object->save();
             return true;
@@ -1002,11 +1015,11 @@ class Service
      */
     protected function updateAsset($wsDocument)
     {
-
         $asset = Asset::getById($wsDocument->id);
 
-        if ($asset === NULL)
+        if ($asset === null) {
             throw new \Exception("Asset with given ID (" . $wsDocument->id . ") does not exist.");
+        }
 
         $this->setModificationParams($asset, false);
         if ($asset instanceof Asset and $asset->getType() == strtolower($wsDocument->type)) {
@@ -1016,7 +1029,6 @@ class Service
         } else {
             throw new \Exception("Type mismatch for given asset with ID [" . $wsDocument->id . "] and existing asset with id [" . $asset->getId() . "]");
         }
-
     }
 
     /**
@@ -1083,15 +1095,16 @@ class Service
         }
     }
 
-    public function getTranslations($type,$params){
-        if(in_array($type,array('website','admin'))){
+    public function getTranslations($type, $params)
+    {
+        if (in_array($type, array('website', 'admin'))) {
             $listClass = '\\Pimcore\\Model\\Translation\\' . ucfirst($type) .'\\Listing';
             /**
              * @var $list \Pimcore\Model\Translation\Website\Listing
              */
             $list = new $listClass();
-            if($key = $params['key']){
-                $list->addConditionParam(" `key` LIKE " . \Pimcore\Resource::get()->quote("%" . $key . "%"),'');
+            if ($key = $params['key']) {
+                $list->addConditionParam(" `key` LIKE " . \Pimcore\Db::get()->quote("%" . $key . "%"), '');
             }
 
             $list->addConditionParam(" `creationDate` >= ? ", $params['creationDateFrom']);
@@ -1102,11 +1115,11 @@ class Service
             $data = $list->load();
 
             $result = array();
-            foreach($data as $obj){
+            foreach ($data as $obj) {
                 $result[] = $obj->getForWebserviceExport();
             }
             return $result;
-        }else{
+        } else {
             throw new \Exception("Parameter 'type' has to be 'website' or 'admin'");
         }
     }

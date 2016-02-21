@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Document
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Document;
 
 use Pimcore\Model;
 
-class DocType extends Model\AbstractModel {
+class DocType extends Model\AbstractModel
+{
 
     /**
      * ID of the document-type
@@ -89,13 +87,13 @@ class DocType extends Model\AbstractModel {
      * @param integer $id
      * @return DocType
      */
-    public static function getById($id) {
-
+    public static function getById($id)
+    {
         $docType = new self();
         $docType->setId(intval($id));
 
         try {
-            $docType->getResource()->getById();
+            $docType->getDao()->getById();
         } catch (\Exception $e) {
             return null;
         }
@@ -108,7 +106,8 @@ class DocType extends Model\AbstractModel {
      *
      * @return DocType
      */
-    public static function create() {
+    public static function create()
+    {
         $type = new self();
         $type->save();
 
@@ -118,35 +117,40 @@ class DocType extends Model\AbstractModel {
     /**
      * @return string
      */
-    public function getAction() {
+    public function getAction()
+    {
         return $this->action;
     }
 
     /**
      * @return string
      */
-    public function getController() {
+    public function getController()
+    {
         return $this->controller;
     }
 
     /**
      * @return integer
      */
-    public function getId() {
+    public function getId()
+    {
         return $this->id;
     }
 
     /**
      * @return string
      */
-    public function getName() {
+    public function getName()
+    {
         return $this->name;
     }
 
     /**
      * @return string
      */
-    public function getTemplate() {
+    public function getTemplate()
+    {
         return $this->template;
     }
 
@@ -154,7 +158,8 @@ class DocType extends Model\AbstractModel {
      * @param string $action
      * @return void
      */
-    public function setAction($action) {
+    public function setAction($action)
+    {
         $this->action = $action;
         return $this;
     }
@@ -163,7 +168,8 @@ class DocType extends Model\AbstractModel {
      * @param string $controller
      * @return void
      */
-    public function setController($controller) {
+    public function setController($controller)
+    {
         $this->controller = $controller;
         return $this;
     }
@@ -172,7 +178,8 @@ class DocType extends Model\AbstractModel {
      * @param integer $id
      * @return void
      */
-    public function setId($id) {
+    public function setId($id)
+    {
         $this->id = (int) $id;
         return $this;
     }
@@ -181,7 +188,8 @@ class DocType extends Model\AbstractModel {
      * @param string $name
      * @return void
      */
-    public function setName($name) {
+    public function setName($name)
+    {
         $this->name = $name;
         return $this;
     }
@@ -190,7 +198,8 @@ class DocType extends Model\AbstractModel {
      * @param string $template
      * @return void
      */
-    public function setTemplate($template) {
+    public function setTemplate($template)
+    {
         $this->template = $template;
         return $this;
     }
@@ -198,7 +207,8 @@ class DocType extends Model\AbstractModel {
     /**
      * @return string
      */
-    public function getType() {
+    public function getType()
+    {
         return $this->type;
     }
 
@@ -206,7 +216,8 @@ class DocType extends Model\AbstractModel {
      * @param string $type
      * @return void
      */
-    public function setType($type) {
+    public function setType($type)
+    {
         $this->type = $type;
         return $this;
     }
@@ -216,7 +227,8 @@ class DocType extends Model\AbstractModel {
      * @param integer $priority
      * @return void
      */
-    public function setPriority($priority) {
+    public function setPriority($priority)
+    {
         $this->priority = (int) $priority;
         return $this;
     }
@@ -224,7 +236,8 @@ class DocType extends Model\AbstractModel {
     /**
      * @return integer
      */
-    public function getPriority() {
+    public function getPriority()
+    {
         return $this->priority;
     }
 

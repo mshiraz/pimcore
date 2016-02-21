@@ -2,22 +2,20 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore;
 
-use Pimcore\Resource; 
+use Pimcore\Db;
 
-class Backup {
+class Backup
+{
 
     /**
      * @var array
@@ -52,28 +50,32 @@ class Backup {
     /**
      * @param $backupFile
      */
-    public function __construct ($backupFile) {
+    public function __construct($backupFile)
+    {
         $this->backupFile = $backupFile;
     }
 
     /**
      * @param $options
      */
-    public function setOptions($options){
+    public function setOptions($options)
+    {
         $this->options = $options;
     }
 
     /**
      * @return array
      */
-    public function getOptions(){
+    public function getOptions()
+    {
         return $this->options;
     }
 
     /**
      * @return mixed
      */
-    public function getFilesToBackup () {
+    public function getFilesToBackup()
+    {
         return $this->filesToBackup;
     }
 
@@ -81,7 +83,8 @@ class Backup {
      * @param $files
      * @return $this
      */
-    protected function setFilesToBackup ($files) {
+    protected function setFilesToBackup($files)
+    {
         $this->filesToBackup = $files;
         return $this;
     }
@@ -89,7 +92,8 @@ class Backup {
     /**
      * @return mixed
      */
-    public function getFileAmount () {
+    public function getFileAmount()
+    {
         return $this->fileAmount;
     }
 
@@ -97,7 +101,8 @@ class Backup {
      * @param $fileAmount
      * @return $this
      */
-    protected function setFileAmount ($fileAmount) {
+    protected function setFileAmount($fileAmount)
+    {
         $this->fileAmount = $fileAmount;
         return $this;
     }
@@ -105,14 +110,16 @@ class Backup {
     /**
      * @return mixed
      */
-    public function getBackupFile () {
+    public function getBackupFile()
+    {
         return $this->backupFile;
     }
 
     /**
      * @return array
      */
-    public function getAdditionalExcludeFiles () {
+    public function getAdditionalExcludeFiles()
+    {
         return $this->additionalExcludePatterns;
     }
 
@@ -120,7 +127,8 @@ class Backup {
      * @param $additionalExcludePatterns
      * @return $this
      */
-    public function setAdditionalExcludePatterns ($additionalExcludePatterns) {
+    public function setAdditionalExcludePatterns($additionalExcludePatterns)
+    {
         $this->additionalExcludePatterns = $additionalExcludePatterns;
         return $this;
     }
@@ -128,9 +136,9 @@ class Backup {
     /**
      * @return string
      */
-    protected function getFormattedFilesize () {
-
-        if($this->zipArchive) {
+    protected function getFormattedFilesize()
+    {
+        if ($this->zipArchive) {
             $this->zipArchive->close();
             $this->zipArchive = null;
         }
@@ -141,10 +149,11 @@ class Backup {
     /**
      * @throws \Exception
      */
-    protected function getArchive () {
+    protected function getArchive()
+    {
 
         // if already initialized, just return the handler
-        if($this->zipArchive) {
+        if ($this->zipArchive) {
             return $this->zipArchive;
         }
 
@@ -155,7 +164,7 @@ class Backup {
             $zipState = $this->zipArchive->open($this->getBackupFile());
         }
 
-        if ($zipState === TRUE) {
+        if ($zipState === true) {
             return $this->zipArchive;
         } else {
             throw new \Exception("unable to create zip archive");
@@ -166,7 +175,8 @@ class Backup {
      * @param array $options
      * @return array
      */
-    public function init ($options = array()) {
+    public function init($options = array())
+    {
         $this->setOptions($options);
 
         // create backup directory if not exists
@@ -190,7 +200,7 @@ class Backup {
         $steps = array();
 
         // get available tables
-        $db = Resource::get();
+        $db = Db::get();
         $tables = $this->getTables();
 
 
@@ -198,7 +208,6 @@ class Backup {
 
         // tables
         foreach ($tables as $table) {
-
             $name = current($table);
             $type = next($table);
 
@@ -212,7 +221,6 @@ class Backup {
 
         // views
         foreach ($tables as $table) {
-
             reset($table);
             $name = current($table);
             $type = next($table);
@@ -228,7 +236,7 @@ class Backup {
 
         $steps[] = array("mysql-complete", null);
 
-        if(!$options['only-mysql-related-tasks']){
+        if (!$options['only-mysql-related-tasks']) {
             // check files
             $currentFileCount = 0;
             $currentFileSize = 0;
@@ -245,7 +253,6 @@ class Backup {
                 }
 
                 if ($currentFileCount > 300 || $currentFileSize > 20000000) {
-
                     $currentFileCount = 0;
                     $currentFileSize = 0;
                     if (!empty($currentStepFiles)) {
@@ -254,7 +261,7 @@ class Backup {
                     $currentStepFiles = array();
                 }
 
-                if(file_exists($fileIn)) {
+                if (file_exists($fileIn)) {
                     $currentFileSize += filesize($fileIn);
                     $currentFileCount++;
                     $currentStepFiles[] = $fileIn;
@@ -293,8 +300,8 @@ class Backup {
      * @return array
      * @throws \Exception
      */
-    public function fileStep ($step) {
-
+    public function fileStep($step)
+    {
         $filesContainer = $this->getFilesToBackup();
         $files = $filesContainer[$step];
 
@@ -307,11 +314,11 @@ class Backup {
             PIMCORE_FRONTEND_MODULE . "/var/webdav/.*"
         );
 
-        if(!empty($this->additionalExcludePatterns) && is_array($this->additionalExcludePatterns)) {
+        if (!empty($this->additionalExcludePatterns) && is_array($this->additionalExcludePatterns)) {
             $excludePatterns = array_merge($excludePatterns, $this->additionalExcludePatterns);
         }
 
-        foreach($excludePatterns as &$excludePattern) {
+        foreach ($excludePatterns as &$excludePattern) {
             $excludePattern = "@" . $excludePattern . "@";
         }
 
@@ -320,7 +327,6 @@ class Backup {
         foreach ($files as $file) {
             if ($file) {
                 if (file_exists($file) && is_readable($file)) {
-
                     $exclude = false;
                     $relPath = str_replace(PIMCORE_DOCUMENT_ROOT, "", $file);
                     $relPath = str_replace(DIRECTORY_SEPARATOR, "/", $relPath); // windows compatibility
@@ -332,13 +338,11 @@ class Backup {
                     }
 
                     if (!$exclude && is_file($file)) {
-                        $this->getArchive()->addFile($file, ltrim($relPath,"/"));
-                    }
-                    else {
+                        $this->getArchive()->addFile($file, ltrim($relPath, "/"));
+                    } else {
                         \Logger::info("Backup: Excluded: " . $file);
                     }
-                }
-                else {
+                } else {
                     \Logger::err("Backup: Can't read file: " . $file);
                 }
             }
@@ -356,14 +360,15 @@ class Backup {
     /**
      * @return array
      */
-    protected function getTables(){
-        $db = Resource::get();
+    protected function getTables()
+    {
+        $db = Db::get();
 
-        if($mysqlTables = $this->options['mysql-tables']){
-            $specificTables = explode(',',$mysqlTables);
+        if ($mysqlTables = $this->options['mysql-tables']) {
+            $specificTables = explode(',', $mysqlTables);
             $databaseName = (string) \Pimcore\Config::getSystemConfig()->database->params->dbname;
-            $query = "SHOW FULL TABLES where `Tables_in_". $databaseName . "` IN(" . implode(',',wrapArrayElements($specificTables)) . ')';
-        }else{
+            $query = "SHOW FULL TABLES where `Tables_in_". $databaseName . "` IN(" . implode(',', wrapArrayElements($specificTables)) . ')';
+        } else {
             $query = "SHOW FULL TABLES";
         }
 
@@ -375,8 +380,9 @@ class Backup {
      * @param array $exclude
      * @return array
      */
-    public function mysqlTables ($exclude = []) {
-        $db = Resource::get();
+    public function mysqlTables($exclude = [])
+    {
+        $db = Db::get();
 
         $tables = $this->getTables();
 
@@ -384,11 +390,10 @@ class Backup {
 
         // tables
         foreach ($tables as $table) {
-
             $name = current($table);
             $type = next($table);
 
-            if(in_array($name, $exclude)) {
+            if (in_array($name, $exclude)) {
                 continue;
             }
 
@@ -403,7 +408,6 @@ class Backup {
 
                 $dumpData .= "\n\n";
             }
-
         }
 
         $dumpData .= "\n\n";
@@ -423,8 +427,9 @@ class Backup {
      * @param $type
      * @return array
      */
-    public function mysqlData ($name, $type) {
-        $db = Resource::reset();
+    public function mysqlData($name, $type)
+    {
+        $db = Db::reset();
 
         $dumpData = "\n\n";
 
@@ -435,12 +440,11 @@ class Backup {
             $tableData = $db->fetchAll("SELECT * FROM " . $name);
 
             foreach ($tableData as $row) {
-
                 $cells = array();
                 foreach ($row as $cell) {
-                    if(is_string($cell)) {
+                    if (is_string($cell)) {
                         $cell = $db->quote($cell);
-                    } else if ($cell === null) {
+                    } elseif ($cell === null) {
                         $cell = "NULL";
                     }
 
@@ -449,10 +453,8 @@ class Backup {
 
                 $dumpData .= "INSERT INTO " . $name . " VALUES (" . implode(",", $cells) . ");";
                 $dumpData .= "\n";
-
             }
-        }
-        else {
+        } else {
             // dump view structure
             $dumpData .= "\n\n";
             $dumpData .= "DROP VIEW IF EXISTS " . $name . ";";
@@ -481,7 +483,8 @@ class Backup {
      * @return array
      * @throws \Exception
      */
-    public function mysqlComplete() {
+    public function mysqlComplete()
+    {
         $this->getArchive()->addFile(PIMCORE_SYSTEM_TEMP_DIRECTORY . "/backup-dump.sql", "dump.sql");
         // cleanup
         //unlink(PIMCORE_SYSTEM_TEMP_DIRECTORY . "/backup-dump.sql");
@@ -496,10 +499,16 @@ class Backup {
      * @return array
      * @throws \Exception
      */
-    public function complete () {
+    public function complete()
+    {
         $this->getArchive()->addFromString(PIMCORE_FRONTEND_MODULE . "/var/cache/.dummy", "dummy");
         $this->getArchive()->addFromString(PIMCORE_FRONTEND_MODULE . "/var/tmp/.dummy", "dummy");
+        $this->getArchive()->addFromString(PIMCORE_FRONTEND_MODULE . "/var/backup/.dummy", "dummy");
+        $this->getArchive()->addFromString(PIMCORE_FRONTEND_MODULE . "/var/log/.dummy", "dummy");
+        $this->getArchive()->addFromString(PIMCORE_FRONTEND_MODULE . "/var/system/.dummy", "dummy");
+        $this->getArchive()->addFromString(PIMCORE_FRONTEND_MODULE . "/var/webdav/.dummy", "dummy");
         $this->getArchive()->addFromString(PIMCORE_FRONTEND_MODULE . "/var/log/debug.log", "dummy");
+
         $this->getArchive()->addFile(PIMCORE_DOCUMENT_ROOT . "/index.php", "index.php");
         $this->getArchive()->addFile(PIMCORE_DOCUMENT_ROOT . "/.htaccess", ".htaccess");
 
@@ -513,17 +522,18 @@ class Backup {
     /**
      *
      */
-    public function __wakeup() {
+    public function __wakeup()
+    {
         $this->zipArchive = null;
     }
 
     /**
      *
      */
-    public function __destruct() {
-        if($this->zipArchive) {
+    public function __destruct()
+    {
+        if ($this->zipArchive) {
             @$this->zipArchive->close();
         }
     }
 }
-

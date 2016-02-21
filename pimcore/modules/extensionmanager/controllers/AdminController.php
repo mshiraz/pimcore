@@ -2,30 +2,29 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
-use Pimcore\ExtensionManager; 
-use Pimcore\File; 
+use Pimcore\ExtensionManager;
+use Pimcore\File;
 
-class Extensionmanager_AdminController extends \Pimcore\Controller\Action\Admin {
+class Extensionmanager_AdminController extends \Pimcore\Controller\Action\Admin
+{
 
-    public function init () {
+    public function init()
+    {
         parent::init();
 
         $this->checkPermission("plugins");
     }
 
-    public function getExtensionsAction () {
-
+    public function getExtensionsAction()
+    {
         $configurations = array();
 
         // plugins
@@ -35,7 +34,7 @@ class Extensionmanager_AdminController extends \Pimcore\Controller\Action\Admin 
             $updateable = false;
 
             $revisionFile = PIMCORE_PLUGINS_PATH . "/" . $config["plugin"]["pluginName"] . "/.pimcore_extension_revision";
-            if(is_file($revisionFile)) {
+            if (is_file($revisionFile)) {
                 $updateable = true;
             }
             
@@ -54,7 +53,7 @@ class Extensionmanager_AdminController extends \Pimcore\Controller\Action\Admin 
                     "version" => $config["plugin"]["pluginVersion"]  // NEU http://www.pimcore.org/issues/browse/PIMCORE-1947
                 );
 
-                if($config["plugin"]["pluginXmlEditorFile"] && is_readable(PIMCORE_DOCUMENT_ROOT . $config["plugin"]["pluginXmlEditorFile"])){
+                if ($config["plugin"]["pluginXmlEditorFile"] && is_readable(PIMCORE_DOCUMENT_ROOT . $config["plugin"]["pluginXmlEditorFile"])) {
                     $plugin['xmlEditorFile'] = $config["plugin"]["pluginXmlEditorFile"];
                 }
 
@@ -66,11 +65,10 @@ class Extensionmanager_AdminController extends \Pimcore\Controller\Action\Admin 
         $brickConfigs = ExtensionManager::getBrickConfigs();
         // get repo state of bricks
         foreach ($brickConfigs as $id => $config) {
-
             $updateable = false;
             
             $revisionFile = PIMCORE_WEBSITE_VAR . "/areas/" . $id . "/.pimcore_extension_revision";
-            if(is_file($revisionFile)) {
+            if (is_file($revisionFile)) {
                 $updateable = true;
             }
 
@@ -91,18 +89,19 @@ class Extensionmanager_AdminController extends \Pimcore\Controller\Action\Admin 
         $this->_helper->json(array("extensions" => $configurations));
     }
 
-    public function toggleExtensionStateAction () {
+    public function toggleExtensionStateAction()
+    {
         $type = $this->getParam("type");
         $id = $this->getParam("id");
         $method = $this->getParam("method");
         $reload = true;
 
-        if($type && $id) {
+        if ($type && $id) {
             ExtensionManager::$method($type, $id);
         }
 
         // do not reload when toggle an area-brick
-        if($type == "brick") {
+        if ($type == "brick") {
             $reload = false;
         }
 
@@ -110,13 +109,12 @@ class Extensionmanager_AdminController extends \Pimcore\Controller\Action\Admin 
     }
 
 
-    public function installAction() {
-
+    public function installAction()
+    {
         $type = $this->getParam("type");
         $id = $this->getParam("id");
 
-        if($type == "plugin") {
-
+        if ($type == "plugin") {
             try {
                 $config = ExtensionManager::getPluginConfig($id);
                 $className = $config["plugin"]["pluginClassName"];
@@ -142,13 +140,12 @@ class Extensionmanager_AdminController extends \Pimcore\Controller\Action\Admin 
         }
     }
 
-    public function uninstallAction() {
-
+    public function uninstallAction()
+    {
         $type = $this->getParam("type");
         $id = $this->getParam("id");
 
-        if($type == "plugin") {
-
+        if ($type == "plugin") {
             try {
                 $config = ExtensionManager::getPluginConfig($id);
                 $className = $config["plugin"]["pluginClassName"];
@@ -173,8 +170,8 @@ class Extensionmanager_AdminController extends \Pimcore\Controller\Action\Admin 
         }
     }
 
-    public function deleteAction () {
-
+    public function deleteAction()
+    {
         $type = $this->getParam("type");
         $id = $this->getParam("id");
 
@@ -195,7 +192,9 @@ class Extensionmanager_AdminController extends \Pimcore\Controller\Action\Admin 
         if (preg_match("/^[a-zA-Z0-9_]+$/", $name, $matches) && !is_dir($pluginDestinationPath)) {
             $pluginExampleFiles = rscandir($examplePluginPath);
             foreach ($pluginExampleFiles as $pluginExampleFile) {
-                if(!is_file($pluginExampleFile)) continue;
+                if (!is_file($pluginExampleFile)) {
+                    continue;
+                }
                 $newPath = $pluginDestinationPath . str_replace($examplePluginPath . DIRECTORY_SEPARATOR . 'Example', '', $pluginExampleFile);
                 $newPath = str_replace(DIRECTORY_SEPARATOR . "Example" . DIRECTORY_SEPARATOR, DIRECTORY_SEPARATOR . $name . DIRECTORY_SEPARATOR, $newPath);
 
@@ -223,8 +222,8 @@ class Extensionmanager_AdminController extends \Pimcore\Controller\Action\Admin 
         ));
     }
 
-    public function uploadAction() {
-
+    public function uploadAction()
+    {
         $success = true;
         $tmpId = uniqid();
         $zipPath = PIMCORE_SYSTEM_TEMP_DIRECTORY . "/plugin-" . $tmpId . ".zip";
@@ -234,7 +233,7 @@ class Extensionmanager_AdminController extends \Pimcore\Controller\Action\Admin 
         copy($_FILES["zip"]["tmp_name"], $zipPath);
 
         $zip = new ZipArchive;
-        if ($zip->open($zipPath) === TRUE) {
+        if ($zip->open($zipPath) === true) {
             $zip->extractTo($tempPath);
             $zip->close();
         } else {
@@ -248,11 +247,11 @@ class Extensionmanager_AdminController extends \Pimcore\Controller\Action\Admin 
         $pluginName = null;
         $files = rscandir($tempPath);
         foreach ($files as $file) {
-            if(preg_match("@/plugin.xml$@", $file)) {
+            if (preg_match("@/plugin.xml$@", $file)) {
                 $rootDir = dirname($file);
 
                 $pluginConfig = new \Zend_Config_Xml($file);
-                if($pluginConfig->plugin->pluginName) {
+                if ($pluginConfig->plugin->pluginName) {
                     $pluginName = $pluginConfig->plugin->pluginName;
                 } else {
                     Logger::error("Unable to find 'pluginName' in " . $file);
@@ -262,12 +261,11 @@ class Extensionmanager_AdminController extends \Pimcore\Controller\Action\Admin 
             }
         }
 
-        if($rootDir && $pluginName) {
-
+        if ($rootDir && $pluginName) {
             $pluginPath = PIMCORE_PLUGINS_PATH . "/" . $pluginName;
 
             // check for existing plugin
-            if(is_dir($pluginPath)) {
+            if (is_dir($pluginPath)) {
                 // move it to the backup directory
                 rename($pluginPath, PIMCORE_BACKUP_DIRECTORY . "/" . $pluginName . "-" . time());
             }

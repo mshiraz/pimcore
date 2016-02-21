@@ -2,23 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 use Pimcore\Model\Element;
 use Pimcore\Model\Document;
 
-class Admin_SnippetController extends \Pimcore\Controller\Action\Admin\Document {
+class Admin_SnippetController extends \Pimcore\Controller\Action\Admin\Document
+{
 
-    public function getDataByIdAction() {
+    public function getDataByIdAction()
+    {
 
         // check for lock
         if (Element\Editlock::isLocked($this->getParam("id"), "document")) {
@@ -29,8 +28,7 @@ class Admin_SnippetController extends \Pimcore\Controller\Action\Admin\Document 
         Element\Editlock::lock($this->getParam("id"), "document");
 
         $snippet = Document\Snippet::getById($this->getParam("id"));
-        $modificationDate = $snippet->getModificationDate();
-        
+        $snippet = clone $snippet;
         $snippet = $this->getLatestVersion($snippet);
 
         $snippet->setVersions(array_splice($snippet->getVersions(), 0, 1));
@@ -40,10 +38,11 @@ class Admin_SnippetController extends \Pimcore\Controller\Action\Admin\Document 
         $snippet->setLocked($snippet->isLocked());
         $snippet->setParent(null);
 
-        if($snippet->getContentMasterDocument()) {
+        if ($snippet->getContentMasterDocument()) {
             $snippet->contentMasterDocumentPath = $snippet->getContentMasterDocument()->getRealFullPath();
         }
 
+        $this->addTranslationsData($snippet);
         $this->minimizeProperties($snippet);
 
         // unset useless data
@@ -56,7 +55,8 @@ class Admin_SnippetController extends \Pimcore\Controller\Action\Admin\Document 
         $this->_helper->json(false);
     }
 
-    public function saveAction() {
+    public function saveAction()
+    {
         if ($this->getParam("id")) {
             $snippet = Document\Snippet::getById($this->getParam("id"));
             $snippet = $this->getLatestVersion($snippet);
@@ -81,10 +81,7 @@ class Admin_SnippetController extends \Pimcore\Controller\Action\Admin\Document 
                 } catch (\Exception $e) {
                     $this->_helper->json(array("success" => false, "message" => $e->getMessage()));
                 }
-
-
-            }
-            else {
+            } else {
                 if ($snippet->isAllowed("save")) {
                     $this->setValuesToDocument($snippet);
 
@@ -95,8 +92,6 @@ class Admin_SnippetController extends \Pimcore\Controller\Action\Admin\Document 
                     } catch (\Exception $e) {
                         $this->_helper->json(array("success" => false, "message" => $e->getMessage()));
                     }
-
-
                 }
             }
         }
@@ -104,12 +99,11 @@ class Admin_SnippetController extends \Pimcore\Controller\Action\Admin\Document 
         $this->_helper->json(false);
     }
 
-    protected function setValuesToDocument(Document $snippet) {
-
+    protected function setValuesToDocument(Document $snippet)
+    {
         $this->addSettingsToDocument($snippet);
         $this->addDataToDocument($snippet);
         $this->addSchedulerToDocument($snippet);
         $this->addPropertiesToDocument($snippet);
     }
-
 }

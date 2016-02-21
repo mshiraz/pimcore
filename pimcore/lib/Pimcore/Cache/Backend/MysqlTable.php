@@ -2,22 +2,20 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Cache\Backend;
 
-use Pimcore\Resource;
+use Pimcore\Db;
 
-class MysqlTable extends \Zend_Cache_Backend implements \Zend_Cache_Backend_ExtendedInterface {
+class MysqlTable extends \Zend_Cache_Backend implements \Zend_Cache_Backend_ExtendedInterface
+{
 
     /**
      * @var \Zend_Db_Adapter_Abstract
@@ -29,9 +27,10 @@ class MysqlTable extends \Zend_Cache_Backend implements \Zend_Cache_Backend_Exte
      * @param bool $doNotTestCacheValidity
      * @return false|null|string
      */
-    public function load($id, $doNotTestCacheValidity = false) {
+    public function load($id, $doNotTestCacheValidity = false)
+    {
         $data = $this->getDb()->fetchRow("SELECT data,expire FROM cache WHERE id = ?", $id);
-        if($data && isset($data["expire"]) && $data["expire"] > time()) {
+        if ($data && isset($data["expire"]) && $data["expire"] > time()) {
             return $data["data"];
         }
         return null;
@@ -40,11 +39,12 @@ class MysqlTable extends \Zend_Cache_Backend implements \Zend_Cache_Backend_Exte
     /**
      * @return \Zend_Db_Adapter_Abstract
      */
-    protected function getDb () {
-        if(!$this->db) {
+    protected function getDb()
+    {
+        if (!$this->db) {
             // we're using a new mysql connection here to avoid problems with active (nested) transactions
             \Logger::debug("Initialize dedicated MySQL connection for the cache adapter");
-            $this->db = Resource::getConnection();
+            $this->db = Db::getConnection();
         }
         return $this->db;
     }
@@ -53,7 +53,8 @@ class MysqlTable extends \Zend_Cache_Backend implements \Zend_Cache_Backend_Exte
      * @param string $tag
      * @return array
      */
-    protected function getItemsByTag($tag) {
+    protected function getItemsByTag($tag)
+    {
         $itemIds = $this->getDb()->fetchCol("SELECT id FROM cache_tags WHERE tag = ?", $tag);
         return $itemIds;
     }
@@ -70,8 +71,8 @@ class MysqlTable extends \Zend_Cache_Backend implements \Zend_Cache_Backend_Exte
      * @param  int    $specificLifetime If != false, set a specific lifetime for this cache record (null => infinite lifetime)
      * @return boolean True if no problem
      */
-    public function save($data, $id, $tags = array(), $specificLifetime = false) {
-
+    public function save($data, $id, $tags = array(), $specificLifetime = false)
+    {
         $lifetime = $this->getLifetime($specificLifetime);
 
         $this->getDb()->beginTransaction();
@@ -107,8 +108,8 @@ class MysqlTable extends \Zend_Cache_Backend implements \Zend_Cache_Backend_Exte
      * @param  string $id
      * @return bool true if OK
      */
-    public function remove($id) {
-
+    public function remove($id)
+    {
         $this->getDb()->beginTransaction();
 
         try {
@@ -140,8 +141,8 @@ class MysqlTable extends \Zend_Cache_Backend implements \Zend_Cache_Backend_Exte
      * @param  array  $tags Array of tags
      * @return boolean True if no problem
      */
-    public function clean($mode = \Zend_Cache::CLEANING_MODE_ALL, $tags = array()) {
-
+    public function clean($mode = \Zend_Cache::CLEANING_MODE_ALL, $tags = array())
+    {
         if ($mode == \Zend_Cache::CLEANING_MODE_ALL) {
             $this->truncate();
         }
@@ -163,7 +164,7 @@ class MysqlTable extends \Zend_Cache_Backend implements \Zend_Cache_Backend_Exte
                         $quotedIds[] = $quotedId;
                     }
 
-                    if(count($quotedIds) > 0) {
+                    if (count($quotedIds) > 0) {
                         $this->getDb()->delete("cache_tags", "id IN (" . implode(",", $quotedIds) . ")");
                     }
 
@@ -176,23 +177,22 @@ class MysqlTable extends \Zend_Cache_Backend implements \Zend_Cache_Backend_Exte
             }
         }
         if ($mode == \Zend_Cache::CLEANING_MODE_NOT_MATCHING_TAG) {
-            
             $condParts = array("1=1");
             foreach ($tags as $tag) {
                 $condParts[] = "tag != '" . $tag . "'";
             }
 
-            $itemIds = $this->getDb()->fetchCol("SELECT id FROM cache_tags WHERE ".implode(" AND ",$condParts));
+            $itemIds = $this->getDb()->fetchCol("SELECT id FROM cache_tags WHERE ".implode(" AND ", $condParts));
             foreach ($itemIds as $item) {
                 $this->remove($item);
             }
-
         }
 
         return true;
     }
     
-    protected function truncate() {
+    protected function truncate()
+    {
         $this->getDb()->query("TRUNCATE TABLE `cache`");
         $this->getDb()->query("TRUNCATE TABLE `cache_tags`");
         $this->getDb()->query("ALTER TABLE `cache_tags` ENGINE=InnoDB");
@@ -202,7 +202,8 @@ class MysqlTable extends \Zend_Cache_Backend implements \Zend_Cache_Backend_Exte
      * @param  string $id
      * @return array tags for given id
      */
-    protected function getTagsById($id) {
+    protected function getTagsById($id)
+    {
         $itemIds = $this->getDb()->fetchCol("SELECT tag FROM cache_tags WHERE id = ?", $id);
         return $itemIds;
     }
@@ -211,13 +212,14 @@ class MysqlTable extends \Zend_Cache_Backend implements \Zend_Cache_Backend_Exte
      * @param array $tags
      * @return array
      */
-    public function getIdsMatchingAnyTags($tags = array()) {
+    public function getIdsMatchingAnyTags($tags = array())
+    {
         $tags_ = array();
-        foreach($tags as $tag) {
+        foreach ($tags as $tag) {
             $tags_[] = $this->getDb()->quote($tag);
         }
 
-        $itemIds = $this->getDb()->fetchCol("SELECT id FROM cache_tags WHERE tag IN (".implode(",",$tags_).")");
+        $itemIds = $this->getDb()->fetchCol("SELECT id FROM cache_tags WHERE tag IN (".implode(",", $tags_).")");
         return $itemIds;
     }
 
@@ -226,19 +228,19 @@ class MysqlTable extends \Zend_Cache_Backend implements \Zend_Cache_Backend_Exte
      * @param array $tags
      * @return array
      */
-    public function getIdsMatchingTags($tags = array()) {
-
+    public function getIdsMatchingTags($tags = array())
+    {
         $tags_ = array();
-        foreach($tags as $tag) {
+        foreach ($tags as $tag) {
             $tags_[] = " tag = ".$this->getDb()->quote($tag);
         }
 
-        $itemIds = $this->getDb()->fetchCol("SELECT id FROM cache_tags WHERE ".implode(" AND ",$tags_));
+        $itemIds = $this->getDb()->fetchCol("SELECT id FROM cache_tags WHERE ".implode(" AND ", $tags_));
         return $itemIds;
     }
 
-    public function getMetadatas($id) {
-
+    public function getMetadatas($id)
+    {
         $data = $this->getDb()->fetchRow("SELECT mtime,expire FROM cache WHERE id = ?", $id);
 
         if (is_array($data) && isset($data["mtime"])) {
@@ -254,7 +256,8 @@ class MysqlTable extends \Zend_Cache_Backend implements \Zend_Cache_Backend_Exte
     /**
      * @return array
      */
-    public function getCapabilities() {
+    public function getCapabilities()
+    {
         return array(
             'automatic_cleaning' => false,
             'tags' => true,

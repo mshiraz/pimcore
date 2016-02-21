@@ -1,15 +1,12 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 pimcore.registerNS("pimcore.layout.toolbar");
@@ -327,14 +324,6 @@ pimcore.layout.toolbar = Class.create({
                 iconCls: "pimcore_icon_update",
                 handler: function () {
                     var update = new pimcore.settings.update();
-                }
-            });
-
-            extrasItems.push({
-                text: t("language_download"),
-                iconCls: "pimcore_icon_languages",
-                handler: function () {
-                    var update = new pimcore.settings.languages();
                 }
             });
 
@@ -1516,7 +1505,7 @@ pimcore.layout.toolbar = Class.create({
         }
         catch (e) {
             pimcore.globalmanager.add(id, new pimcore.tool.genericiframewindow(id,
-                "/pimcore/modules/3rdparty/linfo/index.php", "pimcore_icon_server_info", "Server Info"));
+                "/admin/external_linfo/", "pimcore_icon_server_info", "Server Info"));
         }
 
     },
@@ -1544,7 +1533,7 @@ pimcore.layout.toolbar = Class.create({
         }
         catch (e) {
             pimcore.globalmanager.add(id, new pimcore.tool.genericiframewindow(id,
-                "/pimcore/modules/3rdparty/adminer/index.php", "pimcore_icon_mysql", "Database Admin"));
+                "/admin/external_adminer/adminer/", "pimcore_icon_mysql", "Database Admin"));
         }
 
     },

@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object|Class
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object\ClassDefinition\Layout;
 
 use Pimcore\Model;
 
-class Button extends Model\Object\ClassDefinition\Layout {
+class Button extends Model\Object\ClassDefinition\Layout
+{
 
     /**
      * Static type of this element
@@ -37,11 +35,17 @@ class Button extends Model\Object\ClassDefinition\Layout {
      * @var
      */
     public $text;
+    
+    /**
+     * @var
+     */
+    public $icon;
 
     /**
      * @return mixed
      */
-    public function getText() {
+    public function getText()
+    {
         return $this->text;
     }
 
@@ -49,7 +53,8 @@ class Button extends Model\Object\ClassDefinition\Layout {
      * @param $text
      * @return $this
      */
-    public function setText($text) {
+    public function setText($text)
+    {
         $this->text = $text;
         return $this;
     }
@@ -57,7 +62,8 @@ class Button extends Model\Object\ClassDefinition\Layout {
     /**
      * @return mixed
      */
-    public function getHandler() {
+    public function getHandler()
+    {
         return $this->handler;
     }
 
@@ -65,8 +71,27 @@ class Button extends Model\Object\ClassDefinition\Layout {
      * @param $handler
      * @return $this
      */
-    public function setHandler($handler) {
+    public function setHandler($handler)
+    {
         $this->handler = $handler;
+        return $this;
+    }
+    
+    /**
+     * @return mixed
+     */
+    public function getIcon()
+    {
+        return $this->icon;
+    }
+
+    /**
+     * @param $icon
+     * @return $this
+     */
+    public function setIcon($icon)
+    {
+        $this->icon = $icon;
         return $this;
     }
 }

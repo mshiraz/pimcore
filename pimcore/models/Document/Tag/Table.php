@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Document
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Document\Tag;
 
 use Pimcore\Model;
 
-class Table extends Model\Document\Tag {
+class Table extends Model\Document\Tag
+{
 
     /**
      * Contains the text for this element
@@ -33,7 +31,8 @@ class Table extends Model\Document\Tag {
      * @see Document\Tag\TagInterface::getType
      * @return string
      */
-    public function getType() {
+    public function getType()
+    {
         return "table";
     }
 
@@ -41,7 +40,8 @@ class Table extends Model\Document\Tag {
      * @see Document\Tag\TagInterface::getData
      * @return mixed
      */
-    public function getData() {
+    public function getData()
+    {
         return $this->data;
     }
 
@@ -49,8 +49,8 @@ class Table extends Model\Document\Tag {
      * @see Document\Tag\TagInterface::frontend
      * @return string
      */
-    public function frontend() {
-
+    public function frontend()
+    {
         $html = "";
 
         if (is_array($this->data) && count($this->data) > 0) {
@@ -76,7 +76,8 @@ class Table extends Model\Document\Tag {
      * @param mixed $data
      * @return void
      */
-    public function setDataFromResource($data) {
+    public function setDataFromResource($data)
+    {
         $this->data = \Pimcore\Tool\Serialize::unserialize($data);
         return $this;
     }
@@ -86,7 +87,8 @@ class Table extends Model\Document\Tag {
      * @param mixed $data
      * @return void
      */
-    public function setDataFromEditmode($data) {
+    public function setDataFromEditmode($data)
+    {
         $this->data = $data;
         return $this;
     }
@@ -94,7 +96,8 @@ class Table extends Model\Document\Tag {
     /**
      * @return boolean
      */
-    public function isEmpty() {
+    public function isEmpty()
+    {
         return empty($this->data);
     }
 
@@ -103,14 +106,13 @@ class Table extends Model\Document\Tag {
      * @param null $idMapper
      * @throws \Exception
      */
-    public function getFromWebserviceImport($wsElement, $idMapper = null) {
+    public function getFromWebserviceImport($wsElement, $idMapper = null)
+    {
         $data = $wsElement->value;
         if ($data->data === null or is_array($data->data)) {
             $this->data = $data->data;
         } else {
             throw new \Exception("cannot get values from web service import - invalid data");
         }
-
     }
-
 }

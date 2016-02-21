@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object|Class
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object\ClassDefinition\Data;
 
 use Pimcore\Model;
 
-class Time extends Model\Object\ClassDefinition\Data\Input {
+class Time extends Model\Object\ClassDefinition\Data\Input
+{
 
     /**
      * Static type of this element
@@ -42,11 +40,11 @@ class Time extends Model\Object\ClassDefinition\Data\Input {
      * @param boolean $omitMandatoryCheck
      * @throws \Exception
      */
-    public function checkValidity($data, $omitMandatoryCheck = false){
-
+    public function checkValidity($data, $omitMandatoryCheck = false)
+    {
         parent::checkValidity($data, $omitMandatoryCheck);
 
-        if((is_string($data) && strlen($data) != 5 && !empty($data)) || (!empty($data) && !is_string($data))) {
+        if ((is_string($data) && strlen($data) != 5 && !empty($data)) || (!empty($data) && !is_string($data))) {
             throw new \Exception("Wrong time format given must be a 5 digit string (eg: 06:49) [ ".$this->getName()." ]");
         }
     }
@@ -54,7 +52,8 @@ class Time extends Model\Object\ClassDefinition\Data\Input {
     /** True if change is allowed in edit mode.
      * @return bool
      */
-    public function isDiffChangeAllowed() {
+    public function isDiffChangeAllowed()
+    {
         return true;
     }
 }

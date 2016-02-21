@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Document
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Document\Tag;
@@ -57,7 +54,7 @@ class Input extends Model\Document\Tag
         $options = $this->getOptions();
 
         $text = $this->text;
-        if (isset($options["htmlspecialchars"]) AND $options["htmlspecialchars"] !== false) {
+        if (isset($options["htmlspecialchars"]) and $options["htmlspecialchars"] !== false) {
             $text = htmlspecialchars($this->text);
         }
 
@@ -67,7 +64,8 @@ class Input extends Model\Document\Tag
     /**
      *
      */
-    public function getDataEditmode() {
+    public function getDataEditmode()
+    {
         return htmlentities($this->text);
     }
 

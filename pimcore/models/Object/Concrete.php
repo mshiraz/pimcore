@@ -2,25 +2,23 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object;
 
 use Pimcore\Model;
-use Pimcore\Config; 
+use Pimcore\Config;
 
-class Concrete extends AbstractObject {
+class Concrete extends AbstractObject
+{
 
     public static $systemColumnNames = array("id", "fullpath", "published", "creationDate", "modificationDate", "filename", "classname");
 
@@ -52,7 +50,7 @@ class Concrete extends AbstractObject {
     /**
      * @var array
      */
-    public $lazyLoadedFields = array ();
+    public $lazyLoadedFields = array();
 
     /**
      * @var array
@@ -76,7 +74,8 @@ class Concrete extends AbstractObject {
      * returns the class ID of the current object class
      * @return int
      */
-    public static function classId() {
+    public static function classId()
+    {
         $v = get_class_vars(get_called_class());
         return $v["o_classId"];
     }
@@ -84,7 +83,8 @@ class Concrete extends AbstractObject {
     /**
      *
      */
-    public function __construct () {
+    public function __construct()
+    {
         // nothing to do here
     }
 
@@ -92,14 +92,16 @@ class Concrete extends AbstractObject {
      * @param  string $fieldName
      * @return void
      */
-    public function addLazyLoadedField($fieldName){
+    public function addLazyLoadedField($fieldName)
+    {
         $this->lazyLoadedFields[]=$fieldName;
     }
 
     /**
      * @return array
      */
-    public function getLazyLoadedFields(){
+    public function getLazyLoadedFields()
+    {
         return (array) $this->lazyLoadedFields;
     }
 
@@ -107,7 +109,8 @@ class Concrete extends AbstractObject {
      * @param array $o___loadedLazyFields
      * @return void
      */
-    public function setO__loadedLazyFields(array $o___loadedLazyFields) {
+    public function setO__loadedLazyFields(array $o___loadedLazyFields)
+    {
         $this->o___loadedLazyFields = $o___loadedLazyFields;
         return $this;
     }
@@ -115,7 +118,8 @@ class Concrete extends AbstractObject {
     /**
      * @return array
      */
-    public function getO__loadedLazyFields() {
+    public function getO__loadedLazyFields()
+    {
         return $this->o___loadedLazyFields;
     }
 
@@ -123,22 +127,22 @@ class Concrete extends AbstractObject {
      * @param string $o___loadedLazyField
      * @return void
      */
-    public function addO__loadedLazyField($o___loadedLazyField) {
+    public function addO__loadedLazyField($o___loadedLazyField)
+    {
         $this->o___loadedLazyFields[] = $o___loadedLazyField;
     }
 
     /**
      * @throws \Exception
      */
-    protected function update() {
-
-
+    protected function update()
+    {
         $fieldDefintions = $this->getClass()->getFieldDefinitions();
-        foreach($fieldDefintions as $fd){
+        foreach ($fieldDefintions as $fd) {
             $getter = "get".ucfirst($fd->getName());
             $setter = "set".ucfirst($fd->getName());
 
-            if(method_exists($this, $getter)){
+            if (method_exists($this, $getter)) {
 
                 //To make sure, inherited values are not set again
                 $inheritedValues = AbstractObject::doGetInheritedValues();
@@ -146,7 +150,7 @@ class Concrete extends AbstractObject {
 
                 $value = $this->$getter();
 
-                if(is_array($value) and ($fd instanceof ClassDefinition\Data\Multihref or $fd instanceof ClassDefinition\Data\Objects)){
+                if (is_array($value) and ($fd instanceof ClassDefinition\Data\Multihref or $fd instanceof ClassDefinition\Data\Objects)) {
                     //don't save relations twice
                     $this->$setter(array_unique($value));
                 }
@@ -159,11 +163,9 @@ class Concrete extends AbstractObject {
                 try {
                     $fd->checkValidity($value, $omitMandatoryCheck);
                 } catch (\Exception $e) {
-
-                    if($this->getClass()->getAllowInherit()) {
+                    if ($this->getClass()->getAllowInherit()) {
                         //try again with parent data when inheritance in activated
                         try {
-
                             $getInheritedValues = AbstractObject::doGetInheritedValues();
                             AbstractObject::setGetInheritedValues(true);
 
@@ -171,8 +173,7 @@ class Concrete extends AbstractObject {
                             $fd->checkValidity($value, $omitMandatoryCheck);
 
                             AbstractObject::setGetInheritedValues($getInheritedValues);
-
-                        } catch(\Exception $e) {
+                        } catch (\Exception $e) {
                             throw new \Exception($e->getMessage() . " fieldname=" . $fd->getName());
                         }
                     } else {
@@ -180,12 +181,11 @@ class Concrete extends AbstractObject {
                     }
                 }
             }
-
         }
 
         parent::update();
 
-        $this->getResource()->update();
+        $this->getDao()->update();
 
         // scheduled tasks are saved in $this->saveVersion();
 
@@ -196,24 +196,26 @@ class Concrete extends AbstractObject {
     /**
      * @return void
      */
-    protected function saveChildData () {
-        if($this->getClass()->getAllowInherit()) {
-            $this->getResource()->saveChildData();
+    protected function saveChildData()
+    {
+        if ($this->getClass()->getAllowInherit()) {
+            $this->getDao()->saveChildData();
         }
     }
 
     /**
      * @return void
      */
-    public function saveScheduledTasks () {
+    public function saveScheduledTasks()
+    {
         // update scheduled tasks
         $this->getScheduledTasks();
-        $this->getResource()->deleteAllTasks();
+        $this->getDao()->deleteAllTasks();
 
         if (is_array($this->getScheduledTasks()) && count($this->getScheduledTasks()) > 0) {
             foreach ($this->getScheduledTasks() as $task) {
                 $task->setId(null);
-                $task->setResource(null);
+                $task->setDao(null);
                 $task->setCid($this->getId());
                 $task->setCtype("object");
                 $task->save();
@@ -224,14 +226,15 @@ class Concrete extends AbstractObject {
     /**
      * @return void
      */
-    public function delete() {
+    public function delete()
+    {
 
         // delete all versions
         foreach ($this->getVersions() as $v) {
             $v->delete();
         }
 
-        $this->getResource()->deleteAllTasks();
+        $this->getDao()->deleteAllTasks();
 
         parent::delete();
     }
@@ -243,14 +246,14 @@ class Concrete extends AbstractObject {
      * @param bool $directCall
      * @return Version
      */
-    public function saveVersion($setModificationDate = true, $callPluginHook = true) {
-
+    public function saveVersion($setModificationDate = true, $callPluginHook = true)
+    {
         if ($setModificationDate) {
             $this->setModificationDate(time());
         }
 
         // hook should be also called if "save only new version" is selected
-        if($callPluginHook) {
+        if ($callPluginHook) {
             \Pimcore::getEventManager()->trigger("object.preUpdate", $this, [
                 "saveVersionOnly" => true
             ]);
@@ -262,7 +265,7 @@ class Concrete extends AbstractObject {
         $version = null;
 
         // only create a new version if there is at least 1 allowed
-        if(Config::getSystemConfig()->objects->versions->steps
+        if (Config::getSystemConfig()->objects->versions->steps
             || Config::getSystemConfig()->objects->versions->days) {
             // create version
             $version = new Model\Version();
@@ -275,7 +278,7 @@ class Concrete extends AbstractObject {
         }
 
         // hook should be also called if "save only new version" is selected
-        if($callPluginHook) {
+        if ($callPluginHook) {
             \Pimcore::getEventManager()->trigger("object.postUpdate", $this, [
                 "saveVersionOnly" => true
             ]);
@@ -287,9 +290,10 @@ class Concrete extends AbstractObject {
     /**
      * @return array
      */
-    public function getVersions() {
+    public function getVersions()
+    {
         if ($this->o_versions === null) {
-            $this->setVersions($this->getResource()->getVersions());
+            $this->setVersions($this->getDao()->getVersions());
         }
         return $this->o_versions;
     }
@@ -298,7 +302,8 @@ class Concrete extends AbstractObject {
      * @param array $o_versions
      * @return void
      */
-    public function setVersions($o_versions) {
+    public function setVersions($o_versions)
+    {
         $this->o_versions = $o_versions;
         return $this;
     }
@@ -307,9 +312,14 @@ class Concrete extends AbstractObject {
      * @param string $key
      * @return mixed
      */
-    public function getValueForFieldName($key) {
-        if ($this->$key) {
+    public function getValueForFieldName($key)
+    {
+        if (isset($this->$key)) {
             return $this->$key;
+        } elseif ($this->getClass()->getFieldDefinition($key) instanceof Model\Object\ClassDefinition\Data\CalculatedValue) {
+            $value = new Model\Object\Data\CalculatedValue($key);
+            $value = Service::getCalculatedFieldValue($this, $value);
+            return $value;
         }
         return false;
     }
@@ -317,8 +327,8 @@ class Concrete extends AbstractObject {
     /**
      * @return array
      */
-    public function getCacheTags($tags = array()) {
-        
+    public function getCacheTags($tags = array())
+    {
         $tags = is_array($tags) ? $tags : array();
 
         $tags = parent::getCacheTags($tags);
@@ -336,16 +346,16 @@ class Concrete extends AbstractObject {
     /**
      * @return array
      */
-    public function resolveDependencies() {
-
+    public function resolveDependencies()
+    {
         $dependencies = parent::resolveDependencies();
 
         // check in fields
         if ($this->getClass() instanceof ClassDefinition) {
-        	foreach ($this->getClass()->getFieldDefinitions() as $field) {
-        		$key = $field->getName();
+            foreach ($this->getClass()->getFieldDefinitions() as $field) {
+                $key = $field->getName();
                 $dependencies = array_merge($dependencies, $field->resolveDependencies($this->$key));
-        	}
+            }
         }
         return $dependencies;
     }
@@ -353,7 +363,8 @@ class Concrete extends AbstractObject {
     /**
      * @param ClassDefinition $o_class
      */
-    public function setClass($o_class) {
+    public function setClass($o_class)
+    {
         $this->o_class = $o_class;
         return $this;
     }
@@ -361,7 +372,8 @@ class Concrete extends AbstractObject {
     /**
      * @return ClassDefinition
      */
-    public function getClass() {
+    public function getClass()
+    {
         if (!$this->o_class) {
             $this->setClass(ClassDefinition::getById($this->getClassId()));
         }
@@ -371,7 +383,8 @@ class Concrete extends AbstractObject {
     /**
      * @return integer
      */
-    public function getClassId() {
+    public function getClassId()
+    {
         return (int) $this->o_classId;
     }
 
@@ -379,7 +392,8 @@ class Concrete extends AbstractObject {
      * @param int $o_classId
      * @return void
      */
-    public function setClassId($o_classId) {
+    public function setClassId($o_classId)
+    {
         $this->o_classId = (int) $o_classId;
         return $this;
     }
@@ -387,7 +401,8 @@ class Concrete extends AbstractObject {
     /**
      * @return string
      */
-    public function getClassName() {
+    public function getClassName()
+    {
         return $this->o_className;
     }
 
@@ -395,7 +410,8 @@ class Concrete extends AbstractObject {
      * @param string $o_className
      * @return void
      */
-    public function setClassName($o_className) {
+    public function setClassName($o_className)
+    {
         $this->o_className = $o_className;
         return $this;
     }
@@ -403,14 +419,16 @@ class Concrete extends AbstractObject {
     /**
      * @return boolean
      */
-    public function getPublished() {
+    public function getPublished()
+    {
         return (bool) $this->o_published;
     }
 
     /**
      * @return boolean
      */
-    public function isPublished() {
+    public function isPublished()
+    {
         return (bool) $this->getPublished();
     }
 
@@ -418,7 +436,8 @@ class Concrete extends AbstractObject {
      * @param boolean $o_published
      * @return this
      */
-    public function setPublished($o_published) {
+    public function setPublished($o_published)
+    {
         $this->o_published = (bool) $o_published;
         return $this;
     }
@@ -443,7 +462,8 @@ class Concrete extends AbstractObject {
     /**
      * @return array
      */
-    public function getScheduledTasks() {
+    public function getScheduledTasks()
+    {
         if ($this->scheduledTasks === null) {
             $taskList = new Model\Schedule\Task\Listing();
             $taskList->setCondition("cid = ? AND ctype='object'", $this->getId());
@@ -455,7 +475,8 @@ class Concrete extends AbstractObject {
     /**
      * @param array $scheduledTasks
      */
-    public function setScheduledTasks($scheduledTasks) {
+    public function setScheduledTasks($scheduledTasks)
+    {
         $this->scheduledTasks = $scheduledTasks;
         return $this;
     }
@@ -463,8 +484,8 @@ class Concrete extends AbstractObject {
     /**
      * @return mixed
      */
-    public function getValueFromParent($key, $params = null) {
-
+    public function getValueFromParent($key, $params = null)
+    {
         $parent = $this->getNextParentForInheritance();
         if ($parent) {
             $method = "get" . $key;
@@ -483,11 +504,11 @@ class Concrete extends AbstractObject {
      * @return AbstractObject|void
      * @return AbstractObject|void
      */
-    public function getNextParentForInheritance() {
+    public function getNextParentForInheritance()
+    {
         if ($this->getParent() instanceof AbstractObject) {
-
             $parent = $this->getParent();
-            while($parent && $parent->getType() == "folder") {
+            while ($parent && $parent->getType() == "folder") {
                 $parent = $parent->getParent();
             }
 
@@ -505,7 +526,8 @@ class Concrete extends AbstractObject {
      * Dummy which can be overwritten by a parent class, this is a hook executed in every getter of the properties in the object
      * @param string $key
      */
-    public function preGetValue ($key) {
+    public function preGetValue($key)
+    {
         return;
     }
 
@@ -516,8 +538,9 @@ class Concrete extends AbstractObject {
      * @param bool $forOwner
      * @return array
      */
-    public function getRelationData($fieldName,$forOwner,$remoteClassId){
-        $relationData = $this->getResource()->getRelationData($fieldName,$forOwner,$remoteClassId);
+    public function getRelationData($fieldName, $forOwner, $remoteClassId)
+    {
+        $relationData = $this->getDao()->getRelationData($fieldName, $forOwner, $remoteClassId);
         return $relationData;
     }
 
@@ -527,10 +550,11 @@ class Concrete extends AbstractObject {
      * @param $arguments
      * @throws \Exception
      */
-    public static function __callStatic ($method, $arguments) {
+    public static function __callStatic($method, $arguments)
+    {
 
         // check for custom static getters like Object::getByMyfield()
-        $propertyName = lcfirst(preg_replace("/^getBy/i","",$method));
+        $propertyName = lcfirst(preg_replace("/^getBy/i", "", $method));
         $tmpObj = new static();
 
         // get real fieldname (case sensitive)
@@ -538,43 +562,43 @@ class Concrete extends AbstractObject {
         foreach ($tmpObj->getClass()->getFieldDefinitions() as $fd) {
             $fieldnames[] = $fd->getName();
         }
-        $propertyName = implode("",preg_grep('/^' . preg_quote($propertyName, '/') . '$/i', $fieldnames));
+        $propertyName = implode("", preg_grep('/^' . preg_quote($propertyName, '/') . '$/i', $fieldnames));
 
-        if(property_exists($tmpObj,$propertyName)) {
+        if (property_exists($tmpObj, $propertyName)) {
 
             // check if the given fieldtype is valid for this shorthand
             $allowedDataTypes = array("input","numeric","checkbox","country","date","datetime","image","language","multihref","multiselect","select","slider","time","user","email","firstname","lastname");
 
             $field = $tmpObj->getClass()->getFieldDefinition($propertyName);
-            if(!in_array($field->getFieldType(), $allowedDataTypes)) {
-                throw new \Exception("Static getter '::getBy".ucfirst($propertyName)."' is not allowed for fieldtype '" . $field->getFieldType() . "', it's only allowed for the following fieldtypes: " . implode(",",$allowedDataTypes));
+            if (!in_array($field->getFieldType(), $allowedDataTypes)) {
+                throw new \Exception("Static getter '::getBy".ucfirst($propertyName)."' is not allowed for fieldtype '" . $field->getFieldType() . "', it's only allowed for the following fieldtypes: " . implode(",", $allowedDataTypes));
             }
 
             $arguments = array_pad($arguments, 3, 0);
             list($value, $limit, $offset) = $arguments;
 
-            $defaultCondition = $propertyName . " = " . \Pimcore\Resource::get()->quote($value) . " ";
+            $defaultCondition = $propertyName . " = " . \Pimcore\Db::get()->quote($value) . " ";
             $listConfig = array(
                 "condition" => $defaultCondition
             );
 
-            if(!is_array($limit)){
-                if($limit) {
+            if (!is_array($limit)) {
+                if ($limit) {
                     $listConfig["limit"] = $limit;
                 }
-                if($offset) {
+                if ($offset) {
                     $listConfig["offset"] = $offset;
                 }
             } else {
-                $listConfig = array_merge($listConfig,$limit);
+                $listConfig = array_merge($listConfig, $limit);
                 $listConfig['condition'] = $defaultCondition . $limit['condition'];
             }
 
             $list = static::getList($listConfig);
 
-            if(isset($listConfig['limit']) && $listConfig['limit'] == 1) {
+            if (isset($listConfig['limit']) && $listConfig['limit'] == 1) {
                 $elements = $list->getObjects();
-                return $elements[0];
+                return isset($elements[0]) ? $elements[0] : null;
             }
 
             return $list;
@@ -582,15 +606,15 @@ class Concrete extends AbstractObject {
 
         // there is no property for the called method, so throw an exception
         \Logger::error("Class: Object\\Concrete => call to undefined static method " . $method);
-        throw new \Exception("Call to undefined static method " . $method . " in class Object\\Concrete" );
+        throw new \Exception("Call to undefined static method " . $method . " in class Object\\Concrete");
     }
 
 
     /**
      *
      */
-    public function __sleep() {
-
+    public function __sleep()
+    {
         $parentVars = parent::__sleep();
 
         $finalVars = array();
@@ -599,13 +623,13 @@ class Concrete extends AbstractObject {
         foreach ($parentVars as $key) {
             if (in_array($key, $lazyLoadedFields)) {
                 // prevent lazyloading properties to go into the cache, only to version and recyclebin, ... (_fulldump)
-                if(isset($this->_fulldump)) {
+                if (isset($this->_fulldump)) {
                     $finalVars[] = $key;
                 }
             } else {
                 $finalVars[] = $key;
             }
-        } 
+        }
 
         return $finalVars;
     }
@@ -613,15 +637,27 @@ class Concrete extends AbstractObject {
     /**
      *
      */
-    public function __wakeup() {
-
+    public function __wakeup()
+    {
         parent::__wakeup();
 
         // renew localized fields
         // do not use the getter ($this->getLocalizedfields()) as it somehow slows down the process around a sec
         // no clue why this happens
-        if(property_exists($this, "localizedfields") && $this->localizedfields instanceof Localizedfield) {
+        if (property_exists($this, "localizedfields") && $this->localizedfields instanceof Localizedfield) {
             $this->localizedfields->setObject($this);
         }
+    }
+
+
+    /**
+     * load lazy loaded fields before cloning
+     * @return void
+     */
+    public function __clone()
+    {
+        parent::__clone();
+
+        Service::loadAllObjectFields($this);
     }
 }

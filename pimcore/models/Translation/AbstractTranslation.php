@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Translation
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Translation;
@@ -21,7 +18,8 @@ use Pimcore\Model;
 use Pimcore\Tool;
 use Pimcore\File;
 
-abstract class AbstractTranslation extends Model\AbstractModel implements TranslationInterface {
+abstract class AbstractTranslation extends Model\AbstractModel implements TranslationInterface
+{
 
     /**
      * @var string
@@ -46,7 +44,8 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
     /**
      * @return string
      */
-    public function getKey() {
+    public function getKey()
+    {
         return $this->key;
     }
 
@@ -54,7 +53,8 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
      * @param $key
      * @return $this
      */
-    public function setKey($key) {
+    public function setKey($key)
+    {
         $this->key = self::getValidTranslationKey($key);
         return $this;
     }
@@ -62,7 +62,8 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
     /**
      * @return array
      */
-    public function getTranslations() {
+    public function getTranslations()
+    {
         return $this->translations;
     }
 
@@ -70,7 +71,8 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
      * @param $translations
      * @return $this
      */
-    public function setTranslations($translations) {
+    public function setTranslations($translations)
+    {
         $this->translations = $translations;
         return $this;
     }
@@ -79,7 +81,8 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
      * @return integer
      * @deprecated use getCreationDate or getModificationDate instead
      */
-    public function getDate() {
+    public function getDate()
+    {
         return $this->getModificationDate();
     }
 
@@ -87,12 +90,14 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
      * @param $date
      * @return $this
      */
-    public function setDate($date) {
+    public function setDate($date)
+    {
         $this->setModificationDate($date);
         return $this;
     }
 
-    public function getCreationDate(){
+    public function getCreationDate()
+    {
         return $this->creationDate;
     }
 
@@ -100,12 +105,14 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
      * @param $date
      * @return $this
      */
-    public function setCreationDate($date){
+    public function setCreationDate($date)
+    {
         $this->creationDate = (int) $date;
         return $this;
     }
 
-    public function getModificationDate(){
+    public function getModificationDate()
+    {
         return $this->modificationDate;
     }
 
@@ -113,7 +120,8 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
      * @param $date
      * @return $this
      */
-    public function setModificationDate($date){
+    public function setModificationDate($date)
+    {
         $this->modificationDate = (int) $date;
         return $this;
     }
@@ -123,7 +131,8 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
      * @param string $language
      * @param string $text
      */
-    public function addTranslation($language, $text) {
+    public function addTranslation($language, $text)
+    {
         $this->translations[$language] = $text;
     }
 
@@ -131,15 +140,17 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
      * @param  $language
      * @return array
      */
-    public function getTranslation($language) {
+    public function getTranslation($language)
+    {
         return $this->translations[$language];
     }
 
     /**
      * @return void
      */
-    public static function clearDependentCache () {
-        \Pimcore\Model\Cache::clearTags(array("translator","translate"));
+    public static function clearDependentCache()
+    {
+        \Pimcore\Cache::clearTags(array("translator", "translate"));
     }
 
     /**
@@ -147,7 +158,8 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
      * @param $key
      * @return string
      */
-    protected static function getValidTranslationKey($key){
+    protected static function getValidTranslationKey($key)
+    {
         return mb_strtolower($key);
     }
 
@@ -162,7 +174,7 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
     public static function getByKey($id, $create = false, $returnIdIfEmpty = false)
     {
         $cacheKey = "translation_" . $id;
-        if(\Zend_Registry::isRegistered($cacheKey)) {
+        if (\Zend_Registry::isRegistered($cacheKey)) {
             return \Zend_Registry::get($cacheKey);
         }
 
@@ -171,14 +183,14 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
         $idOriginal = $id;
         $id = mb_strtolower($id);
 
-        if($translation instanceof Model\Translation\Admin) {
+        if ($translation instanceof Model\Translation\Admin) {
             $languages = Tool\Admin::getLanguages();
         } else {
             $languages = Tool::getValidLanguages();
         }
 
         try {
-            $translation->getResource()->getByKey(self::getValidTranslationKey($id));
+            $translation->getDao()->getByKey(self::getValidTranslationKey($id));
         } catch (\Exception $e) {
             if (!$create) {
                 throw new \Exception($e->getMessage());
@@ -194,13 +206,12 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
                 $translation->setTranslations($translations);
                 $translation->save();
             }
-
         }
 
         if ($returnIdIfEmpty) {
             $translations = $translation->getTranslations();
             foreach ($languages as $language) {
-                if(!array_key_exists($language, $translations) || empty($translations[$language])) {
+                if (!array_key_exists($language, $translations) || empty($translations[$language])) {
                     $translations[$language] = $idOriginal;
                 }
             }
@@ -223,8 +234,9 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
      * @return string
      * @throws \Exception
      */
-    public static function getByKeyLocalized($id, $create = false, $returnIdIfEmpty = false, $language = null) {
-        if(!$language) {
+    public static function getByKeyLocalized($id, $create = false, $returnIdIfEmpty = false, $language = null)
+    {
+        if (!$language) {
             try {
                 $language = (string) \Zend_Registry::get('Zend_Locale');
             } catch (\Exception $e) {
@@ -239,16 +251,17 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
     /**
      *
      */
-    public function save() {
-        if(!$this->getCreationDate()) {
+    public function save()
+    {
+        if (!$this->getCreationDate()) {
             $this->setCreationDate(time());
         }
 
-        if(!$this->getModificationDate()) {
+        if (!$this->getModificationDate()) {
             $this->setModificationDate(time());
         }
 
-        $this->getResource()->save();
+        $this->getDao()->save();
     }
 
     /**
@@ -260,12 +273,12 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
      * @param bool $replaceExistingTranslations
      * @throws \Exception
      */
-    public static function importTranslationsFromFile($file, $replaceExistingTranslations = true, $languages = null){
-
+    public static function importTranslationsFromFile($file, $replaceExistingTranslations = true, $languages = null)
+    {
         $delta = array();
 
-        if(is_readable($file)){
-            if(!$languages || empty($languages) || !is_array($languages)) {
+        if (is_readable($file)) {
+            if (!$languages || empty($languages) || !is_array($languages)) {
                 $languages = Tool::getValidLanguages();
             }
 
@@ -284,7 +297,7 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
             // determine csv type
             $dialect = Tool\Admin::determineCsvDialect(PIMCORE_SYSTEM_TEMP_DIRECTORY . "/import_translations_original");
             //read data
-            if (($handle = fopen(PIMCORE_SYSTEM_TEMP_DIRECTORY . "/import_translations", "r")) !== FALSE) {
+            if (($handle = fopen(PIMCORE_SYSTEM_TEMP_DIRECTORY . "/import_translations", "r")) !== false) {
                 while (($rowData = fgetcsv($handle, 0, $dialect->delimiter, $dialect->quotechar, $dialect->escapechar)) !== false) {
                     $data[] = $rowData;
                 }
@@ -296,7 +309,6 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
                 $keys = $data[0];
                 $data = array_slice($data, 1);
                 foreach ($data as $row) {
-
                     $keyValueArray = array();
                     for ($counter = 0; $counter < count($row); $counter++) {
                         $rd = str_replace("&quot;", '"', $row[$counter]);
@@ -305,23 +317,23 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
 
                     $textKey = $keyValueArray["key"];
                     if ($textKey) {
-                        $t = static::getByKey($textKey,true);
+                        $t = static::getByKey($textKey, true);
                         $dirty = false;
                         foreach ($keyValueArray as $key => $value) {
                             if (in_array($key, $languages)) {
                                 $currentTranslation = $t->getTranslation($key);
-                                if($replaceExistingTranslations){
+                                if ($replaceExistingTranslations) {
                                     $t->addTranslation($key, $value);
                                     if ($currentTranslation != $value) {
                                         $dirty = true;
                                     }
-                                }else{
-                                    if(!$t->getTranslation($key)){
+                                } else {
+                                    if (!$t->getTranslation($key)) {
                                         $t->addTranslation($key, $value);
                                         if ($currentTranslation != $value) {
                                             $dirty = true;
                                         }
-                                    } else if ($t->getTranslation($key) != $value && $value) {
+                                    } elseif ($t->getTranslation($key) != $value && $value) {
                                         $delta[]=
                                             array(
                                                 "lg" => $key,
@@ -359,7 +371,7 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
      */
     public function getFromWebserviceImport($data)
     {
-        foreach($data as $key => $value){
+        foreach ($data as $key => $value) {
             $setter = 'set' . ucfirst($key);
             $this->$setter($value);
         }
@@ -368,9 +380,10 @@ abstract class AbstractTranslation extends Model\AbstractModel implements Transl
     /**
      * @return array
      */
-    public function getForWebserviceExport(){
+    public function getForWebserviceExport()
+    {
         $data = get_object_vars($this);
-        unset($data['resource']);
+        unset($data['dao']);
         return $data;
     }
 }

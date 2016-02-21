@@ -2,92 +2,205 @@
 /**
  * Pimcore
  *
- * LICENSE
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
- *
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
- 
-class
-Logger {
-	
-	private static $logger = array();
-	private static $priorities = array();
-	private static $enabled = false;
-	
-	public static function setLogger ($logger) {
-        self::$logger = array();
-		self::$logger[] = $logger;
-        self::$enabled = true;
-	}
 
-    public static function resetLoggers() {
+use Psr\Log\LogLevel;
+
+class Logger
+{
+
+    /**
+     * @var array
+     */
+    private static $logger = [];
+
+    /**
+     * @var array
+     */
+    private static $priorities = [];
+
+    /**
+     * @var bool
+     */
+    private static $enabled = false;
+
+    /**
+     * @return array
+     */
+    public static function getAvailablePriorities()
+    {
+        return [
+            LogLevel::EMERGENCY,
+            LogLevel::ALERT,
+            LogLevel::CRITICAL,
+            LogLevel::ERROR,
+            LogLevel::WARNING,
+            LogLevel::NOTICE,
+            LogLevel::INFO,
+            LogLevel::DEBUG,
+        ];
+    }
+
+    /**
+     * @param $logger
+     */
+    public static function setLogger($logger)
+    {
+        self::$logger = array();
+        self::$logger[] = $logger;
+        self::$enabled = true;
+    }
+
+    /**
+     * @param $logger
+     */
+    public static function removeLogger($logger)
+    {
+        $pos = array_search($logger, self::$logger);
+        array_splice(self::$logger, $pos, 1);
+    }
+
+    /**
+     *
+     */
+    public static function resetLoggers()
+    {
         self::$logger = array();
     }
-    
-    public static function addLogger ($logger,$reset = false) {
-        if($reset) {
+
+    /**
+     * @param $logger
+     * @param bool|false $reset
+     * @throws Exception
+     */
+    public static function addLogger($logger, $reset = false)
+    {
+        if (!$logger instanceof \Zend_Log && !$logger instanceof \Psr\Log\LoggerInterface) {
+            throw new \Exception("Logger must be either an instance of Zend_Log or needs to implement Psr\\Log\\LoggerInterface");
+        }
+
+        if ($reset) {
             self::$logger = array();
         }
         self::$logger[] = $logger;
         self::$enabled = true;
     }
-    
-    public static function getLogger () {
-		return self::$logger;
-	}
-	
-	public static function setPriorities ($prios) {
-		self::$priorities = $prios;
-	}
+
+    /**
+     * @return array
+     */
+    public static function getLogger()
+    {
+        return self::$logger;
+    }
+
+    /**
+     * @param $prios
+     */
+    public static function setPriorities($prios)
+    {
+        self::$priorities = $prios;
+    }
 
     /**
      * return priorities, an array of log levels that will be logged by this logger
      *
      * @return array
      */
-    public static function getPriorities () {
+    public static function getPriorities()
+    {
         return self::$priorities;
     }
 
-	public static function initDummy() {
-		self::$enabled = false;
-	}
-
-    public static function disable() {
+    /**
+     *
+     */
+    public static function initDummy()
+    {
         self::$enabled = false;
     }
 
-    public static function enable() {
+    /**
+     *
+     */
+    public static function disable()
+    {
+        self::$enabled = false;
+    }
+
+    /**
+     *
+     */
+    public static function enable()
+    {
         self::$enabled = true;
     }
 
-    public static function setVerbosePriorities() {
-        self::setPriorities(array(
-            Zend_Log::DEBUG,
-            Zend_Log::INFO,
-            Zend_Log::NOTICE,
-            Zend_Log::WARN,
-            Zend_Log::ERR,
-            Zend_Log::CRIT,
-            Zend_Log::ALERT,
-            Zend_Log::EMERG
-        ));
+    /**
+     *
+     */
+    public static function setVerbosePriorities()
+    {
+        self::setPriorities([
+            "debug",
+            "info",
+            "notice",
+            "warning",
+            "error",
+            "critical",
+            "alert",
+            "emergency"
+        ]);
     }
-	
-	public static function log ($message,$code=Zend_Log::INFO) {
-		
-		if(!self::$enabled) {
-			return;
-		}
-		
-		if(in_array($code,self::$priorities)) {
 
+    /**
+     * @return array
+     */
+    public static function getZendLoggerPsr3Mapping()
+    {
+        return [
+            \Zend_Log::DEBUG => LogLevel::DEBUG,
+            \Zend_Log::INFO => LogLevel::INFO,
+            \Zend_Log::NOTICE => LogLevel::NOTICE,
+            \Zend_Log::WARN => LogLevel::WARNING,
+            \Zend_Log::ERR => LogLevel::ERROR,
+            \Zend_Log::CRIT => LogLevel::CRITICAL,
+            \Zend_Log::ALERT => LogLevel::ALERT,
+            \Zend_Log::EMERG => LogLevel::EMERGENCY
+        ];
+    }
+
+    /**
+     * @param $message
+     * @param string $code
+     * @param array $context
+     */
+    public static function log($message, $level = "info", $context = [])
+    {
+        if (!self::$enabled) {
+            return;
+        }
+
+        // backward compatibility of level definitions
+        // Zend_Logger compatibility
+        $zendLoggerPsr3Mapping = self::getZendLoggerPsr3Mapping();
+
+        if (array_key_exists($level, $zendLoggerPsr3Mapping)) {
+            $level = $zendLoggerPsr3Mapping[$level];
+        }
+
+        if (!is_array($context)) {
+            $context = [];
+        }
+
+
+        if (in_array($level, self::$priorities)) {
             $backtrace = debug_backtrace();
 
             if (!isset($backtrace[2])) {
@@ -98,87 +211,95 @@ Logger {
 
             $call["line"] = $backtrace[1]["line"];
 
-            if(is_object($message) || is_array($message)) {
-                // special formatting for exception
-				if($message instanceof Exception) {
-					$message = $call["class"] . $call["type"] . $call["function"] . "() [" . $call["line"] . "]: [Exception] with message: ".$message->getMessage()
-                        ."\n"
-                        ."In file: "
-                        .$message->getFile()
-                        . " on line "
-                        .$message->getLine()
-                        ."\n"
-                        .$message->getTraceAsString();
-				}
-				else {
-					$message = print_r($message,true);
-				}
-			} else {
-                $message = $call["class"] . $call["type"] . $call["function"] . "() [" . $call["line"] . "]: " . $message;
+            if (is_object($message) || is_array($message)) {
+                if (!$message instanceof Exception) {
+                    $message = print_r($message, true);
+                }
             }
+
+            $context["origin"] = $call["class"] . $call["type"] . $call["function"] . "() on line " . $call["line"];
 
             // add the memory consumption
             $memory = formatBytes(memory_get_usage(), 0);
             $memory = str_pad($memory, 6, " ", STR_PAD_LEFT);
 
-            $message = $memory . " | " . $message;
+            $context["memory"] = $memory;
 
             foreach (self::$logger as $logger) {
-                $logger->log($message,$code);
+                if ($logger instanceof \Psr\Log\LoggerInterface) {
+                    $logger->log($level, $message, $context);
+                } else {
+                    // Zend_Log backward compatibility
+                    $zendLoggerPsr3ReverseMapping = array_flip($zendLoggerPsr3Mapping);
+                    $zfCode = $zendLoggerPsr3ReverseMapping[$level];
+                    $logger->log($message, $zfCode);
+                }
             }
-		}
-	}
+        }
+    }
     
     
     /**
      * $l is for backward compatibility
      **/
     
-     public static function emergency ($m, $l = null) {
-        self::log($m,Zend_Log::EMERG);
+     public static function emergency($m, $context = [])
+     {
+         self::log($m, "emergency", $context);
+     }
+    
+    public static function emerg($m, $context = [])
+    {
+        self::log($m, "emergency", $context);
+    }
+
+    public static function alert($m, $context = [])
+    {
+        self::log($m, "alert", $context);
+    }
+
+    public static function critical($m, $context = [])
+    {
+        self::log($m, "critical", $context);
     }
     
-    public static function emerg ($m, $l = null) {
-        self::log($m,Zend_Log::EMERG);
+    public static function crit($m, $context = [])
+    {
+        self::log($m, "critical", $context);
     }
     
-    public static function critical ($m, $l = null) {
-        self::log($m,Zend_Log::CRIT);
+    public static function error($m, $context = [])
+    {
+        self::log($m, "error", $context);
     }
     
-    public static function crit ($m, $l = null) {
-        self::log($m,Zend_Log::CRIT);
+    public static function err($m, $context = [])
+    {
+        self::log($m, "error", $context);
     }
     
-    public static function error ($m, $l = null) {
-        self::log($m,Zend_Log::ERR);
+    public static function warning($m, $context = [])
+    {
+        self::log($m, "warning", $context);
     }
     
-    public static function err ($m, $l = null) {
-        self::log($m,Zend_Log::ERR);
+    public static function warn($m, $context = [])
+    {
+        self::log($m, "warning", $context);
     }
     
-    public static function alert ($m, $l = null) {
-        self::log($m,Zend_Log::ALERT);
+    public static function notice($m, $context = [])
+    {
+        self::log($m, "notice", $context);
     }
     
-    public static function warning ($m, $l = null) {
-        self::log($m,Zend_Log::WARN);
+    public static function info($m, $context = [])
+    {
+        self::log($m, "info", $context);
     }
     
-    public static function warn ($m, $l = null) {
-        self::log($m,Zend_Log::WARN);
-    }
-    
-    public static function notice ($m, $l = null) {
-        self::log($m,Zend_Log::NOTICE);
-    }
-    
-    public static function info ($m, $l = null) {
-        self::log($m,Zend_Log::INFO);
-    }
-    
-    public static function debug ($m, $l = null) {
-        self::log($m,Zend_Log::DEBUG);
+    public static function debug($m, $context = [])
+    {
+        self::log($m, "debug", $context);
     }
 }

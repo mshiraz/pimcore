@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object|Class
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object\ClassDefinition;
@@ -180,18 +177,18 @@ abstract class Data
      * @param boolean $omitMandatoryCheck
      * @throws \Exception
      */
-    public function checkValidity($data, $omitMandatoryCheck = false) {
-
+    public function checkValidity($data, $omitMandatoryCheck = false)
+    {
         $isEmpty = true;
 
         // this is to do not treated "0" as empty
-        if(is_string($data) || is_numeric($data)) {
-            if(strlen($data) > 0) {
+        if (is_string($data) || is_numeric($data)) {
+            if (strlen($data) > 0) {
                 $isEmpty = false;
             }
         }
 
-        if(!empty($data)) {
+        if (!empty($data)) {
             $isEmpty = false;
         }
 
@@ -204,11 +201,12 @@ abstract class Data
      * converts object data to a simple string value or CSV Export
      * @abstract
      * @param Object\AbstractObject $object
+     * @param array $params
      * @return string
      */
-    public function getForCsvExport($object)
+    public function getForCsvExport($object, $params = array())
     {
-        return $this->getDataFromObjectParam($object);
+        return $this->getDataFromObjectParam($object, $params);
     }
 
     /**
@@ -224,7 +222,8 @@ abstract class Data
      * @param $object
      * @return string
      */
-    public function getDataForSearchIndex($object) {
+    public function getDataForSearchIndex($object)
+    {
         // this is the default, but csv doesn't work for all data types
         return $this->getForCsvExport($object);
     }
@@ -603,16 +602,16 @@ abstract class Data
      */
     public function getFilterCondition($value, $operator)
     {
-        $db = \Pimcore\Resource::get();
+        $db = \Pimcore\Db::get();
         $key = $db->quoteIdentifier($this->name);
 
         if ($value === "NULL") {
             if ($operator == '=') {
                 $operator = "IS";
-            } else if ($operator == "!=") {
+            } elseif ($operator == "!=") {
                 $operator = "IS NOT";
             }
-        } else if (!is_array($value) && !is_object($value)) {
+        } elseif (!is_array($value) && !is_object($value)) {
             if ($operator == "LIKE") {
                 $value = $db->quote("%" . $value . "%");
             } else {
@@ -621,9 +620,10 @@ abstract class Data
         }
 
         if (in_array($operator, Object\ClassDefinition\Data::$validFilterOperators)) {
-
             return $key . " " . $operator . " " . $value . " ";
-        } else return "";
+        } else {
+            return "";
+        }
     }
 
     /**
@@ -749,7 +749,7 @@ abstract class Data
         if (method_exists($this, "preSetData")) {
             $code .= "\t" . '$this->' . $key . " = " . '$this->getDefinition()->getFieldDefinition("' . $key . '")->preSetData($this, $' . $key . ');' . "\n";
         } else {
-        $code .= "\t" . '$this->' . $key . " = " . '$' . $key . ";\n";
+            $code .= "\t" . '$this->' . $key . " = " . '$' . $key . ";\n";
         }
 
         $code .= "\t" . 'return $this;' . "\n";
@@ -767,7 +767,6 @@ abstract class Data
     public function getGetterCodeFieldcollection($fieldcollectionDefinition)
     {
         $key = $this->getName();
-        $code = "";
 
         $code = "";
         $code .= '/**' . "\n";
@@ -836,7 +835,11 @@ abstract class Data
 
         // adds a hook preGetValue which can be defined in an extended class
         $code .= "\t" . '$preValue = $this->preGetValue("' . $key . '");' . " \n";
-        $code .= "\t" . 'if($preValue !== null && !\Pimcore::inAdmin()) { return $preValue;}' . "\n";
+        $code .= "\t" . 'if($preValue !== null && !\Pimcore::inAdmin()) { ' . "\n";
+        $code .= "\t\t" . 'return $preValue;' . "\n";
+        $code .= "\t" . '}' . "\n";
+
+        // we don't need to consider preGetData, because this is already managed directly by the localized fields within getLocalizedValue()
 
         $code .= "\t return " . '$data' . ";\n";
         $code .= "}\n\n";
@@ -872,7 +875,8 @@ abstract class Data
      *
      * @return int|null
      */
-    public function getAsIntegerCast($number){
+    public function getAsIntegerCast($number)
+    {
         return strlen($number) === 0 ? "" : (int)$number;
     }
 
@@ -880,7 +884,8 @@ abstract class Data
      * @param $number
      * @return float
      */
-    public function getAsFloatCast($number){
+    public function getAsFloatCast($number)
+    {
         return strlen($number) === 0 ? "" : (float)$number;
     }
 
@@ -888,7 +893,8 @@ abstract class Data
      * @param $data
      * @return string
      */
-    public function getVersionPreview($data) {
+    public function getVersionPreview($data)
+    {
         return "no preview";
     }
 
@@ -896,8 +902,9 @@ abstract class Data
      * @param Object\Concrete $data
      * @return bool
      */
-    public function isEmpty($data) {
-        if(empty($data)) {
+    public function isEmpty($data)
+    {
+        if (empty($data)) {
             return true;
         }
         return false;
@@ -906,7 +913,8 @@ abstract class Data
     /** True if change is allowed in edit mode.
      * @return bool
      */
-    public function isDiffChangeAllowed() {
+    public function isDiffChangeAllowed()
+    {
         return false;
     }
 
@@ -919,7 +927,8 @@ abstract class Data
      * @param null $object
      * @return mixed
      */
-    public function getDiffDataFromEditmode($data, $object = null) {
+    public function getDiffDataFromEditmode($data, $object = null)
+    {
         $thedata = $this->getDataFromEditmode($data[0]["data"], $object);
         return $thedata;
     }
@@ -943,7 +952,8 @@ abstract class Data
      * @param null|Object\AbstractObject $object
      * @return null|array
      */
-    public function getDiffDataForEditMode($data, $object = null) {
+    public function getDiffDataForEditMode($data, $object = null)
+    {
         $diffdata = array();
         $diffdata["data"] = $this->getDataForEditmode($data, $object);
         $diffdata["disabled"] = !($this->isDiffChangeAllowed());
@@ -987,14 +997,14 @@ abstract class Data
      * @param array $params
      * @return mixed
      */
-    protected function getDataFromObjectParam($object, $params = array()) {
-
+    protected function getDataFromObjectParam($object, $params = array())
+    {
         $data = null;
 
         $getter = "get".ucfirst($this->getName());
-        if(method_exists($object, $getter)) { // for Object\Concrete, Object\Fieldcollection\Data\AbstractData, Object\Objectbrick\Data\AbstractData
+        if (method_exists($object, $getter)) { // for Object\Concrete, Object\Fieldcollection\Data\AbstractData, Object\Objectbrick\Data\AbstractData
             $data = $object->$getter();
-        } else if ($object instanceof Object\Localizedfield) {
+        } elseif ($object instanceof Object\Localizedfield) {
             $data = $object->getLocalizedValue($this->getName(), $params["language"], true);
         }
 
@@ -1004,14 +1014,16 @@ abstract class Data
     /**
      * @param Object\ClassDefinition\Data $masterDefinition
      */
-    public function synchronizeWithMasterDefinition(Object\ClassDefinition\Data $masterDefinition) {
+    public function synchronizeWithMasterDefinition(Object\ClassDefinition\Data $masterDefinition)
+    {
         // implement in child classes
     }
 
     /**
      * @param Object\ClassDefinition\Data $masterDefinition
      */
-    public function adoptMasterDefinition(Object\ClassDefinition\Data $masterDefinition) {
+    public function adoptMasterDefinition(Object\ClassDefinition\Data $masterDefinition)
+    {
         $vars = get_object_vars($this);
         $protectedFields = array("noteditable", "invisible");
         foreach ($vars as $name => $value) {
@@ -1024,5 +1036,28 @@ abstract class Data
                 $this->$name = $value;
             }
         }
+    }
+
+    /** Encode value for packing it into a single column.
+     * @param mixed $value
+     * @param Model\Object\AbstractObject $object
+     * @return mixed
+     */
+    public function marshal($value, $object = null)
+    {
+        return array("value" => $value);
+    }
+
+    /** See marshal
+     * @param mixed $value
+     * @param Model\Object\AbstractObject $object
+     * @return mixed
+     */
+    public function unmarshal($data, $object = null)
+    {
+        if (is_array($data)) {
+            return $data["value"];
+        };
+        return null;
     }
 }

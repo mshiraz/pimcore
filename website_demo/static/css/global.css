@@ -25,6 +25,7 @@ body {
 
 .navbar-brand img {
     height: 30px;
+    margin-left: 10px;
 }
 
 .navbar-wrapper ul {
@@ -259,30 +260,6 @@ section img {
     right: 15px;
     top: 15px;
     display: none;
-}
-
-.languages a {
-    width: 24px;
-    height: 12px;
-    overflow: hidden;
-    margin-left: 5px;
-    display: inline-block;
-    border: 2px solid #999;
-    box-sizing: content-box;
-    -moz-box-sizing: content-box;
-    font-size: 0;
-}
-
-.languages a:hover {
-    border-color: #fff;
-}
-
-.languages .de {
-    background-image: url(/website/static/img/de.png);
-}
-
-.languages .en {
-    background-image: url(/website/static/img/en.png);
 }
 
 .sidebar .teaser {

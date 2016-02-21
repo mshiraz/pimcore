@@ -2,24 +2,22 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object|Class
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object\ClassDefinition;
 
 use Pimcore\Model;
 
-class Layout {
+class Layout
+{
 
     /**
      * @var string
@@ -89,56 +87,64 @@ class Layout {
     /**
      * @return string
      */
-    public function getName() {
+    public function getName()
+    {
         return $this->name;
     }
 
     /**
      * @return string
      */
-    public function getType() {
+    public function getType()
+    {
         return $this->type;
     }
 
     /**
      * @return string
      */
-    public function getRegion() {
+    public function getRegion()
+    {
         return $this->region;
     }
 
     /**
      * @return string
      */
-    public function getTitle() {
+    public function getTitle()
+    {
         return $this->title;
     }
 
     /**
      * @return integer
      */
-    public function getWidth() {
+    public function getWidth()
+    {
         return $this->width;
     }
 
     /**
      * @return integer
      */
-    public function getHeight() {
+    public function getHeight()
+    {
         return $this->height;
     }
 
     /**
      * @return boolean
      */
-    public function getCollapsible() {
+    public function getCollapsible()
+    {
         return $this->collapsible;
     }
 
     /**
      * @return array
      */
-    public function getPermissions() {
+    public function getPermissions()
+    {
         return $this->permissions;
     }
 
@@ -146,7 +152,8 @@ class Layout {
      * @param string $name
      * @return void
      */
-    public function setName($name) {
+    public function setName($name)
+    {
         $this->name = $name;
         return $this;
     }
@@ -155,7 +162,8 @@ class Layout {
      * @param string $type
      * @return void
      */
-    public function setType($type) {
+    public function setType($type)
+    {
         $this->type = $type;
         return $this;
     }
@@ -164,7 +172,8 @@ class Layout {
      * @param string $region
      * @return void
      */
-    public function setRegion($region) {
+    public function setRegion($region)
+    {
         $this->region = $region;
         return $this;
     }
@@ -173,7 +182,8 @@ class Layout {
      * @param string $title
      * @return void
      */
-    public function setTitle($title) {
+    public function setTitle($title)
+    {
         $this->title = $title;
         return $this;
     }
@@ -182,7 +192,8 @@ class Layout {
      * @param integer $width
      * @return void
      */
-    public function setWidth($width) {
+    public function setWidth($width)
+    {
         if (!empty($width) && is_numeric($width)) {
             $this->width = intval($width);
         } else {
@@ -195,7 +206,8 @@ class Layout {
      * @param integer $height
      * @return void
      */
-    public function setHeight($height) {
+    public function setHeight($height)
+    {
         if (!empty($height) && is_numeric($height)) {
             $this->height = intval($height);
         } else {
@@ -208,7 +220,8 @@ class Layout {
      * @param boolean $collapsible
      * @return void
      */
-    public function setCollapsible($collapsible) {
+    public function setCollapsible($collapsible)
+    {
         $this->collapsible = (bool) $collapsible;
         return $this;
     }
@@ -217,7 +230,8 @@ class Layout {
      * @param array $permissions
      * @return void
      */
-    public function setPermissions($permissions) {
+    public function setPermissions($permissions)
+    {
         $this->permissions = $permissions;
         return $this;
     }
@@ -225,7 +239,8 @@ class Layout {
     /**
      * @return array
      */
-    public function getChilds() {
+    public function getChilds()
+    {
         return $this->childs;
     }
 
@@ -233,7 +248,8 @@ class Layout {
      * @param array $childs
      * @return void
      */
-    public function setChilds($childs) {
+    public function setChilds($childs)
+    {
         $this->childs = $childs;
         return $this;
     }
@@ -241,7 +257,8 @@ class Layout {
     /**
      * @return boolean
      */
-    public function hasChilds() {
+    public function hasChilds()
+    {
         if (is_array($this->childs) && count($this->childs) > 0) {
             return true;
         }
@@ -252,7 +269,8 @@ class Layout {
      * @param mixed $child
      * @return void
      */
-    public function addChild($child) {
+    public function addChild($child)
+    {
         $this->childs[] = $child;
     }
 
@@ -261,7 +279,8 @@ class Layout {
      * @param array $blockedKeys
      * @return void
      */
-    public function setValues($data = array(), $blockedKeys = array()) {
+    public function setValues($data = array(), $blockedKeys = array())
+    {
         foreach ($data as $key => $value) {
             if (!in_array($key, $blockedKeys)) {
                 $method = "set" . $key;
@@ -276,7 +295,8 @@ class Layout {
     /**
      * @return mixed
      */
-    public function getDatatype() {
+    public function getDatatype()
+    {
         return $this->datatype;
     }
 
@@ -284,7 +304,8 @@ class Layout {
      * @param mixed $datatype
      * @return void
      */
-    public function setDatatype($datatype) {
+    public function setDatatype($datatype)
+    {
         $this->datatype = $datatype;
         return $this;
     }
@@ -293,7 +314,8 @@ class Layout {
      *
      * @return boolean
      */
-    public function getLocked() {
+    public function getLocked()
+    {
         return $this->locked;
     }
 
@@ -301,7 +323,8 @@ class Layout {
      * @param $locked
      * @return $this
      */
-    public function setLocked($locked) {
+    public function setLocked($locked)
+    {
         $this->locked = (bool) $locked;
         return $this;
     }
@@ -341,5 +364,4 @@ class Layout {
     {
         return $this->bodyStyle;
     }
-
 }

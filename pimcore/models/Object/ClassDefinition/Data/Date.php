@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object|Class
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object\ClassDefinition\Data;
@@ -65,13 +62,13 @@ class Date extends Model\Object\ClassDefinition\Data
 
     /**
      * @see Object\ClassDefinition\Data::getDataForResource
-     * @param \Zend_Date $data
+     * @param \Zend_Date|\DateTime $data
      * @param null|Object\AbstractObject $object
      * @return integer
      */
     public function getDataForResource($data, $object = null)
     {
-        if ($data instanceof \Zend_Date) {
+        if ($data) {
             return $data->getTimestamp();
         }
     }
@@ -79,51 +76,68 @@ class Date extends Model\Object\ClassDefinition\Data
     /**
      * @see Object\ClassDefinition\Data::getDataFromResource
      * @param integer $data
-     * @return \Zend_Date
+     * @return \Zend_Date|\DateTime
      */
     public function getDataFromResource($data)
     {
         if ($data) {
-            return new \Pimcore\Date($data);
+            return $this->getDateFromTimestamp($data);
         }
+        return null;
     }
 
     /**
      * @see Object\ClassDefinition\Data::getDataForQueryResource
-     * @param \Zend_Date $data
+     * @param \Zend_Date|\DateTime $data
      * @param null|Object\AbstractObject $object
      * @return integer
      */
     public function getDataForQueryResource($data, $object = null)
     {
-        if ($data instanceof \Zend_Date) {
+        if ($data) {
             return $data->getTimestamp();
         }
     }
 
     /**
      * @see Object\ClassDefinition\Data::getDataForEditmode
-     * @param \Zend_Date $data
+     * @param \Zend_Date\DateTime $data
      * @param null|Object\AbstractObject $object
      * @return string
      */
     public function getDataForEditmode($data, $object = null)
     {
-        if ($data instanceof \Zend_Date) {
+        if ($data) {
             return $data->getTimestamp();
         }
+    }
+
+    /**
+     * @param $timestamp
+     * @return \DateTime|\Pimcore\Date
+     */
+    protected function getDateFromTimestamp($timestamp)
+    {
+        if (\Pimcore\Config::getFlag("useZendDate")) {
+            $date = new \Pimcore\Date($timestamp);
+        } else {
+            $date = new \DateTime();
+            $date->setTimestamp($timestamp);
+        }
+
+        return $date;
     }
 
     /**
      * @see Model\Object\ClassDefinition\Data::getDataFromEditmode
      * @param integer $data
      * @param null|Object\AbstractObject $object
-     * @return \Zend_Date
+     * @return \Zend_Date|\DateTime
      */
     public function getDataFromEditmode($data, $object = null)
     {
         if ($data) {
-            return new \Pimcore\Date($data / 1000);
+            return $this->getDateFromTimestamp($data / 1000);
         }
         return false;
     }
@@ -135,7 +149,7 @@ class Date extends Model\Object\ClassDefinition\Data
      */
     public function getDataForGrid($data, $object = null)
     {
-        if ($data instanceof \Zend_Date) {
+        if ($data) {
             return $data->getTimestamp();
         } else {
             return null;
@@ -144,13 +158,15 @@ class Date extends Model\Object\ClassDefinition\Data
 
     /**
      * @see Object\ClassDefinition\Data::getVersionPreview
-     * @param \Zend_Date $data
+     * @param \Zend_Date|\DateTime $data
      * @return string
      */
     public function getVersionPreview($data)
     {
         if ($data instanceof \Zend_Date) {
             return $data->get(\Zend_Date::DATE_MEDIUM);
+        } elseif ($data instanceof \DateTime) {
+            return $data->format("Y-m-d");
         }
     }
 
@@ -162,7 +178,9 @@ class Date extends Model\Object\ClassDefinition\Data
     {
         if ($this->defaultValue !== null) {
             return $this->defaultValue;
-        } else return 0;
+        } else {
+            return 0;
+        }
     }
 
     /**
@@ -186,14 +204,18 @@ class Date extends Model\Object\ClassDefinition\Data
      * converts object data to a simple string value or CSV Export
      * @abstract
      * @param Object\AbstractObject $object
+     * @param array $params
      * @return string
      */
-    public function getForCsvExport($object)
+    public function getForCsvExport($object, $params = array())
     {
         $data = $this->getDataFromObjectParam($object);
         if ($data instanceof \Zend_Date) {
-            return $data->toString();
-        } else return null;
+            return $data->toString("Y-m-d", "php");
+        } elseif ($data instanceof \DateTime) {
+            return $data->format("Y-m-d");
+        }
+        return null;
     }
 
     /**
@@ -202,25 +224,22 @@ class Date extends Model\Object\ClassDefinition\Data
      */
     public function getFromCsvImport($importValue)
     {
-        try {
-            $value = new \Pimcore\Date(strtotime($importValue));
-            return $value;
-        } catch (\Exception $e) {
-            return null;
+        $timestamp = strtotime($importValue);
+        if ($timestamp) {
+            return $this->getDateFromTimestamp($timestamp);
         }
+
+        return null;
     }
 
     /**
      * converts data to be exposed via webservices
-     * @param string $object
+     * @param Object\Concrete $object
      * @return mixed
      */
     public function getForWebserviceExport($object)
     {
-        $data = $this->getDataFromObjectParam($object);
-        if ($data instanceof \Zend_Date) {
-            return $data->toString();
-        } else return null;
+        return $this->getForCsvExport($object);
     }
 
     /**
@@ -235,8 +254,8 @@ class Date extends Model\Object\ClassDefinition\Data
         $timestamp = strtotime($value);
         if (empty($value)) {
             return null;
-        } else if ($timestamp !== FALSE) {
-            return new \Pimcore\Date($timestamp);
+        } elseif ($timestamp !== false) {
+            return $this->getDateFromTimestamp($timestamp);
         } else {
             throw new \Exception("cannot get values from web service import - invalid data");
         }
@@ -255,7 +274,8 @@ class Date extends Model\Object\ClassDefinition\Data
     /** True if change is allowed in edit mode.
      * @return bool
      */
-    public function isDiffChangeAllowed() {
+    public function isDiffChangeAllowed()
+    {
         return true;
     }
 
@@ -264,10 +284,11 @@ class Date extends Model\Object\ClassDefinition\Data
      * @param null $object
      * @return null|\Pimcore\Date
      */
-    public function getDiffDataFromEditmode($data, $object = null) {
+    public function getDiffDataFromEditmode($data, $object = null)
+    {
         $thedata = $data[0]["data"];
         if ($thedata) {
-            return new \Pimcore\Date($thedata);
+            return $this->getDateFromTimestamp($thedata);
         } else {
             return null;
         }
@@ -278,11 +299,12 @@ class Date extends Model\Object\ClassDefinition\Data
      * @param null $object
      * @return array|null
      */
-    public function getDiffDataForEditMode($data, $object = null) {
+    public function getDiffDataForEditMode($data, $object = null)
+    {
         $result = array();
 
         $thedata = null;
-        if ($data instanceof \Zend_Date) {
+        if ($data) {
             $thedata = $data->getTimestamp();
         };
         $diffdata = array();

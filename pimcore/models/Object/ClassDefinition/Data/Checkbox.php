@@ -2,17 +2,14 @@
 /**
  * Pimcore
  *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://www.pimcore.org/license
+ * This source file is subject to the GNU General Public License version 3 (GPLv3)
+ * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
+ * files that are distributed with this source code.
  *
  * @category   Pimcore
  * @package    Object|Class
- * @copyright  Copyright (c) 2009-2014 pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     New BSD License
+ * @copyright  Copyright (c) 2009-2016 pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GNU General Public License version 3 (GPLv3)
  */
 
 namespace Pimcore\Model\Object\ClassDefinition\Data;
@@ -84,7 +81,6 @@ class Checkbox extends Model\Object\ClassDefinition\Data
      */
     public function getDataForResource($data, $object = null)
     {
-
         if (is_bool($data)) {
             $data = (int)$data;
         }
@@ -100,7 +96,7 @@ class Checkbox extends Model\Object\ClassDefinition\Data
      */
     public function getDataFromResource($data)
     {
-        if(!is_null($data)) {
+        if (!is_null($data)) {
             $data = (bool) $data;
         }
         return $data;
@@ -161,7 +157,6 @@ class Checkbox extends Model\Object\ClassDefinition\Data
      */
     public function checkValidity($data, $omitMandatoryCheck = false)
     {
-
         if (!$omitMandatoryCheck and $this->getMandatory() and $data === null) {
             throw new \Exception("Empty mandatory field [ " . $this->getName() . " ]");
         }
@@ -176,9 +171,10 @@ class Checkbox extends Model\Object\ClassDefinition\Data
      * converts object data to a simple string value or CSV Export
      * @abstract
      * @param Object\AbstractObject $object
+     * @param array $params
      * @return string
      */
-    public function getForCsvExport($object)
+    public function getForCsvExport($object, $params = array())
     {
         $data = $this->getDataFromObjectParam($object);
         return strval($data);
@@ -216,14 +212,16 @@ class Checkbox extends Model\Object\ClassDefinition\Data
     /** True if change is allowed in edit mode.
      * @return bool
      */
-    public function isDiffChangeAllowed() {
+    public function isDiffChangeAllowed()
+    {
         return true;
     }
 
     /**
      * @param Object\ClassDefinition\Data $masterDefinition
      */
-    public function synchronizeWithMasterDefinition(Object\ClassDefinition\Data $masterDefinition) {
+    public function synchronizeWithMasterDefinition(Object\ClassDefinition\Data $masterDefinition)
+    {
         $this->defaultValue = $masterDefinition->defaultValue;
     }
 
@@ -234,8 +232,9 @@ class Checkbox extends Model\Object\ClassDefinition\Data
      * @return string
      *
      */
-    public function getFilterCondition($value, $operator) {
-        $db = \Pimcore\Resource::get();
+    public function getFilterCondition($value, $operator)
+    {
+        $db = \Pimcore\Db::get();
         $value = $db->quote($value);
         $key = $db->quoteIdentifier($this->name, $this->name);
         return "IFNULL(" . $key . ", 0) = " . $value . " ";
